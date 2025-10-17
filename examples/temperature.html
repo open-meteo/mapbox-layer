@@ -10,6 +10,8 @@
 			html,
 			body,
 			#map {
+				margin: 0;
+				padding: 0;
 				height: 100%;
 			}
 		</style>
@@ -21,6 +23,11 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
+				zoom: 5.2,
+				center: {
+					lng: 8.21,
+					lat: 50.64
+				},
 				style: {
 					version: 8,
 					sources: {
@@ -42,6 +49,7 @@
 				}
 			});
 
+			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om?variable={{{  }}}}
 			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
 
 			map.on('load', () => {
