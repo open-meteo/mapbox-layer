@@ -6,7 +6,7 @@ import type { Data } from './om-protocol';
 
 import type { Domain, DimensionRange, Variable } from './types';
 
-import { fastAtan2, radiansToDegrees } from './utils/math';
+import { fastAtan2, radiansToDegrees } from './utils/projections';
 
 import {
 	DynamicProjection,

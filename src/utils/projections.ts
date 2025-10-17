@@ -1,4 +1,54 @@
-import { degreesToRadians, lat2tile, lon2tile, radiansToDegrees, tile2lat, tile2lon } from './math';
+export const PI = Math.PI;
+export const degreesToRadians = (degree: number) => {
+	return degree * (PI / 180);
+};
+
+export const radiansToDegrees = (rad: number) => {
+	return rad * (180 / PI);
+};
+
+export const tile2lon = (x: number, z: number): number => {
+	return (x / Math.pow(2, z)) * 360 - 180;
+};
+
+export const tile2lat = (y: number, z: number): number => {
+	const n = PI - (2 * PI * y) / Math.pow(2, z);
+	return radiansToDegrees(Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
+};
+
+export const lon2tile = (lon: number, z: number): number => {
+	return Math.pow(2, z) * ((lon + 180) / 360);
+};
+
+export const lat2tile = (lat: number, z: number): number => {
+	return (
+		(Math.pow(2, z) *
+			(1 - Math.log(Math.tan(degreesToRadians(lat)) + 1 / Math.cos(degreesToRadians(lat))) / PI)) /
+		2
+	);
+};
+
+const a1 = 0.99997726;
+const a3 = -0.33262347;
+const a5 = 0.19354346;
+const a7 = -0.11643287;
+const a9 = 0.05265332;
+const a11 = -0.0117212;
+
+// https://mazzo.li/posts/vectorized-atan2.html
+export const fastAtan2 = (y: number, x: number) => {
+	const swap = Math.abs(x) < Math.abs(y);
+	const denominator = (swap ? y : x) === 0 ? 0.00000001 : swap ? y : x;
+	const atan_input = (swap ? x : y) / denominator;
+
+	const z_sq = atan_input * atan_input;
+	let res = atan_input * (a1 + z_sq * (a3 + z_sq * (a5 + z_sq * (a7 + z_sq * (a9 + z_sq * a11)))));
+
+	if (swap) res = (Math.sign(atan_input) * PI) / 2 - res;
+	if (x < 0.0) res = Math.sign(y) * PI + res;
+
+	return res;
+};
 
 import type { Domain } from '../types';
 import type { DimensionRange } from '../types';
@@ -8,19 +58,19 @@ export interface Projection {
 	reverse(x: number, y: number): [latitude: number, longitude: number];
 }
 
-export class MercatorProjection implements Projection {
-	forward(latitude: number, longitude: number): [x: number, y: number] {
-		const x = lon2tile(longitude, 0);
-		const y = lat2tile(latitude, 0);
-		return [x, y];
-	}
+// export class MercatorProjection implements Projection {
+// 	forward(latitude: number, longitude: number): [x: number, y: number] {
+// 		const x = lon2tile(longitude, 0);
+// 		const y = lat2tile(latitude, 0);
+// 		return [x, y];
+// 	}
 
-	reverse(x: number, y: number): [latitude: number, longitude: number] {
-		const lon = tile2lon(x, 0);
-		const lat = tile2lat(y, 0);
-		return [lat, lon];
-	}
-}
+// 	reverse(x: number, y: number): [latitude: number, longitude: number] {
+// 		const lon = tile2lon(x, 0);
+// 		const lat = tile2lat(y, 0);
+// 		return [lat, lon];
+// 	}
+// }
 
 export class RotatedLatLonProjection implements Projection {
 	θ: number;
@@ -269,7 +319,7 @@ export class StereograpicProjection implements Projection {
 }
 
 const projections = {
-	MercatorProjection,
+	// MercatorProjection,
 	StereograpicProjection,
 	RotatedLatLonProjection,
 	LambertConformalConicProjection,

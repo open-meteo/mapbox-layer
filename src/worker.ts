@@ -2,13 +2,9 @@ import { hideZero, drawOnTiles } from './utils/variables';
 
 import { DynamicProjection, ProjectionGrid, type Projection } from './utils/projections';
 
-import {
-	tile2lat,
-	tile2lon,
-	rotatePoint,
-	degreesToRadians,
-	getIndexFromLatLong
-} from './utils/math';
+import { tile2lat, tile2lon, degreesToRadians } from './utils/projections';
+
+import { rotatePoint, getIndexFromLatLong } from './utils/math';
 
 import { getColorScale, getInterpolator } from './utils/color-scales';
 
@@ -23,8 +19,8 @@ import type {
 
 import type { IconListPixels } from './utils/icons';
 
-const TILE_SIZE = (Number(import.meta.env.VITE_TILE_SIZE) ?? 256) * 2;
-const OPACITY = Number(import.meta.env.VITE_TILE_OPACITY) ?? 75;
+const TILE_SIZE = 256 * 2;
+const OPACITY = 75;
 
 const drawArrow = (
 	rgba: Uint8ClampedArray,

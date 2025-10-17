@@ -4,7 +4,7 @@ import { domainOptions } from '../utils/domains';
 
 import { RotatedLatLonProjection, LambertConformalConicProjection } from '../utils/projections';
 
-import { fastAtan2 } from '../utils/math';
+import { fastAtan2 } from '../utils/projections';
 
 const dmiDomain = domainOptions.find((d) => d.value === 'dmi_harmonie_arome_europe');
 const knmiDomain = domainOptions.find((d) => d.value === 'knmi_harmonie_arome_europe');

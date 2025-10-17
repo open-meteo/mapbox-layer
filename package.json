@@ -4,8 +4,8 @@
 	"type": "module",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"author": "Open-Meteo <info@open-meteo.com>",
 	"module": "dist/index.js",
+	"author": "Open-Meteo <info@open-meteo.com>",
 	"repository": "git://github.com/open-meteo/mapbox-layer",
 	"description": "Protocol to read OMfiles and parse them to tiles for Mapbox / Maplibre",
 	"keywords": [
@@ -17,73 +17,20 @@
 	"files": [
 		"dist/**/*"
 	],
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./worker": {
-			"types": "./dist/worker.d.ts",
-			"import": "./dist/worker.js"
-		},
-		"./worker-pool": {
-			"types": "./dist/worker-pool.d.ts",
-			"import": "./dist/worker-pool.js"
-		},
-		"./om-protocol": {
-			"types": "./dist/om-protocol.d.ts",
-			"import": "./dist/om-protocol.js"
-		},
-		"./types": {
-			"types": "./dist/types.d.ts",
-			"import": "./dist/types.js"
-		},
-		"./utils/arrow": {
-			"types": "./dist/utils/arrow.d.ts",
-			"import": "./dist/utils/arrow.js"
-		},
-		"./utils/color-scales": {
-			"types": "./dist/utils/color-scales.d.ts",
-			"import": "./dist/utils/color-scales.js"
-		},
-		"./utils/domains": {
-			"types": "./dist/utils/domains.d.ts",
-			"import": "./dist/utils/domains.js"
-		},
-		"./utils/icons": {
-			"types": "./dist/utils/icons.d.ts",
-			"import": "./dist/utils/icons.js"
-		},
-		"./utils/interpolations": {
-			"types": "./dist/utils/interpolations.d.ts",
-			"import": "./dist/utils/interpolations.js"
-		},
-		"./utils/math": {
-			"types": "./dist/utils/math.d.ts",
-			"import": "./dist/utils/math.js"
-		},
-		"./utils/projections": {
-			"types": "./dist/utils/projections.d.ts",
-			"import": "./dist/utils/projections.js"
-		},
-		"./utils/variables": {
-			"types": "./dist/utils/variables.d.ts",
-			"import": "./dist/utils/variables.js"
-		}
-	},
 	"scripts": {
-		"dev": "vite build --watch",
+		"dev": "rollup -c watch",
 		"test": "vitest",
-		"build": "vite build -l info",
-		"prepare": "npm run build"
+		"build": "rollup -c"
 	},
 	"devDependencies": {
 		"@types/d3": "^7.4.3",
 		"d3": "^7.9.0",
 		"prettier": "^3.6.2",
+		"rollup": "^4.18.0",
+		"rollup-plugin-dts": "^6.1.0",
+		"rollup-plugin-typescript2": "^0.36.0",
+		"rollup-plugin-web-worker-loader": "^1.7.0",
 		"typescript": "5.9.3",
-		"vite": "^7.1.10",
-		"vite-plugin-dts": "^4.5.4",
 		"vitest": "^3.2.4"
 	},
 	"dependencies": {
