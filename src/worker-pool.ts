@@ -39,7 +39,8 @@ export class WorkerPool {
 		}
 		const workerCount = navigator.hardwareConcurrency || 4;
 		for (let i = 0; i < workerCount; i++) {
-			const worker = new Worker('');
+			const workerUrl = new URL('./worker.js', import.meta.url);
+			const worker = new Worker(workerUrl);
 			worker.onmessage = (message) => this.handleMessage(message);
 			this.workers.push(worker);
 		}
