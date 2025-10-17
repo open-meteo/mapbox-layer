@@ -1,3 +1,7 @@
 import { omProtocol, getValueFromLatLong } from './om-protocol';
 
-export { omProtocol, getValueFromLatLong };
+import { hideZero, variableOptions } from './utils/variables';
+import { domainOptions } from './utils/domains';
+import { getColorScale } from './utils/color-scales';
+
+export { omProtocol, getValueFromLatLong, hideZero, getColorScale, variableOptions, domainOptions };

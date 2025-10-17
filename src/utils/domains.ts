@@ -31,6 +31,7 @@ export const domainGroups = [
 const getCenterPoint = (grid: Domain['grid']) => {
 	let center;
 	if (grid.projection) {
+		console.log('heyweufhwe');
 		const projection = new DynamicProjection(
 			grid.projection.name as ProjectionName,
 			grid.projection

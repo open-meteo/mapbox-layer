@@ -211,7 +211,7 @@ type ColorScales = {
 // 	}
 // };
 //
-export const colorScales = {
+export const colorScales: ColorScales = {
 	cape: {
 		min: 0,
 		max: 4000,

@@ -30,14 +30,14 @@ export default [
 			dir: 'dist/staging',
 			format: 'amd',
 			indent: false,
-			chunkFileNames: 'shared.js',
-			minifyInternalExports: true
+			chunkFileNames: 'shared.js'
+			// minifyInternalExports: true
 		},
 		onwarn: (message) => {
 			console.error(message);
 			throw message;
 		},
-		treeshake: true,
+		treeshake: false, // was true
 		plugins: [nodeResolve, typescript(), commonjs()]
 	},
 	create('dist/index.cjs', 'cjs'),

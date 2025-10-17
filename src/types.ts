@@ -52,6 +52,7 @@ export type ColorScale = {
 	min: number;
 	max: number;
 	unit: string;
+	steps: number;
 	colors: number[][];
 	scalefactor: number;
 	interpolationMethod: InterpolationMethod;
