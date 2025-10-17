@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer/dist/index.js"></script>
+		<script src="../dist/index.umd.js"></script>
 		<style>
 			html,
 			body,
@@ -17,7 +17,7 @@
 	<body>
 		<div id="map"></div>
 		<script>
-			maplibregl.addProtocol('om', omProtocol);
+			maplibregl.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
 
 			const map = new maplibregl.Map({
 				container: 'map',

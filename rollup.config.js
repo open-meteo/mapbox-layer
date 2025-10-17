@@ -20,6 +20,8 @@ const input = {
 	'utils/variables': 'src/utils/variables.ts'
 };
 
+const external = ['@openmeteo/file-reader', '@openmeteo/file-format-wasm'];
+
 export default [
 	// JS build
 	{
@@ -31,7 +33,7 @@ export default [
 			chunkFileNames: '[name].js',
 			assetFileNames: '[name].[ext]'
 		},
-		external: ['@openmeteo/file-reader', '@openmeteo/file-format-wasm', 'd3', 'maplibre-gl'],
+		external: external,
 		plugins: [
 			typescript({
 				tsconfig: './tsconfig.json',
@@ -43,6 +45,42 @@ export default [
 			})
 		],
 		preserveEntrySignatures: 'strict'
+	},
+	// CJS build for main entry only
+	{
+		input: 'src/index.ts',
+		output: {
+			file: 'dist/index.cjs',
+			format: 'cjs',
+			exports: 'named'
+		},
+		plugins: [
+			typescript({
+				tsconfig: './tsconfig.json',
+				useTsconfigDeclarationDir: true
+			})
+		]
+	},
+
+	// UMD build for main entry only
+	{
+		input: 'src/index.ts',
+		output: {
+			file: 'dist/index.umd.js',
+			format: 'umd',
+			name: 'OpenMeteoMapboxLayer', // global variable name for UMD
+			exports: 'named',
+			globals: {
+				'@openmeteo/file-reader': 'OpenMeteoFileReader',
+				'@openmeteo/file-format-wasm': 'OpenMeteoFileFormatWasm'
+			}
+		},
+		plugins: [
+			typescript({
+				tsconfig: './tsconfig.json',
+				useTsconfigDeclarationDir: true
+			})
+		]
 	},
 	// DTS build
 	{
