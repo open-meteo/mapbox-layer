@@ -1,5 +1,3 @@
-import TileWorker from './worker?worker&inline';
-
 import type { Data } from './om-protocol';
 
 import type { Domain, Variable, DimensionRange } from './types';
@@ -41,7 +39,7 @@ export class WorkerPool {
 		}
 		const workerCount = navigator.hardwareConcurrency || 4;
 		for (let i = 0; i < workerCount; i++) {
-			const worker = new TileWorker();
+			const worker = new Worker('');
 			worker.onmessage = (message) => this.handleMessage(message);
 			this.workers.push(worker);
 		}

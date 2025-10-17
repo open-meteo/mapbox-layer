@@ -1,14 +1,22 @@
 {
 	"compilerOptions": {
-		"module": "ESNext",
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
+		"target": "ES2016",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"strict": true,
-		"moduleResolution": "bundler"
-	}
+		"moduleResolution": "Bundler",
+		"allowJs": true,
+		"skipLibCheck": false,
+		"types": ["jest", "node"],
+		"allowSyntheticDefaultImports": true,
+		"isolatedModules": true,
+		"module": "ESNext",
+		"esModuleInterop": true,
+		"verbatimModuleSyntax": true
+	},
+	"ts-node": {
+		"experimentalSpecifierResolution": "node",
+		"esm": true
+	},
+	"include": ["src/*.ts"],
+	"exclude": ["node_modules"]
 }

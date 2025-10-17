@@ -72,13 +72,27 @@
 		}
 	},
 	"scripts": {
-		"dev": "vite build --watch",
-		"test": "vitest",
-		"build": "vite build -l info"
+		"bench": "npm run build && node benchmark.js",
+		"build": "rm -rf dist && rollup -c && npm run generate-types && tsc --project tsconfig.dist.json",
+		"test-build-v3": "cd test-project-maplibre-3 && rm -rf node_modules && rm -rf package-lock.json && npm i && npm test",
+		"test-build": "cd test-project && rm -rf node_modules && rm -rf package-lock.json && npm i && npm test",
+		"generate-types": "tsc --emitDeclarationOnly --declaration --outDir dist && rm -rf dist/*{.t,-j}est.d.ts",
+		"jest": "jest",
+		"jest:watch": "jest --watch",
+		"test": "run-p typecheck lint jest checkformat",
+		"lint": "eslint src",
+		"format": "prettier src --write",
+		"checkformat": "prettier src --check",
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
+		"@rollup/plugin-commonjs": "^28.0.8",
+		"@rollup/plugin-node-resolve": "^16.0.3",
+		"@rollup/plugin-terser": "^0.4.4",
+		"@rollup/plugin-typescript": "^12.1.4",
 		"@types/d3": "^7.4.3",
 		"d3": "^7.9.0",
+		"jest": "^30.2.0",
 		"prettier": "^3.6.2",
 		"typescript": "5.9.3",
 		"vite": "^7.1.10",

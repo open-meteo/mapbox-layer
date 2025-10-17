@@ -2,8 +2,7 @@ import {
 	ProjectionGrid,
 	DynamicProjection,
 	type Projection,
-	type ProjectionName,
-	MercatorProjection
+	type ProjectionName
 } from './projections';
 
 import type { Domain, Bounds, Center, IndexAndFractions } from '../types';
@@ -82,8 +81,6 @@ export const derivative = (fm1: number, fp1: number): number => {
 export const secondDerivative = (fm1: number, f0: number, fp1: number): number => {
 	return fm1 - 2 * f0 + fp1;
 };
-
-const mercator = new MercatorProjection();
 
 export const getIndexFromLatLong = (
 	lat: number,
