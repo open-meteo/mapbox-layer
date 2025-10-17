@@ -74,7 +74,8 @@
 	"scripts": {
 		"dev": "vite build --watch",
 		"test": "vitest",
-		"build": "vite build -l info"
+		"build": "vite build -l info",
+		"prepare": "npm run build"
 	},
 	"devDependencies": {
 		"@types/d3": "^7.4.3",
