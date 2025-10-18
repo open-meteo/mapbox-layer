@@ -39,7 +39,7 @@ export default [
 				useTsconfigDeclarationDir: true
 			}),
 			webWorkerLoader({
-				inline: true,
+				inline: false,
 				targetPlatform: 'browser'
 			})
 		],
