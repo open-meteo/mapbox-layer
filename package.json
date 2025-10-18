@@ -21,7 +21,9 @@
 		"omfile"
 	],
 	"files": [
-		"dist/**/*"
+		"build/",
+		"dist/*",
+		"src/"
 	],
 	"scripts": {
 		"bench": "npm run build && node benchmark.js",

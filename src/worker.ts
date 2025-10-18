@@ -21,10 +21,8 @@ import type {
 	IndexAndFractions
 } from './types';
 
-import type { IconListPixels } from './utils/icons';
-
-const TILE_SIZE = (Number(import.meta.env.VITE_TILE_SIZE) ?? 256) * 2;
-const OPACITY = Number(import.meta.env.VITE_TILE_OPACITY) ?? 75;
+const TILE_SIZE = 256 * 2;
+const OPACITY = 75;
 
 const drawArrow = (
 	rgba: Uint8ClampedArray,
@@ -41,11 +39,8 @@ const drawArrow = (
 	values: Float32Array,
 	directions: Float32Array,
 	boxSize = TILE_SIZE / 8,
-	iconPixelData: IconListPixels,
 	interpolator: Interpolator
 ): void => {
-	const northArrow = iconPixelData['0'];
-
 	const iCenter = iBase + Math.floor(boxSize / 2);
 	const jCenter = jBase + Math.floor(boxSize / 2);
 
@@ -88,12 +83,12 @@ const drawArrow = (
 					opacityValue = 0.8;
 				}
 
-				if (northArrow[4 * ind + 3]) {
-					rgba[4 * indTile] = 0;
-					rgba[4 * indTile + 1] = 0;
-					rgba[4 * indTile + 2] = 0;
-					rgba[4 * indTile + 3] = Number(northArrow[4 * ind + 3]) * opacityValue * (OPACITY / 50);
-				}
+				// if (northArrow[4 * ind + 3]) {
+				// 	rgba[4 * indTile] = 0;
+				// 	rgba[4 * indTile + 1] = 0;
+				// 	rgba[4 * indTile + 2] = 0;
+				// 	rgba[4 * indTile + 3] = Number(northArrow[4 * ind + 3]) * opacityValue * (OPACITY / 50);
+				// }
 			}
 		}
 	}
@@ -265,7 +260,6 @@ self.onmessage = async (message) => {
 							values,
 							directions,
 							boxSize,
-							iconPixelData,
 							interpolator
 						);
 					}

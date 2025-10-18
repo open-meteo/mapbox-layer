@@ -26,8 +26,6 @@ import {
 
 import { OMapsFileReader } from './om-file-reader';
 
-import arrowPixelsSource from './utils/arrow';
-
 import type {
 	Bounds,
 	Domain,
@@ -52,36 +50,6 @@ let projectionGrid: ProjectionGrid;
 
 setupGlobalCache();
 
-const arrowPixelData: Record<string, ImageDataArray> = {};
-const initPixelData = async () => {
-	const loadIcon = async (key: string, iconUrl: string) => {
-		const svgText = await fetch(iconUrl).then((r) => r.text());
-		const canvas = new OffscreenCanvas(32, 32);
-
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.onload = () => {
-				const ctx = canvas.getContext('2d');
-				if (!ctx) {
-					reject(new Error('Failed to get 2D context'));
-					return;
-				}
-				ctx.drawImage(img, 0, 0, 32, 32);
-				arrowPixelData[key] = ctx.getImageData(0, 0, 32, 32).data;
-				resolve(void 0);
-			};
-			img.onerror = reject;
-			img.src = `data:image/svg+xml;base64,${btoa(svgText)}`;
-		});
-	};
-
-	if (Object.keys(arrowPixelData).length > 0) {
-		return; // Already loaded
-	}
-
-	await Promise.all(Object.entries(arrowPixelsSource).map(([key, url]) => loadIcon(key, url)));
-};
-
 export interface Data {
 	values: Float32Array | undefined;
 	directions: Float32Array | undefined;
@@ -89,7 +57,8 @@ export interface Data {
 
 let data: Data;
 
-const TILE_SIZE = Number(import.meta.env.VITE_TILE_SIZE) * 2;
+const TILE_SIZE = 256 * 2;
+
 const workerPool = new WorkerPool();
 
 export const getValueFromLatLong = (
@@ -143,9 +112,6 @@ const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitm
 	const key = `${omUrl}/${TILE_SIZE}/${z}/${x}/${y}`;
 
 	let iconList = {};
-	if (variable.value.startsWith('wind') || variable.value.startsWith('wave')) {
-		iconList = arrowPixelData;
-	}
 
 	return await workerPool.requestTile({
 		type: 'GT',
@@ -217,8 +183,6 @@ const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
 };
 
 const initOMFile = (url: string): Promise<void> => {
-	initPixelData();
-
 	return new Promise((resolve, reject) => {
 		const [omUrl, omParams] = url.replace('om://', '').split('?');
 

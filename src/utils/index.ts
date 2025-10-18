@@ -2,14 +2,8 @@ import * as maplibregl from 'maplibre-gl';
 
 import type { Domain, Variable, DomainMetaData } from '../types';
 
-const TILE_SIZE = Number(import.meta.env.VITE_TILE_SIZE) ?? 256;
-
-const beforeLayer = 'waterway-tunnel';
-
 const now = new Date();
 now.setHours(now.getHours() + 1, 0, 0, 0);
-
-let omUrl: string;
 
 export const pad = (n: string | number) => {
 	return ('0' + n).slice(-2);
