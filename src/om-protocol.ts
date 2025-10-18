@@ -26,7 +26,7 @@ import {
 
 import { OMapsFileReader } from './om-file-reader';
 
-import arrowPixelsSource from './utils/arrow';
+import { arrowSVG } from './utils/arrow';
 
 import type {
 	Bounds,
@@ -53,33 +53,31 @@ let projectionGrid: ProjectionGrid;
 setupGlobalCache();
 
 const arrowPixelData: Record<string, ImageDataArray> = {};
+const loadArrowIcon = async (key: string, svgText: string) => {
+	const canvas = new OffscreenCanvas(32, 32);
+
+	return new Promise<void>((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				reject(new Error('Failed to get 2D context'));
+				return;
+			}
+			ctx.drawImage(img, 0, 0, 32, 32);
+			arrowPixelData[key] = ctx.getImageData(0, 0, 32, 32).data;
+			resolve();
+		};
+		img.onerror = reject;
+		img.src = `data:image/svg+xml;base64,${btoa(svgText)}`;
+	});
+};
+
 const initPixelData = async () => {
-	const loadIcon = async (key: string, iconUrl: string) => {
-		const svgText = await fetch(iconUrl).then((r) => r.text());
-		const canvas = new OffscreenCanvas(32, 32);
-
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.onload = () => {
-				const ctx = canvas.getContext('2d');
-				if (!ctx) {
-					reject(new Error('Failed to get 2D context'));
-					return;
-				}
-				ctx.drawImage(img, 0, 0, 32, 32);
-				arrowPixelData[key] = ctx.getImageData(0, 0, 32, 32).data;
-				resolve(void 0);
-			};
-			img.onerror = reject;
-			img.src = `data:image/svg+xml;base64,${btoa(svgText)}`;
-		});
-	};
-
 	if (Object.keys(arrowPixelData).length > 0) {
 		return; // Already loaded
 	}
-
-	await Promise.all(Object.entries(arrowPixelsSource).map(([key, svg]) => svg));
+	await loadArrowIcon('arrow', arrowSVG);
 };
 
 export interface Data {

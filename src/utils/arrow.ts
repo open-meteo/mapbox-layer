@@ -1,7 +1,8 @@
-import type { IconListPixels } from './icons';
-const arrowPixelsSource: IconListPixels = {};
+export interface IconListPixels {
+	[key: number]: Uint8ClampedArray | string;
+}
 
-const arrowSVG = `
+export const arrowSVG = `
   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 30 30" style="enable-background:new 0 0 30 30;" xml:space="preserve">
   <path
@@ -10,9 +11,3 @@ const arrowSVG = `
      style="opacity:0.75;stroke-width:0.22267;stroke-dasharray:none" />
   </svg>
   `;
-for (const [i, _] of Object.entries({ 0: 'arrow' })) {
-	const index = Number(i);
-	arrowPixelsSource[index] = arrowSVG;
-}
-
-export default arrowPixelsSource;
