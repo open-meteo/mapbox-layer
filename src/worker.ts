@@ -158,6 +158,7 @@ const getIndexAndFractions = (
 };
 
 self.onmessage = async (message) => {
+	console.log('Received message:', message);
 	if (message.data.type == 'GT') {
 		const key = message.data.key;
 		const x = message.data.x;

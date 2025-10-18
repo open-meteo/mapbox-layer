@@ -75,6 +75,7 @@ export const getIndicesFromBounds = (
 	east: number,
 	domain: Domain
 ): [minX: number, minY: number, maxX: number, maxY: number] => {
+	console.log('getIndicesFromBounds');
 	let dx = domain.grid.dx;
 	let dy = domain.grid.dy;
 

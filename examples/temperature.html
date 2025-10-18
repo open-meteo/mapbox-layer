@@ -5,6 +5,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+		<script src="../../blub/om_reader_wasm.web.js"></script>
+		<script src="../../blub2/index.umd.js"></script>
 		<script src="../dist/index.umd.js"></script>
 		<style>
 			html,
@@ -50,7 +52,7 @@
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om?variable={{{  }}}}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
@@ -64,6 +66,7 @@
 					type: 'raster',
 					source: 'omFileSource'
 				});
+				console.log('map layers', map.getStyle().layers);
 			});
 		</script>
 	</body>

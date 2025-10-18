@@ -1,4 +1,6 @@
-const workerUrl = new URL('./worker.js', import.meta.url);
+// @ts-ignore
+// Import the worker using rollup-plugin-web-worker-loader
+import TileWorker from 'web-worker:./worker.ts';
 
 import type { Data } from './om-protocol';
 
@@ -41,13 +43,14 @@ export class WorkerPool {
 		}
 		const workerCount = navigator.hardwareConcurrency || 4;
 		for (let i = 0; i < workerCount; i++) {
-			const worker = new Worker(workerUrl, { type: 'module' });
-			worker.onmessage = (message) => this.handleMessage(message);
+			const worker = new TileWorker();
+			worker.onmessage = (message: MessageEvent) => this.handleMessage(message);
 			this.workers.push(worker);
 		}
 	}
 
 	private handleMessage(message: MessageEvent): void {
+		console.log('Message received:', message);
 		const data = message.data as TileResponse;
 		if (data.type === 'RT') {
 			const resolve = this.resolvers.get(data.key);
@@ -62,6 +65,7 @@ export class WorkerPool {
 	}
 
 	public getNextWorker(): Worker | undefined {
+		console.log('Worker requested');
 		if (this.workers.length === 0) return undefined;
 
 		const worker = this.workers[this.nextWorker];
@@ -76,6 +80,7 @@ export class WorkerPool {
 		}
 
 		const worker = this.getNextWorker();
+		console.log('Worker selected:', worker);
 		if (!worker) {
 			return Promise.reject(new Error('No workers available (likely running in SSR)'));
 		}
@@ -85,6 +90,7 @@ export class WorkerPool {
 		});
 
 		this.pendingTiles.set(request.key, promise);
+		console.log(this.pendingTiles);
 		worker.postMessage(request);
 
 		return promise;

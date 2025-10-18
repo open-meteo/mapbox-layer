@@ -79,7 +79,7 @@ const initPixelData = async () => {
 		return; // Already loaded
 	}
 
-	await Promise.all(Object.entries(arrowPixelsSource).map(([key, url]) => loadIcon(key, url)));
+	await Promise.all(Object.entries(arrowPixelsSource).map(([key, svg]) => svg));
 };
 
 export interface Data {
@@ -89,7 +89,7 @@ export interface Data {
 
 let data: Data;
 
-const TILE_SIZE = Number(import.meta.env.VITE_TILE_SIZE) * 2;
+const TILE_SIZE = 256 * 2;
 const workerPool = new WorkerPool();
 
 export const getValueFromLatLong = (
@@ -233,15 +233,18 @@ const initOMFile = (url: string): Promise<void> => {
 			?.split(',')
 			.map((b: string): number => Number(b)) as number[];
 
-		mapBoundsIndexes = getIndicesFromBounds(
-			mapBounds[0],
-			mapBounds[1],
-			mapBounds[2],
-			mapBounds[3],
-			domain
-		);
-
 		if (partial) {
+			// FIXME: Mapbounds hardcoded for now
+			mapBounds = [-180, 0, 180, 90];
+			console.log('mapBounds', mapBounds);
+
+			mapBoundsIndexes = getIndicesFromBounds(
+				mapBounds[0],
+				mapBounds[1],
+				mapBounds[2],
+				mapBounds[3],
+				domain
+			);
 			ranges = [
 				{ start: mapBoundsIndexes[1], end: mapBoundsIndexes[3] },
 				{ start: mapBoundsIndexes[0], end: mapBoundsIndexes[2] }
