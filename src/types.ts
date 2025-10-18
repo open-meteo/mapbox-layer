@@ -57,6 +57,10 @@ export type ColorScale = {
 	interpolationMethod: InterpolationMethod;
 };
 
+export type ColorScales = {
+	[key: string]: ColorScale;
+};
+
 export type InterpolationMethod = 'none' | 'linear' | 'hermite2d';
 
 export type Interpolator = (
