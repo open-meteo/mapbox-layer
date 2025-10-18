@@ -8,11 +8,10 @@ const input = {
 	'om-protocol': 'src/om-protocol.ts',
 	worker: 'src/worker.ts',
 	'worker-pool': 'src/worker-pool.ts',
-	'om-file-reader': 'src/om-protocol.ts',
+	'om-file-reader': 'src/om-file-reader.ts',
 	'utils/arrow': 'src/utils/arrow.ts',
 	'utils/color-scales': 'src/utils/color-scales.ts',
 	'utils/domains': 'src/utils/domains.ts',
-	'utils/icons': 'src/utils/icons.ts',
 	'utils/index': 'src/utils/index.ts',
 	'utils/interpolations': 'src/utils/interpolations.ts',
 	'utils/math': 'src/utils/math.ts',
@@ -24,28 +23,28 @@ const input = {
 
 export default [
 	// JS build
-	// {
-	// 	input,
-	// 	output: {
-	// 		dir: 'dist',
-	// 		format: 'esm',
-	// 		entryFileNames: '[name].js',
-	// 		chunkFileNames: '[name].js',
-	// 		assetFileNames: '[name].[ext]'
-	// 	},
-	// 	// external: external,
-	// 	plugins: [
-	// 		typescript({
-	// 			tsconfig: './tsconfig.json',
-	// 			useTsconfigDeclarationDir: true
-	// 		}),
-	// 		webWorkerLoader({
-	// 			inline: true,
-	// 			targetPlatform: 'browser'
-	// 		})
-	// 	],
-	// 	preserveEntrySignatures: 'strict'
-	// },
+	{
+		input,
+		output: {
+			dir: 'dist',
+			format: 'esm',
+			entryFileNames: '[name].js',
+			chunkFileNames: '[name].js',
+			assetFileNames: '[name].[ext]'
+		},
+		// external: external,
+		plugins: [
+			typescript({
+				tsconfig: './tsconfig.json',
+				useTsconfigDeclarationDir: true
+			}),
+			webWorkerLoader({
+				inline: true,
+				targetPlatform: 'browser'
+			})
+		],
+		preserveEntrySignatures: 'strict'
+	},
 	// CJS build for main entry only
 	{
 		input: 'src/index.ts',
