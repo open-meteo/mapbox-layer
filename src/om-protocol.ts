@@ -20,7 +20,7 @@ import {
 } from './utils/color-scales';
 
 import { domainOptions } from './utils/domains';
-import { variableOptions } from './utils/variables';
+import { variableOptions as defaultVariableOptions } from './utils/variables';
 
 import {
 	DynamicProjection,
@@ -121,8 +121,6 @@ export const getValueFromLatLong = (
 const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitmap> => {
 	const key = `${omUrl}/${TILE_SIZE}/${z}/${x}/${y}`;
 
-	console.log(variable);
-
 	return await workerPool.requestTile({
 		type: 'GT',
 
@@ -199,9 +197,10 @@ const initOMFile = (url: string, useSAB: boolean): Promise<void> => {
 		const urlParams = new URLSearchParams(omParams);
 		dark = urlParams.get('dark') === 'true';
 		partial = urlParams.get('partial') === 'true';
-		domain = domainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? domainOptions[0];
+		domain = domainOptions.find((dm) => dm.value === 'dwd_icon_eu') ?? domainOptions[0];
 		variable =
-			variableOptions.find((v) => urlParams.get('variable') === v.value) ?? variableOptions[0];
+			setVariableOptions.find((v) => urlParams.get('variable') === v.value) ??
+			setVariableOptions[0];
 		mapBounds = urlParams
 			.get('bounds')
 			?.split(',')
@@ -248,16 +247,18 @@ const initOMFile = (url: string, useSAB: boolean): Promise<void> => {
 };
 
 let setColorScales: ColorScales;
+let setDomainOptions: Domain[];
+let setVariableOptions: Variable[];
 export const omProtocol = async (
 	params: RequestParameters,
 	abortController?: AbortController,
 	useSAB = false,
-	colorScales = defaultColorScales
+	colorScales = defaultColorScales,
+	variableOptions = defaultVariableOptions
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap>> => {
 	if (params.type == 'json') {
-		console.log(colorScales);
 		setColorScales = colorScales;
-		console.log(setColorScales);
+		setVariableOptions = variableOptions;
 		try {
 			await initOMFile(params.url, useSAB);
 		} catch (e) {
