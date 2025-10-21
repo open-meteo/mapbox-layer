@@ -121,6 +121,8 @@ export const getValueFromLatLong = (
 const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitmap> => {
 	const key = `${omUrl}/${TILE_SIZE}/${z}/${x}/${y}`;
 
+	console.log(variable);
+
 	return await workerPool.requestTile({
 		type: 'GT',
 
@@ -253,7 +255,9 @@ export const omProtocol = async (
 	colorScales = defaultColorScales
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap>> => {
 	if (params.type == 'json') {
+		console.log(colorScales);
 		setColorScales = colorScales;
+		console.log(setColorScales);
 		try {
 			await initOMFile(params.url, useSAB);
 		} catch (e) {

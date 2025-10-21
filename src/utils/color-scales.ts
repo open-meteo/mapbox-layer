@@ -55,6 +55,7 @@ export const getColorScale = (variable: Variable['value']) => {
 };
 
 export const getInterpolator = (colorScale: ColorScale): Interpolator => {
+	console.log(colorScale);
 	if (!colorScale.interpolationMethod || colorScale.interpolationMethod === 'none') {
 		return noInterpolation;
 	} else if (colorScale.interpolationMethod === 'linear') {

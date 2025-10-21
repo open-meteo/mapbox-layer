@@ -22,12 +22,12 @@
 		<script>
 			const customColorScales = {
 				// use same key as variable name
-				temperature_2m: {
+				ffmc: {
 					min: -40,
-					max: 60,
+					max: 100,
 					steps: 30,
-					scalefactor: 30 / (60 - -40), // (steps / (max - min))
-					interpolationMethod: 'linear', // linear or none
+					scalefactor: 30 / (100 - -40), // (steps / (max - min))
+					interpolationMethod: 'none', // linear or none
 
 					// colors as rgb array
 					colors: [
@@ -96,7 +96,7 @@
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
+			const omUrl = `https://fsn1.your-objectstorage.com/testing-wf-indices/data_spatial/dwd_icon_eu/2025/10/21/0000Z/2025-10-21T1200.om?variable=ffmc`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
