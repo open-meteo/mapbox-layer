@@ -21,8 +21,8 @@ import type { Domain, Variable, Interpolator, DimensionRange, IndexAndFractions 
 
 import { GaussianGrid } from './utils/gaussian';
 import { MS_TO_KMH } from './utils/constants';
+import { TILE_SIZE } from './om-protocol';
 
-const TILE_SIZE = 256 * 2;
 const OPACITY = 75;
 
 let arrowCanvas: OffscreenCanvasRenderingContext2D | null = null;
