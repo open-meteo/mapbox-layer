@@ -112,10 +112,10 @@ export const getValueFromLatLong = (
 	}
 };
 
-const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitmap> => {
+export const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitmap> => {
 	const key = `${omUrl}/${tileSize}/${z}/${x}/${y}`;
 
-	return await workerPool.requestTile({
+	const tile_response = await workerPool.requestTile({
 		type: 'GT',
 		x,
 		y,
@@ -127,10 +127,10 @@ const getTile = async ({ z, x, y }: TileIndex, omUrl: string): Promise<ImageBitm
 		tileSize: resolutionFactor * tileSize,
 		domain,
 		variable,
-		colorScale:
-			setColorScales?.custom ?? setColorScales[variable.value] ?? getColorScale(variable.value),
+		colorScale: getColorScale(variable.value),
 		mapBounds: mapBounds
 	});
+	return tile_response;
 };
 
 const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
