@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.4](https://github.com/open-meteo/mapbox-layer/compare/v0.0.3...v0.0.4) (2025-10-23)
+
+
+### Features
+
+* Transfer buffer after worker process ([d222d54](https://github.com/open-meteo/mapbox-layer/commit/d222d543c3a6ac8ae5e07bc0673962a3fddf54ce))
+
+
+### Bug Fixes
+
+* inconsistent colorscales between chrome and firefox ([3eac2e2](https://github.com/open-meteo/mapbox-layer/commit/3eac2e2c08c943f91a4cb50d488fb1365993f8ff))
+* inconsistent colorscales between chrome and firefox ([c847469](https://github.com/open-meteo/mapbox-layer/commit/c847469be7a5e1693cf68ad8dec4ae930e7da1bd))
+
 ## [0.0.3](https://github.com/open-meteo/mapbox-layer/compare/v0.0.2...v0.0.3) (2025-10-23)
 
 
