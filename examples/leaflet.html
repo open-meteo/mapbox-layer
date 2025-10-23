@@ -35,9 +35,9 @@
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
 			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
-
+			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 			// OpenMeteoMapboxLayer might not be a good name anymore
-			OpenMeteoMapboxLayer.initOMFile(omUrl, false).then(() => {
+			OpenMeteoMapboxLayer.initOMFile(omUrl, omProtocolOptions).then(() => {
 				const omLayer = new OpenMeteoMapboxLayer.OpenMeteoLeafletLayer({
 					omUrl: omUrl
 				});

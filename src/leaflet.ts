@@ -1,5 +1,5 @@
 import L, { GridLayerOptions, DoneCallback, Coords } from 'leaflet';
-import { getTile, TILE_SIZE } from './om-protocol';
+import { defaultOmProtocolSettings, getTile, initOMFile, omProtocol } from './om-protocol';
 
 export interface OpenMeteoLeafletLayerOptions extends GridLayerOptions {
 	omUrl: string;
@@ -10,13 +10,15 @@ export class OpenMeteoLeafletLayer extends L.GridLayer {
 
 	constructor(options: OpenMeteoLeafletLayerOptions) {
 		super(options);
+		const omProtocolOptions = defaultOmProtocolSettings;
 		this.omUrl = options.omUrl;
+		initOMFile(this.omUrl, omProtocolOptions);
 	}
 
 	createTile(coords: Coords, done: DoneCallback): HTMLCanvasElement {
 		const tile = document.createElement('canvas');
-		tile.width = TILE_SIZE;
-		tile.height = TILE_SIZE;
+		tile.width = 256;
+		tile.height = 256;
 
 		getTile({ z: coords.z, x: coords.x, y: coords.y }, this.omUrl)
 			.then((imageBitmap: ImageBitmap) => {
