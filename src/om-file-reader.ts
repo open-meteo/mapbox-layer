@@ -100,16 +100,18 @@ export class OMapsFileReader {
 				valuesVPromise
 			])) as [Float32Array, Float32Array];
 
-			const BufferConstructor = valuesU.buffer.constructor as typeof ArrayBuffer;
-			values = new Float32Array(new BufferConstructor(valuesU.byteLength));
-			directions = new Float32Array(new BufferConstructor(valuesU.byteLength));
+			values = valuesU;
+			directions = valuesV;
+			// const BufferConstructor = valuesU.buffer.constructor as typeof ArrayBuffer;
+			// values = new Float32Array(new BufferConstructor(valuesU.byteLength));
+			// directions = new Float32Array(new BufferConstructor(valuesU.byteLength));
 
-			for (let i = 0; i < valuesU.length; ++i) {
-				const u = valuesU[i];
-				const v = valuesV[i];
-				values[i] = Math.sqrt(u * u + v * v);
-				directions[i] = (radiansToDegrees(fastAtan2(u, v)) + 180) % 360;
-			}
+			// for (let i = 0; i < valuesU.length; ++i) {
+			// 	const u = valuesU[i];
+			// 	const v = valuesV[i];
+			// 	values[i] = Math.sqrt(u * u + v * v);
+			// 	directions[i] = (radiansToDegrees(fastAtan2(u, v)) + 180) % 360;
+			// }
 		} else {
 			const variableReader = await this.reader?.getChildByName(variable.value);
 			const dimensions = variableReader?.getDimensions();
