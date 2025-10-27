@@ -13,3 +13,4 @@ export * from './om-protocol';
 export * from './worker-pool';
 
 export * from './types';
+export * from './webgl-raster-layer';
