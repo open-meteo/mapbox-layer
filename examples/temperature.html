@@ -7,9 +7,9 @@
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
 		<!-- Set to latest version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.3/dist/index.js"></script>
+		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.3/dist/index.js"></script>-->
 		<!-- Local development -->
-		<!--<script src="../dist/index.js"></script>-->
+		<script src="../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -48,8 +48,10 @@
 				hash: true
 			});
 
+			// defaults to icon global yesterday noon
+			const omUrl = OpenMeteoMapboxLayer.getOMUrl();
+			// outputs string like: `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/0000Z/2025-10-15T1400.om?variable=temperature_2m`;
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
