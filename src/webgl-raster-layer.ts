@@ -1,7 +1,9 @@
-import { Map, CustomRenderMethodInput, CustomLayerInterface } from 'maplibre-gl';
-import { OMapsFileReader } from './om-file-reader';
-import { Domain, Variable } from './types';
+import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 import { MercatorCoordinate } from 'maplibre-gl';
+
+import { OMapsFileReader } from './om-file-reader';
+
+import { Domain, Variable } from './types';
 
 export class WebGLRasterLayer implements CustomLayerInterface {
 	id: string;
@@ -74,7 +76,7 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new OMapsFileReader(domain, false, false);
+		this.omFileReader = new OMapsFileReader();
 		this.colorScale = colorScale;
 		console.log(colorScale);
 	}
@@ -229,13 +231,13 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 		this.colorRampTexture = this.createColorRampTexture(gl);
 
 		// Load data asynchronously
-		await this.omFileReader.init(this.omUrl);
+		await this.omFileReader.setToOmFile(this.omUrl);
 		await this.loadData(map);
 	}
 
 	private async loadData(map: Map): Promise<void> {
 		console.log('Loading data...');
-		const data = await this.omFileReader.readVariable(this.variable, [
+		const data = await this.omFileReader.readVariable(this.variable.value, [
 			{ start: 0, end: this.domain.grid.ny },
 			{ start: 0, end: this.domain.grid.nx }
 		]);

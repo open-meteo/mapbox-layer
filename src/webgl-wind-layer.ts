@@ -1,5 +1,7 @@
-import { Map, CustomRenderMethodInput, CustomLayerInterface } from 'maplibre-gl';
+import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
+
 import { OMapsFileReader } from './om-file-reader';
+
 import { Domain, Variable } from './types';
 
 export class WebGLWindLayer implements CustomLayerInterface {
@@ -38,7 +40,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new OMapsFileReader(domain, false, false);
+		this.omFileReader = new OMapsFileReader();
 	}
 
 	private getBounds() {
@@ -150,7 +152,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 		}
 
 		// Load wind data
-		await this.omFileReader.init(this.omUrl);
+		await this.omFileReader.setToOmFile(this.omUrl);
 		await this.loadWindData(map);
 
 		// Create shaders and program
@@ -251,7 +253,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 	private async loadWindData(map: Map): Promise<void> {
 		console.log('Loading wind data...');
 
-		const data = await this.omFileReader.readVariable(this.variable, [
+		const data = await this.omFileReader.readVariable(this.variable.value, [
 			{ start: 0, end: this.domain.grid.ny },
 			{ start: 0, end: this.domain.grid.nx }
 		]);
