@@ -53,16 +53,15 @@ export const getColorScale = (variable: Variable['value']) => {
 	);
 };
 
-export const getInterpolator = (colorScale: ColorScale): Interpolator => {
+// TODO: Interpolation should be set per variable not per ColorScale
+export const getInterpolationMethod = (colorScale: ColorScale): 'nearest' | 'linear' => {
 	if (!colorScale.interpolationMethod || colorScale.interpolationMethod === 'none') {
-		return noInterpolation;
+		return 'nearest';
 	} else if (colorScale.interpolationMethod === 'linear') {
-		return interpolateLinear;
-	} else if (colorScale.interpolationMethod === 'hermite2d') {
-		return interpolate2DHermite;
+		return 'linear';
 	} else {
 		// default is linear
-		return interpolateLinear;
+		return 'linear';
 	}
 };
 

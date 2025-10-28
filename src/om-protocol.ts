@@ -1,11 +1,7 @@
 import { setupGlobalCache } from '@openmeteo/file-reader';
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import {
-	colorScales as defaultColorScales,
-	getColorScale,
-	getInterpolator
-} from './utils/color-scales';
+import { colorScales as defaultColorScales, getColorScale } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { domainOptions as defaultDomainOptions } from './utils/domains';
 import { GaussianGrid } from './utils/gaussian';
@@ -13,7 +9,6 @@ import {
 	getBorderPoints,
 	getBoundsFromBorderPoints,
 	getBoundsFromGrid,
-	getIndexAndFractions,
 	getIndicesFromBounds
 } from './utils/projections';
 import {
@@ -24,6 +19,7 @@ import {
 } from './utils/projections';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
+import { GridFactory } from './grids';
 import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
@@ -49,7 +45,7 @@ let mapBounds: number[];
 let omFileReader: OMapsFileReader;
 let resolutionFactor = 1;
 let mapBoundsIndexes: number[];
-let ranges: DimensionRange[];
+let ranges: DimensionRange[] | null;
 
 let projection: Projection;
 let projectionGrid: ProjectionGrid;
@@ -76,33 +72,12 @@ export const getValueFromLatLong = (
 	}
 
 	const values = data.values;
-	const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-	const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-	const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-	const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
-
-	if (domain.grid.gaussianGridLatitudeLines) {
-		const gaussian = new GaussianGrid(domain.grid.gaussianGridLatitudeLines);
-		const value = gaussian.getLinearInterpolatedValue(values, lat, lon);
-		return { value: value };
-	} else {
-		const { index, xFraction, yFraction } = getIndexAndFractions(
-			lat,
-			((((lon + 180) % 360) + 360) % 360) - 180,
-			domain,
-			projectionGrid,
-			ranges,
-			[latMin, lonMin, latMax, lonMax]
-		);
-
-		const interpolator = getInterpolator(colorScale);
-		let px = interpolator(values, index, xFraction, yFraction, ranges);
-		if (variable.value.includes('wind')) {
-			px = px * MS_TO_KMH;
-		}
-
-		return { value: px };
+	const grid = GridFactory.create(domain.grid);
+	let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
+	if (variable.value.includes('wind')) {
+		px = px * MS_TO_KMH;
 	}
+	return { value: px };
 };
 
 const getTile = async (
@@ -161,6 +136,9 @@ const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
 
 		const borderPoints = getBorderPoints(projectionGrid);
 		bounds = getBoundsFromBorderPoints(borderPoints, projection);
+	} else if (domain.grid.gaussianGridLatitudeLines) {
+		// FIXME: global bounds for now
+		bounds = [-180, -90, 180, 90];
 	} else {
 		bounds = getBoundsFromGrid(
 			domain.grid.lonMin,
@@ -236,7 +214,10 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
 
-	if (partial) {
+	if (domain.grid.gaussianGridLatitudeLines) {
+		// gaussian grid has to be read entirely
+		ranges = null;
+	} else if (partial) {
 		mapBoundsIndexes = getIndicesFromBounds(
 			mapBounds[0],
 			mapBounds[1],
@@ -261,7 +242,7 @@ export interface OmParseUrlCallbackResult {
 	partial: boolean;
 	domain: Domain;
 	variable: Variable;
-	ranges: DimensionRange[];
+	ranges: DimensionRange[] | null;
 	omUrl: string;
 }
 

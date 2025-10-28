@@ -97,12 +97,6 @@ export interface Domain {
 			bounds?: number[];
 			projectOrigin?: boolean;
 		};
-		center?:
-			| {
-					lng: number;
-					lat: number;
-			  }
-			| Function;
 		gaussianGridLatitudeLines?: number;
 	};
 	time_interval: number;

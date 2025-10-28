@@ -13,7 +13,7 @@ export interface TileRequest {
 	key: string;
 	data: Data;
 	dark: boolean;
-	ranges: DimensionRange[];
+	ranges: DimensionRange[] | null;
 	tileSize: number;
 	interval: number;
 	domain: Domain;

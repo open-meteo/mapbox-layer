@@ -1,23 +1,67 @@
 import Pbf from 'pbf';
 
-import { getColor, getInterpolator, getOpacity } from './utils/color-scales';
+import { getColor, getInterpolationMethod, getOpacity } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { generateContours } from './utils/contours';
-import { GaussianGrid } from './utils/gaussian';
 import { generateGrid } from './utils/grid';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
-import {
-	DynamicProjection,
-	type Projection,
-	ProjectionGrid,
-	ProjectionName,
-	getIndexAndFractions
-} from './utils/projections';
 import { drawOnTiles, hideZero } from './utils/variables';
+
+import { GridBehavior, GridFactory } from './grids';
 
 import type { DimensionRange, Domain, IndexAndFractions, Interpolator, Variable } from './types';
 
 const OPACITY = 75;
+
+interface GetImageMessage {
+	type: 'getImage';
+	key: string;
+	x: number;
+	y: number;
+	z: number;
+	dark: boolean;
+	data: {
+		values: Float32Array;
+		directions?: Float32Array;
+	};
+	ranges: DimensionRange[] | null;
+	tileSize: number;
+	domain: Domain;
+	variable: Variable;
+	colorScale: any; // Define proper type based on your color scale structure
+}
+
+interface GetArrayBufferMessage {
+	type: 'getArrayBuffer';
+	key: string;
+	x: number;
+	y: number;
+	z: number;
+	data: {
+		values: Float32Array;
+		directions?: Float32Array;
+	};
+	ranges: DimensionRange[] | null;
+	domain: Domain;
+	interval?: number;
+	colorScale: any;
+}
+
+type WorkerMessage = GetImageMessage | GetArrayBufferMessage;
+
+interface ImageResponse {
+	type: 'returnImage';
+	tile: ImageBitmap;
+	key: string;
+}
+
+interface ArrayBufferResponse {
+	type: 'returnArrayBuffer';
+	tile: ArrayBuffer;
+	key: string;
+}
+
+type WorkerResponse = ImageResponse | ArrayBufferResponse;
 
 let arrowCanvas: OffscreenCanvasRenderingContext2D | null = null;
 const getArrowCanvas = (size: number) => {
@@ -54,16 +98,13 @@ const drawArrow = (
 	y: number,
 	z: number,
 	values: Float32Array,
-	ranges: DimensionRange[],
+	ranges: DimensionRange[] | null,
 	tileSize: number,
 	boxSize: number,
 	domain: Domain,
 	variable: Variable,
-	gaussian: GaussianGrid | undefined,
-	directions: Float32Array,
-	interpolator: Interpolator,
-	projectionGrid: ProjectionGrid | null,
-	latLonMinMax: [minLat: number, minLon: number, maxLat: number, maxLon: number]
+	grid: GridBehavior,
+	directions: Float32Array
 ): void => {
 	const arrow = getArrowCanvas(boxSize);
 
@@ -73,25 +114,8 @@ const drawArrow = (
 	const lat = tile2lat(y + iCenter / tileSize, z);
 	const lon = tile2lon(x + jCenter / tileSize, z);
 
-	const { index, xFraction, yFraction } = getIndexAndFractions(
-		lat,
-		lon,
-		domain,
-		projectionGrid,
-		ranges,
-		latLonMinMax
-	);
-
-	let px, direction;
-	if (gaussian) {
-		px = gaussian.getLinearInterpolatedValue(values, lat, lon);
-		direction = degreesToRadians(gaussian.getLinearInterpolatedValue(directions, lat, lon) + 180);
-	} else {
-		px = interpolator(values, index, xFraction, yFraction, ranges);
-		direction = degreesToRadians(
-			interpolator(directions, index, xFraction, yFraction, ranges) + 180
-		);
-	}
+	const px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
+	const direction = grid.getLinearInterpolatedValue(directions, lat, lon, ranges);
 
 	arrow.rotate(direction);
 	const arrowPixelData = arrow.getImageData(0, 0, boxSize, boxSize).data;
@@ -131,7 +155,7 @@ const drawArrow = (
 	}
 };
 
-self.onmessage = async (message) => {
+self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const key = message.data.key;
 
@@ -150,27 +174,9 @@ self.onmessage = async (message) => {
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		let projectionGrid = null;
-		if (domain.grid.projection) {
-			const projectionName = domain.grid.projection.name as ProjectionName;
-			const projection = new DynamicProjection(
-				projectionName,
-				domain.grid.projection
-			) as Projection;
-			projectionGrid = new ProjectionGrid(projection, domain.grid, ranges);
-		}
+		const grid = GridFactory.create(domain.grid);
 
-		const interpolator = getInterpolator(colorScale);
-
-		const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-		const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-		const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-		const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
-
-		let gaussian;
-		if (domain.grid.gaussianGridLatitudeLines) {
-			gaussian = new GaussianGrid(domain.grid.gaussianGridLatitudeLines);
-		}
+		// const interpolationMethod = getInterpolationMethod(colorScale);
 
 		const isWind = variable.value.includes('wind');
 		const isWeatherCode = variable.value === 'weather_code';
@@ -188,22 +194,7 @@ self.onmessage = async (message) => {
 			for (let j = 0; j < tileSize; j++) {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
-
-				let px = NaN;
-				if (gaussian && domain.grid.gaussianGridLatitudeLines) {
-					px = gaussian.getLinearInterpolatedValue(values, lat, lon);
-				} else {
-					const { index, xFraction, yFraction } = getIndexAndFractions(
-						lat,
-						lon,
-						domain,
-						projectionGrid,
-						ranges,
-						[latMin, lonMin, latMax, lonMax]
-					);
-
-					px = interpolator(values as Float32Array, index, xFraction, yFraction, ranges);
-				}
+				let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
 
 				if (isHideZero) {
 					if (px < 0.25) {
@@ -252,11 +243,8 @@ self.onmessage = async (message) => {
 						boxSize,
 						domain,
 						variable,
-						gaussian,
-						directions,
-						interpolator,
-						projectionGrid,
-						[latMin, lonMin, latMax, lonMax]
+						grid,
+						directions
 					);
 				}
 			}
