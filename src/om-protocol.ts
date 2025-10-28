@@ -1,53 +1,43 @@
+import { setupGlobalCache } from '@openmeteo/file-reader';
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { setupGlobalCache } from '@openmeteo/file-reader';
-
-import { WorkerPool } from './worker-pool';
-
-import { getIndexFromLatLong } from './utils/math';
-
+import {
+	colorScales as defaultColorScales,
+	getColorScale,
+	getInterpolator
+} from './utils/color-scales';
+import { MS_TO_KMH } from './utils/constants';
+import { domainOptions as defaultDomainOptions } from './utils/domains';
+import { GaussianGrid } from './utils/gaussian';
 import {
 	getBorderPoints,
-	getBoundsFromGrid,
-	getIndicesFromBounds,
 	getBoundsFromBorderPoints,
-	getIndexAndFractions
+	getBoundsFromGrid,
+	getIndexAndFractions,
+	getIndicesFromBounds
 } from './utils/projections';
-
-import {
-	getInterpolator,
-	colorScales as defaultColorScales,
-	getColorScale
-} from './utils/color-scales';
-
-import { domainOptions as defaultDomainOptions } from './utils/domains';
-import { variableOptions as defaultVariableOptions } from './utils/variables';
-
 import {
 	DynamicProjection,
-	ProjectionGrid,
 	type Projection,
+	ProjectionGrid,
 	type ProjectionName
 } from './utils/projections';
+import { variableOptions as defaultVariableOptions } from './utils/variables';
 
 import { OMapsFileReader } from './om-file-reader';
-
-import { GaussianGrid } from './utils/gaussian';
-
-import { MS_TO_KMH } from './utils/constants';
+import { capitalize } from './utils';
+import { TilePromise, WorkerPool } from './worker-pool';
 
 import type {
 	Bounds,
-	Domain,
-	Variable,
-	TileJSON,
-	TileIndex,
 	ColorScale,
+	ColorScales,
 	DimensionRange,
-	ColorScales
+	Domain,
+	TileIndex,
+	TileJSON,
+	Variable
 } from './types';
-
-import { capitalize } from './utils';
 
 let dark = false;
 let partial = false;
@@ -119,7 +109,7 @@ const getTile = async (
 	{ z, x, y }: TileIndex,
 	omUrl: string,
 	type: 'image' | 'arrayBuffer'
-): Promise<ImageBitmap> => {
+): TilePromise => {
 	const key = `${omUrl}/${tileSize}/${z}/${x}/${y}`;
 
 	return await workerPool.requestTile({
@@ -207,14 +197,12 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 		const { partial, domain, variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
 		if (!omFileReader) {
-			omFileReader = new OMapsFileReader(domain, partial, useSAB);
+			omFileReader = new OMapsFileReader({ useSAB: useSAB });
 		}
-
-		omFileReader.setReaderData(domain, partial);
 		omFileReader
-			.init(omUrl)
+			.setToOmFile(omUrl)
 			.then(() => {
-				omFileReader.readVariable(variable, ranges).then((values) => {
+				omFileReader.readVariable(variable.value, ranges).then((values) => {
 					data = values;
 					resolve();
 
@@ -305,7 +293,7 @@ export const omProtocol = async (
 	params: RequestParameters,
 	abortController?: AbortController,
 	omProtocolSettings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | ImageBitmap>> => {
+): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	if (params.type == 'json') {
 		try {
 			await initOMFile(params.url, omProtocolSettings);

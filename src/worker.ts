@@ -1,28 +1,21 @@
 import Pbf from 'pbf';
 
-import { hideZero, drawOnTiles } from './utils/variables';
-
+import { getColor, getInterpolator, getOpacity } from './utils/color-scales';
+import { MS_TO_KMH } from './utils/constants';
+import { generateContours } from './utils/contours';
+import { GaussianGrid } from './utils/gaussian';
+import { generateGrid } from './utils/grid';
+import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
 import {
 	DynamicProjection,
-	getIndexAndFractions,
+	type Projection,
 	ProjectionGrid,
 	ProjectionName,
-	type Projection
+	getIndexAndFractions
 } from './utils/projections';
+import { drawOnTiles, hideZero } from './utils/variables';
 
-import { tile2lat, tile2lon, rotatePoint, degreesToRadians } from './utils/math';
-
-import { getColor, getInterpolator, getOpacity } from './utils/color-scales';
-
-import type { Domain, Variable, Interpolator, DimensionRange, IndexAndFractions } from './types';
-
-import { generateGrid } from './utils/grid';
-
-import { generateContours } from './utils/contours';
-
-import { GaussianGrid } from './utils/gaussian';
-
-import { MS_TO_KMH } from './utils/constants';
+import type { DimensionRange, Domain, IndexAndFractions, Interpolator, Variable } from './types';
 
 const OPACITY = 75;
 
@@ -269,10 +262,10 @@ self.onmessage = async (message) => {
 			}
 		}
 
-		const buffer = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
+		const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
 			premultiplyAlpha: 'premultiply'
 		});
-		postMessage({ type: 'returnImage', tile: buffer, key: key }, { transfer: [buffer] });
+		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const key = message.data.key;
 
@@ -294,7 +287,10 @@ self.onmessage = async (message) => {
 			generateContours(pbf, values, domain, ranges, x, y, z, interval ? interval : 2);
 		}
 
-		const buffer = pbf.finish();
-		postMessage({ type: 'returnArrayBuffer', tile: buffer, key: key }, { transfer: [buffer] });
+		const arrayBuffer = pbf.finish();
+		postMessage(
+			{ type: 'returnArrayBuffer', tile: arrayBuffer.buffer, key: key },
+			{ transfer: [arrayBuffer.buffer] }
+		);
 	}
 };
