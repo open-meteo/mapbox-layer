@@ -1,10 +1,8 @@
-import { GridFactory } from '../grids';
+import { GridBehavior } from '../grids';
 import Pbf from 'pbf';
 
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
-
-import { DimensionRange, Domain } from '../types';
 
 // prettier-ignore
 export const edgeTable = [
@@ -182,8 +180,7 @@ export const ratio = (a: number, b: number, c: number) => {
 export const generateContours = (
 	pbf: Pbf,
 	values: Float32Array,
-	domain: Domain,
-	ranges: DimensionRange[] | null,
+	grid: GridBehavior,
 	x: number,
 	y: number,
 	z: number,
@@ -199,7 +196,6 @@ export const generateContours = (
 	const width = 128;
 	const height = width;
 
-	const grid = GridFactory.create(domain.grid, ranges);
 	const multiplier = extent / width;
 	let tld: number, bld: number;
 	let i: number, j: number;

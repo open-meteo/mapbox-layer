@@ -219,7 +219,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			}
 			generateGrid(pbf, values, directions, domain.grid, x, y, z);
 		} else {
-			generateContours(pbf, values, domain, ranges, x, y, z, interval ? interval : 2);
+			const grid = GridFactory.create(domain.grid, ranges);
+			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}
 
 		const arrayBuffer = pbf.finish();

@@ -168,9 +168,9 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 
 	// We initialize the grid with the ranges set to null
 	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
-	const grid = GridFactory.create(domain.grid, null);
+	const gridGetter = GridFactory.create(domain.grid, null);
 	if (partial) {
-		ranges = grid.getRangeCovering(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
+		ranges = gridGetter.getRangeCovering(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
 	} else {
 		ranges = [
 			{ start: 0, end: domain.grid.ny },
