@@ -1,3 +1,4 @@
+/* global URL*/
 import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
@@ -16,7 +17,9 @@ export default ts.config(
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node },
 			parserOptions: {
-				projectService: true,
+				projectService: {
+					allowDefaultProject: ['*.js', '*.ts']
+				},
 				ecmaVersion: 'latest',
 				sourceType: 'module'
 			}
@@ -34,14 +37,6 @@ export default ts.config(
 			],
 			'@typescript-eslint/explicit-function-return-type': 'off',
 			'@typescript-eslint/explicit-module-boundary-types': 'off'
-		}
-	},
-	{
-		files: ['eslint.config.js'],
-		languageOptions: {
-			globals: globals.node, // Only Node globals
-			ecmaVersion: 'latest',
-			sourceType: 'module'
 		}
 	}
 );
