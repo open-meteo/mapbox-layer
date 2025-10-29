@@ -10,7 +10,7 @@ import { drawOnTiles, hideZero } from './utils/variables';
 import { GridBehavior, GridFactory } from './grids';
 import { TileRequest } from './worker-pool';
 
-import type { Bounds, DimensionRange, Variable } from './types';
+import type { Variable } from './types';
 
 const OPACITY = 75;
 
@@ -49,13 +49,11 @@ const drawArrow = (
 	y: number,
 	z: number,
 	values: Float32Array,
-	ranges: DimensionRange[] | null,
 	tileSize: number,
 	boxSize: number,
 	variable: Variable,
 	grid: GridBehavior,
-	directions: Float32Array,
-	bounds: Bounds | null
+	directions: Float32Array
 ): void => {
 	const arrow = getArrowCanvas(boxSize);
 
@@ -65,10 +63,8 @@ const drawArrow = (
 	const lat = tile2lat(y + iCenter / tileSize, z);
 	const lon = tile2lon(x + jCenter / tileSize, z);
 
-	const px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
-	const direction = degreesToRadians(
-		grid.getLinearInterpolatedValue(directions, lat, lon, ranges, bounds)
-	);
+	const px = grid.getLinearInterpolatedValue(values, lat, lon);
+	const direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon));
 
 	arrow.rotate(direction);
 	const arrowPixelData = arrow.getImageData(0, 0, boxSize, boxSize).data;
@@ -127,21 +123,13 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		const grid = GridFactory.create(domain.grid);
-
 		if (!values) {
 			throw new Error('No values provided');
 		}
 
 		// const interpolationMethod = getInterpolationMethod(colorScale);
-		let bounds: Bounds | null = null;
-		if (ranges) {
-			const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-			const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-			const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-			const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
-			bounds = [lonMin, latMin, lonMax, latMax];
-		}
+		const grid = GridFactory.create(domain.grid, ranges);
+
 		const isWind = variable.value.includes('wind');
 		const isWeatherCode = variable.value === 'weather_code';
 		const isDirection =
@@ -158,7 +146,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			for (let j = 0; j < tileSize; j++) {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
-				let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
+				let px = grid.getLinearInterpolatedValue(values, lat, lon);
 
 				if (isHideZero) {
 					if (px < 0.25) {
@@ -197,22 +185,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			const boxSize = Math.floor(tileSize / 8);
 			for (let i = 0; i < tileSize; i += boxSize) {
 				for (let j = 0; j < tileSize; j += boxSize) {
-					drawArrow(
-						rgba,
-						i,
-						j,
-						x,
-						y,
-						z,
-						values,
-						ranges,
-						tileSize,
-						boxSize,
-						variable,
-						grid,
-						directions,
-						bounds
-					);
+					drawArrow(rgba, i, j, x, y, z, values, tileSize, boxSize, variable, grid, directions);
 				}
 			}
 		}
@@ -241,7 +214,10 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const pbf = new Pbf();
 
 		if (key.includes('grid=true')) {
-			generateGrid(pbf, values, directions, domain, x, y, z);
+			if (domain.grid.type === 'gaussian') {
+				throw new Error('Gaussian grid type is not supported');
+			}
+			generateGrid(pbf, values, directions, domain.grid, x, y, z);
 		} else {
 			generateContours(pbf, values, domain, ranges, x, y, z, interval ? interval : 2);
 		}

@@ -11,15 +11,7 @@ import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
-import type {
-	Bounds,
-	ColorScales,
-	DimensionRange,
-	Domain,
-	TileIndex,
-	TileJSON,
-	Variable
-} from './types';
+import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
 
 let dark = false;
 let partial = false;
@@ -53,17 +45,8 @@ export const getValueFromLatLong = (
 	}
 
 	const values = data.values;
-	let bounds: Bounds | null = null;
-	if (ranges) {
-		const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-		const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-		const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-		const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
-		bounds = [lonMin, latMin, lonMax, latMax];
-	}
-
-	const grid = GridFactory.create(domain.grid);
-	let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
+	const grid = GridFactory.create(domain.grid, ranges);
+	let px = grid.getLinearInterpolatedValue(values, lat, lon);
 	if (variable.value.includes('wind')) {
 		px = px * MS_TO_KMH;
 	}
@@ -115,7 +98,8 @@ const renderTile = async (url: string, type: 'image' | 'arrayBuffer') => {
 };
 
 const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
-	const grid = GridFactory.create(domain.grid);
+	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
+	const grid = GridFactory.create(domain.grid, null);
 	const bounds = grid.getBounds();
 
 	return {
@@ -182,7 +166,9 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
 
-	const grid = GridFactory.create(domain.grid);
+	// We initialize the grid with the ranges set to null
+	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
+	const grid = GridFactory.create(domain.grid, null);
 	if (partial) {
 		ranges = grid.getRangeCovering(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
 	} else {

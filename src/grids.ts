@@ -8,7 +8,6 @@ import {
 	ProjectionName,
 	getBorderPoints,
 	getBoundsFromBorderPoints,
-	getBoundsFromGrid,
 	getRotatedSWNE
 } from './utils/projections';
 
@@ -22,13 +21,7 @@ import {
 } from './types';
 
 export interface GridBehavior {
-	getLinearInterpolatedValue(
-		values: Float32Array,
-		lat: number,
-		lon: number,
-		ranges: DimensionRange[] | null,
-		bounds: Bounds | null
-	): number;
+	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number;
 
 	getBounds(): Bounds;
 	getCenter(): { lng: number; lat: number };
@@ -37,47 +30,47 @@ export interface GridBehavior {
 
 // Regular grid implementation
 class RegularGrid implements GridBehavior {
-	private _bounds?: Bounds;
+	private data: RegularGridData;
+	private _bounds: Bounds;
+	private _ranges: DimensionRange[];
 	private _center?: { lng: number; lat: number };
 
-	constructor(private data: RegularGridData) {}
+	constructor(data: RegularGridData, ranges: DimensionRange[] | null = null) {
+		this.data = data;
+		if (!ranges) {
+			ranges = [
+				{ start: 0, end: data.ny },
+				{ start: 0, end: data.nx }
+			];
+		}
+		this._ranges = ranges;
+		const lonMin = data.lonMin + data.dx * ranges[1]['start'];
+		const latMin = data.latMin + data.dy * ranges[0]['start'];
+		const lonMax = data.lonMin + data.dx * ranges[1]['end'];
+		const latMax = data.latMin + data.dy * ranges[0]['end'];
+		this._bounds = [lonMin, latMin, lonMax, latMax];
+	}
 
-	getLinearInterpolatedValue(
-		values: Float32Array,
-		lat: number,
-		lon: number,
-		ranges: DimensionRange[] | null,
-		bounds: Bounds | null
-	): number {
-		const defaultRanges = ranges || [
-			{ start: 0, end: this.data.ny },
-			{ start: 0, end: this.data.nx }
-		];
-		const boundsWithFallback = bounds || this.getBounds();
-
+	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
 		const idx = getIndexFromLatLong(
 			lat,
 			lon,
 			this.data.dx,
 			this.data.dy,
-			defaultRanges[1].end - defaultRanges[1].start,
-			boundsWithFallback
+			this._ranges[1].end - this._ranges[1].start,
+			this._bounds
 		);
 
-		return interpolateLinear(values, idx.index, idx.xFraction, idx.yFraction, defaultRanges);
+		return interpolateLinear(
+			values,
+			idx.index,
+			idx.xFraction,
+			idx.yFraction,
+			this._ranges[1].end - this._ranges[1].start
+		);
 	}
 
 	getBounds(): Bounds {
-		if (!this._bounds) {
-			this._bounds = getBoundsFromGrid(
-				this.data.lonMin,
-				this.data.latMin,
-				this.data.dx,
-				this.data.dy,
-				this.data.nx,
-				this.data.ny
-			);
-		}
 		return this._bounds;
 	}
 
@@ -140,19 +133,21 @@ class RegularGrid implements GridBehavior {
 			{ start: minY, end: maxY },
 			{ start: minX, end: maxX }
 		];
-		console.log('ranges: ', ranges);
 		return ranges;
 	}
 }
 
 // Projected grid implementation
 class ProjectedGrid implements GridBehavior {
+	private data: ProjectedGridData;
 	private projection: Projection;
 	private projectionGrid: ProjectionGrid;
+	private _ranges: DimensionRange[];
 	private _bounds?: Bounds;
 	private _center?: { lng: number; lat: number };
 
-	constructor(private data: ProjectedGridData) {
+	constructor(data: ProjectedGridData, ranges: DimensionRange[] | null = null) {
+		this.data = data;
 		// Create projection using existing system
 		this.projection = new DynamicProjection(
 			data.projection.name as ProjectionName,
@@ -161,22 +156,29 @@ class ProjectedGrid implements GridBehavior {
 
 		// Create projection grid using existing system
 		this.projectionGrid = new ProjectionGrid(this.projection, data);
+		if (!ranges) {
+			ranges = [
+				{ start: 0, end: data.ny },
+				{ start: 0, end: data.nx }
+			];
+		}
+		this._ranges = ranges;
+		const lonMin = data.lonMin + data.dx * ranges[1]['start'];
+		const latMin = data.latMin + data.dy * ranges[0]['start'];
+		const lonMax = data.lonMin + data.dx * ranges[1]['end'];
+		const latMax = data.latMin + data.dy * ranges[0]['end'];
+		this._bounds = [lonMin, latMin, lonMax, latMax];
 	}
 
-	getLinearInterpolatedValue(
-		values: Float32Array,
-		lat: number,
-		lon: number,
-		ranges: DimensionRange[] | null,
-		_bounds: Bounds
-	): number {
-		const defaultRanges = ranges || [
-			{ start: 0, end: this.data.ny },
-			{ start: 0, end: this.data.nx }
-		];
-
-		const idx = this.projectionGrid.findPointInterpolated(lat, lon, defaultRanges);
-		return interpolateLinear(values, idx.index, idx.xFraction, idx.yFraction, defaultRanges);
+	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
+		const idx = this.projectionGrid.findPointInterpolated(lat, lon, this._ranges);
+		return interpolateLinear(
+			values,
+			idx.index,
+			idx.xFraction,
+			idx.yFraction,
+			this._ranges[1].end - this._ranges[1].start
+		);
 	}
 
 	getBounds(): Bounds {
@@ -251,18 +253,15 @@ class ProjectedGrid implements GridBehavior {
 }
 // Gaussian grid implementation (you'll need to implement this based on your existing logic)
 class GaussianGrid implements GridBehavior {
+	private data: GaussianGridData;
 	private gaussianGrid: ExistingGaussianGrid;
 
-	constructor(private data: GaussianGridData) {
+	constructor(data: GaussianGridData, _ranges: DimensionRange[] | null = null) {
+		this.data = data;
 		this.gaussianGrid = new ExistingGaussianGrid(data.gaussianGridLatitudeLines!);
 	}
 
-	getLinearInterpolatedValue(
-		values: Float32Array,
-		lat: number,
-		lon: number,
-		_ranges: DimensionRange[] | null
-	): number {
+	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
 		// Use your existing gaussian interpolation
 		return this.gaussianGrid.getLinearInterpolatedValue(values, lat, lon);
 	}
@@ -288,13 +287,13 @@ class GaussianGrid implements GridBehavior {
 }
 
 export class GridFactory {
-	static create(data: Domain['grid']): GridBehavior {
+	static create(data: Domain['grid'], ranges: DimensionRange[] | null = null): GridBehavior {
 		if (data.type === 'gaussian') {
-			return new GaussianGrid(data);
+			return new GaussianGrid(data, ranges);
 		} else if (data.type === 'projected') {
-			return new ProjectedGrid(data);
+			return new ProjectedGrid(data, ranges);
 		} else if (data.type === 'regular') {
-			return new RegularGrid(data);
+			return new RegularGrid(data, ranges);
 		} else {
 			throw new Error('Unsupported grid type');
 		}

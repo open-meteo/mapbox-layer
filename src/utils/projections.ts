@@ -438,18 +438,3 @@ export const getBoundsFromBorderPoints = (
 	}
 	return [minLon, minLat, maxLon, maxLat];
 };
-
-export const getBoundsFromGrid = (
-	lonMin: number,
-	latMin: number,
-	dx: number,
-	dy: number,
-	nx: number,
-	ny: number
-): Bounds => {
-	const minLon = lonMin;
-	const minLat = latMin;
-	const maxLon = minLon + dx * nx;
-	const maxLat = minLat + dy * ny;
-	return [minLon, minLat, maxLon, maxLat];
-};

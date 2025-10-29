@@ -188,7 +188,7 @@ export const generateContours = (
 	y: number,
 	z: number,
 	interval: number = 2,
-	threshold = undefined,
+	_threshold = undefined,
 	extent: number = 4096
 ) => {
 	const features = [];
@@ -199,7 +199,7 @@ export const generateContours = (
 	const width = 128;
 	const height = width;
 
-	const grid = GridFactory.create(domain.grid);
+	const grid = GridFactory.create(domain.grid, ranges);
 	const multiplier = extent / width;
 	let tld: number, bld: number;
 	let i: number, j: number;
@@ -212,8 +212,8 @@ export const generateContours = (
 		const latBottom = tile2lat(y + (i - 1) / height, z);
 		const lon = tile2lon(x + 0 / height, z);
 
-		let trd = grid.getLinearInterpolatedValue(values, latBottom, lon, ranges);
-		let brd = grid.getLinearInterpolatedValue(values, latTop, lon, ranges);
+		let trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
+		let brd = grid.getLinearInterpolatedValue(values, latTop, lon);
 
 		let minR = Math.min(trd, brd);
 		let maxR = Math.max(trd, brd);
@@ -224,8 +224,8 @@ export const generateContours = (
 			tld = trd;
 			bld = brd;
 
-			trd = grid.getLinearInterpolatedValue(values, latBottom, lon, ranges);
-			brd = grid.getLinearInterpolatedValue(values, latTop, lon, ranges);
+			trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
+			brd = grid.getLinearInterpolatedValue(values, latTop, lon);
 
 			// trd = tile.get(j, i - 1);
 			// brd = tile.get(j, i);
