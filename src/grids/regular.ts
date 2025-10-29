@@ -1,9 +1,14 @@
-import { interpolateLinear } from '../utils/interpolations';
-import { getCenterFromGrid } from '../utils/math';
-
 import { GridInterface } from './interface';
+import { interpolateLinear } from './interpolations';
 
-import { Bounds, DimensionRange, IndexAndFractions, RegularGridData } from '../types';
+import {
+	Bounds,
+	Center,
+	DimensionRange,
+	IndexAndFractions,
+	ProjectedGridData,
+	RegularGridData
+} from '../types';
 
 // Regular grid implementation
 export class RegularGrid implements GridInterface {
@@ -134,4 +139,11 @@ const getIndexFromLatLong = (
 		const index = y * nx + x;
 		return { index, xFraction, yFraction };
 	}
+};
+
+const getCenterFromGrid = (grid: RegularGridData | ProjectedGridData): Center => {
+	return {
+		lng: grid.lonMin + grid.dx * (grid.nx * 0.5),
+		lat: grid.latMin + grid.dy * (grid.ny * 0.5)
+	};
 };

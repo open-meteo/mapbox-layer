@@ -1,6 +1,5 @@
-import { interpolateLinear } from '../utils/interpolations';
-
 import { GridInterface } from './interface';
+import { interpolateLinear } from './interpolations';
 import { DynamicProjection, Projection, ProjectionName, getRotatedSWNE } from './projections';
 
 import { Bounds, Center, DimensionRange, ProjectedGridData } from '../types';

@@ -5,7 +5,6 @@ export * from './utils/domains';
 export * from './grids/index';
 export * from './utils/grid-points';
 export * from './utils/index';
-export * from './utils/interpolations';
 export * from './utils/math';
 export * from './utils/pbf';
 export * from './utils/variables';

@@ -1,5 +1,3 @@
-import type { Center, ProjectedGridData, RegularGridData } from '../types';
-
 const PI = Math.PI;
 
 export const degreesToRadians = (degree: number) => {
@@ -43,13 +41,6 @@ export const secondDerivative = (fm1: number, f0: number, fp1: number): number =
 
 export const modPositive = (n: number, m: number): number => {
 	return ((n % m) + m) % m;
-};
-
-export const getCenterFromGrid = (grid: RegularGridData | ProjectedGridData): Center => {
-	return {
-		lng: grid.lonMin + grid.dx * (grid.nx * 0.5),
-		lat: grid.latMin + grid.dy * (grid.ny * 0.5)
-	};
 };
 
 export const rotatePoint = (cx: number, cy: number, theta: number, x: number, y: number) => {
