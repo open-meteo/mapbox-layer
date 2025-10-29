@@ -6,7 +6,7 @@ import { MS_TO_KMH } from './utils/constants';
 import { domainOptions as defaultDomainOptions } from './utils/domains';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
-import { GridFactory } from './grids/grids';
+import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';

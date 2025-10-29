@@ -1,4 +1,4 @@
-import { GridBehavior } from '../grids/grids';
+import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
 
 import { tile2lat, tile2lon } from './math';
@@ -180,7 +180,7 @@ export const ratio = (a: number, b: number, c: number) => {
 export const generateContours = (
 	pbf: Pbf,
 	values: Float32Array,
-	grid: GridBehavior,
+	grid: GridInterface,
 	x: number,
 	y: number,
 	z: number,

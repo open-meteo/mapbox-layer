@@ -110,7 +110,7 @@ export interface ProjectedGridData extends BaseGridData {
 
 export interface GaussianGridData extends BaseGridData {
 	type: 'gaussian';
-	gaussianGridLatitudeLines?: number;
+	gaussianGridLatitudeLines: number;
 }
 
 // Union type for all grid types

@@ -7,7 +7,7 @@ import { generateGrid } from './utils/grid';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
 import { drawOnTiles, hideZero } from './utils/variables';
 
-import { GridBehavior, GridFactory } from './grids/grids';
+import { GridFactory, GridInterface } from './grids/index';
 import { TileRequest } from './worker-pool';
 
 import type { Variable } from './types';
@@ -52,7 +52,7 @@ const drawArrow = (
 	tileSize: number,
 	boxSize: number,
 	variable: Variable,
-	grid: GridBehavior,
+	grid: GridInterface,
 	directions: Float32Array
 ): void => {
 	const arrow = getArrowCanvas(boxSize);
