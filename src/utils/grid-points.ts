@@ -5,7 +5,7 @@ import { command, writeLayer, zigzag } from './pbf';
 
 import { ProjectedGridData, RegularGridData } from '../types';
 
-export const generateGrid = (
+export const generateGridPoints = (
 	pbf: Pbf,
 	values: Float32Array,
 	directions: Float32Array | undefined,

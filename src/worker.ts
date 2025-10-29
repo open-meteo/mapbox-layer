@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { getColor, getOpacity } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { generateContours } from './utils/contours';
-import { generateGrid } from './utils/grid';
+import { generateGridPoints } from './utils/grid-points';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
 import { drawOnTiles, hideZero } from './utils/variables';
 
@@ -217,7 +217,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			if (domain.grid.type === 'gaussian') {
 				throw new Error('Gaussian grid type is not supported');
 			}
-			generateGrid(pbf, values, directions, domain.grid, x, y, z);
+			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		} else {
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
