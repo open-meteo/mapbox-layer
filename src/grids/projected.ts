@@ -150,7 +150,7 @@ export class ProjectionGrid implements GridInterface {
 		return this.center;
 	}
 
-	getRangeCovering(south: number, west: number, north: number, east: number): DimensionRange[] {
+	getCoveringRanges(south: number, west: number, north: number, east: number): DimensionRange[] {
 		const dx = this.dx;
 		const dy = this.dy;
 		const nx = this.nx;

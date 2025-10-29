@@ -5,5 +5,5 @@ export interface GridInterface {
 
 	getBounds(): Bounds;
 	getCenter(): { lng: number; lat: number };
-	getRangeCovering(south: number, west: number, north: number, east: number): DimensionRange[];
+	getCoveringRanges(south: number, west: number, north: number, east: number): DimensionRange[];
 }

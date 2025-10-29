@@ -27,7 +27,12 @@ export class GaussianGrid implements GridInterface {
 		return { lng: 0, lat: 0 };
 	}
 
-	getRangeCovering(_south: number, _west: number, _north: number, _east: number): DimensionRange[] {
+	getCoveringRanges(
+		_south: number,
+		_west: number,
+		_north: number,
+		_east: number
+	): DimensionRange[] {
 		const ranges = [
 			{ start: 0, end: this.data.ny },
 			{ start: 0, end: this.data.nx }

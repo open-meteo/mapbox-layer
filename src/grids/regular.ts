@@ -65,7 +65,7 @@ export class RegularGrid implements GridInterface {
 		return this.center;
 	}
 
-	getRangeCovering(south: number, west: number, north: number, east: number): DimensionRange[] {
+	getCoveringRanges(south: number, west: number, north: number, east: number): DimensionRange[] {
 		const dx = this.data.dx;
 		const dy = this.data.dy;
 		const nx = this.data.nx;
