@@ -122,14 +122,14 @@ class GaussianGrid implements GridBehavior {
 		values: Float32Array,
 		lat: number,
 		lon: number,
-		ranges: DimensionRange[] | null
+		_ranges: DimensionRange[] | null
 	): number {
 		// Use your existing gaussian interpolation
 		return this.gaussianGrid.getLinearInterpolatedValue(values, lat, lon);
 	}
 
 	getBounds(): Bounds {
-		// global for now
+		// FIXME: global for now
 		return [-180, -90, 180, 90];
 	}
 

@@ -9,7 +9,7 @@ import { drawOnTiles, hideZero } from './utils/variables';
 
 import { GridBehavior, GridFactory } from './grids';
 
-import type { DimensionRange, Domain, IndexAndFractions, Interpolator, Variable } from './types';
+import type { DimensionRange, Domain, Variable } from './types';
 
 const OPACITY = 75;
 

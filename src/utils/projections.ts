@@ -1,12 +1,4 @@
-import {
-	degreesToRadians,
-	getIndexFromLatLong,
-	lat2tile,
-	lon2tile,
-	radiansToDegrees,
-	tile2lat,
-	tile2lon
-} from './math';
+import { degreesToRadians, lat2tile, lon2tile, radiansToDegrees, tile2lat, tile2lon } from './math';
 
 import type { Bounds, DimensionRange, Domain } from '../types';
 
@@ -558,37 +550,3 @@ export const getBoundsFromGrid = (
 	const maxLat = minLat + dy * ny;
 	return [minLon, minLat, maxLon, maxLat];
 };
-
-// export const getIndexAndFractions = (
-// 	lat: number,
-// 	lon: number,
-// 	domain: Domain,
-// 	projectionGrid: ProjectionGrid | null,
-// 	ranges = [
-// 		{ start: 0, end: domain.grid.ny },
-// 		{ start: 0, end: domain.grid.nx }
-// 	],
-// 	latLonMinMax: [minLat: number, minLon: number, maxLat: number, maxLon: number]
-// ): IndexAndFractions => {
-// 	let indexObject: IndexAndFractions;
-// 	if (domain.grid.type === 'projected' && projectionGrid) {
-// 		indexObject = projectionGrid.findPointInterpolated(lat, lon, ranges);
-// 	} else {
-// 		indexObject = getIndexFromLatLong(
-// 			lat,
-// 			lon,
-// 			domain.grid.dx,
-// 			domain.grid.dy,
-// 			ranges[1]['end'] - ranges[1]['start'],
-// 			latLonMinMax
-// 		);
-// 	}
-
-// 	return (
-// 		indexObject ?? {
-// 			index: NaN,
-// 			xFraction: 0,
-// 			yFraction: 0
-// 		}
-// 	);
-// };
