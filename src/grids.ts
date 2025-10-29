@@ -27,6 +27,9 @@ export interface GridBehavior {
 
 // Regular grid implementation
 class RegularGrid implements GridBehavior {
+	private _bounds?: Bounds;
+	private _center?: { lng: number; lat: number };
+
 	constructor(private data: Domain['grid']) {}
 
 	getLinearInterpolatedValue(
@@ -54,18 +57,24 @@ class RegularGrid implements GridBehavior {
 	}
 
 	getBounds(): Bounds {
-		return getBoundsFromGrid(
-			this.data.lonMin,
-			this.data.latMin,
-			this.data.dx,
-			this.data.dy,
-			this.data.nx,
-			this.data.ny
-		);
+		if (!this._bounds) {
+			this._bounds = getBoundsFromGrid(
+				this.data.lonMin,
+				this.data.latMin,
+				this.data.dx,
+				this.data.dy,
+				this.data.nx,
+				this.data.ny
+			);
+		}
+		return this._bounds;
 	}
 
 	getCenter(): { lng: number; lat: number } {
-		return getCenterFromGrid(this.data);
+		if (!this._center) {
+			this._center = getCenterFromGrid(this.data);
+		}
+		return this._center;
 	}
 }
 
@@ -73,6 +82,8 @@ class RegularGrid implements GridBehavior {
 class ProjectedGrid implements GridBehavior {
 	private projection: Projection;
 	private projectionGrid: ProjectionGrid;
+	private _bounds?: Bounds;
+	private _center?: { lng: number; lat: number };
 
 	constructor(private data: Domain['grid']) {
 		// Create projection using existing system
@@ -101,13 +112,19 @@ class ProjectedGrid implements GridBehavior {
 	}
 
 	getBounds(): Bounds {
-		const borderPoints = getBorderPoints(this.projectionGrid);
-		return getBoundsFromBorderPoints(borderPoints, this.projection);
+		if (!this._bounds) {
+			const borderPoints = getBorderPoints(this.projectionGrid);
+			this._bounds = getBoundsFromBorderPoints(borderPoints, this.projection);
+		}
+		return this._bounds;
 	}
 
 	getCenter(): { lng: number; lat: number } {
-		const bounds = this.getBounds();
-		return getCenterFromBounds(bounds);
+		if (!this._center) {
+			const bounds = this.getBounds();
+			this._center = getCenterFromBounds(bounds);
+		}
+		return this._center;
 	}
 }
 // Gaussian grid implementation (you'll need to implement this based on your existing logic)

@@ -11,6 +11,7 @@ export * from './utils/pbf';
 export * from './utils/projections';
 export * from './utils/variables';
 
+export * from './grids';
 export * from './om-file-reader';
 export * from './om-protocol';
 export * from './worker-pool';
