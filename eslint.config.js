@@ -1,4 +1,3 @@
-/* global URL*/
 import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
@@ -25,18 +24,15 @@ export default ts.config(
 			}
 		},
 		files: ['**/*.{js,ts,mjs,cjs}'],
-		ignores: ['eslint.config.js', 'prettier.config.js'],
 		rules: {
-			// Add any project-specific rules here
+			// Add project-specific rules here
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{
 					argsIgnorePattern: '^_',
 					varsIgnorePattern: '^_'
 				}
-			],
-			'@typescript-eslint/explicit-function-return-type': 'off',
-			'@typescript-eslint/explicit-module-boundary-types': 'off'
+			]
 		}
 	}
 );
