@@ -1,4 +1,10 @@
-import type { Bounds, Center, Domain, IndexAndFractions } from '../types';
+import type {
+	Bounds,
+	Center,
+	IndexAndFractions,
+	ProjectedGridData,
+	RegularGridData
+} from '../types';
 
 const PI = Math.PI;
 
@@ -52,7 +58,7 @@ export const getCenterFromBounds = (bounds: Bounds): Center => {
 	};
 };
 
-export const getCenterFromGrid = (grid: Domain['grid']): Center => {
+export const getCenterFromGrid = (grid: RegularGridData | ProjectedGridData): Center => {
 	return {
 		lng: grid.lonMin + grid.dx * (grid.nx * 0.5),
 		lat: grid.latMin + grid.dy * (grid.ny * 0.5)
