@@ -1,6 +1,7 @@
-import { GaussianGrid as ExistingGaussianGrid } from './utils/gaussian';
-import { interpolateLinear } from './utils/interpolations';
-import { getCenterFromBounds, getCenterFromGrid, getIndexFromLatLong } from './utils/math';
+import { interpolateLinear } from '../utils/interpolations';
+import { getCenterFromBounds, getCenterFromGrid, getIndexFromLatLong } from '../utils/math';
+
+import { GaussianGrid as ExistingGaussianGrid } from './gaussian';
 import {
 	DynamicProjection,
 	Projection,
@@ -9,7 +10,7 @@ import {
 	getBorderPoints,
 	getBoundsFromBorderPoints,
 	getRotatedSWNE
-} from './utils/projections';
+} from './projections';
 
 import {
 	Bounds,
@@ -18,7 +19,7 @@ import {
 	GaussianGridData,
 	ProjectedGridData,
 	RegularGridData
-} from './types';
+} from '../types';
 
 export interface GridBehavior {
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number;
@@ -251,7 +252,8 @@ class ProjectedGrid implements GridBehavior {
 		return ranges;
 	}
 }
-// Gaussian grid implementation (you'll need to implement this based on your existing logic)
+
+// Gaussian grid implementation
 class GaussianGrid implements GridBehavior {
 	private data: GaussianGridData;
 	private gaussianGrid: ExistingGaussianGrid;

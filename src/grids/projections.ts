@@ -1,4 +1,11 @@
-import { degreesToRadians, lat2tile, lon2tile, radiansToDegrees, tile2lat, tile2lon } from './math';
+import {
+	degreesToRadians,
+	lat2tile,
+	lon2tile,
+	radiansToDegrees,
+	tile2lat,
+	tile2lon
+} from '../utils/math';
 
 import type { Bounds, DimensionRange, ProjectedGridData } from '../types';
 

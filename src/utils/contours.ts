@@ -1,4 +1,4 @@
-import { GridBehavior } from '../grids';
+import { GridBehavior } from '../grids/grids';
 import Pbf from 'pbf';
 
 import { tile2lat, tile2lon } from './math';

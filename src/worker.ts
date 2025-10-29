@@ -7,7 +7,7 @@ import { generateGrid } from './utils/grid';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
 import { drawOnTiles, hideZero } from './utils/variables';
 
-import { GridBehavior, GridFactory } from './grids';
+import { GridBehavior, GridFactory } from './grids/grids';
 import { TileRequest } from './worker-pool';
 
 import type { Variable } from './types';

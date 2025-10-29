@@ -1,4 +1,4 @@
-import { modPositive } from './math';
+import { modPositive } from '../utils/math';
 
 /**
  * Implementation of a Gaussian grid projection for mapping, specifically the O1280 version used by ECMWF IFS
