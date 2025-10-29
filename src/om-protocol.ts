@@ -4,18 +4,6 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 import { colorScales as defaultColorScales, getColorScale } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { domainOptions as defaultDomainOptions } from './utils/domains';
-import {
-	getBorderPoints,
-	getBoundsFromBorderPoints,
-	getBoundsFromGrid,
-	getIndicesFromBounds
-} from './utils/projections';
-import {
-	DynamicProjection,
-	type Projection,
-	ProjectionGrid,
-	type ProjectionName
-} from './utils/projections';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
 import { GridFactory } from './grids';
@@ -42,11 +30,7 @@ let variable: Variable;
 let mapBounds: number[];
 let omFileReader: OMapsFileReader;
 let resolutionFactor = 1;
-let mapBoundsIndexes: number[];
 let ranges: DimensionRange[] | null;
-
-let projection: Projection;
-let projectionGrid: ProjectionGrid;
 
 setupGlobalCache();
 
@@ -131,30 +115,8 @@ const renderTile = async (url: string, type: 'image' | 'arrayBuffer') => {
 };
 
 const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
-	let bounds: Bounds;
-	if (domain.grid.projection) {
-		const projectionName = domain.grid.projection.name;
-		projection = new DynamicProjection(
-			projectionName as ProjectionName,
-			domain.grid.projection
-		) as Projection;
-		projectionGrid = new ProjectionGrid(projection, domain.grid);
-
-		const borderPoints = getBorderPoints(projectionGrid);
-		bounds = getBoundsFromBorderPoints(borderPoints, projection);
-	} else if (domain.grid.gaussianGridLatitudeLines) {
-		// FIXME: global bounds for now
-		bounds = [-180, -90, 180, 90];
-	} else {
-		bounds = getBoundsFromGrid(
-			domain.grid.lonMin,
-			domain.grid.latMin,
-			domain.grid.dx,
-			domain.grid.dy,
-			domain.grid.nx,
-			domain.grid.ny
-		);
-	}
+	const grid = GridFactory.create(domain.grid);
+	const bounds = grid.getBounds();
 
 	return {
 		tilejson: '2.2.0',
@@ -220,27 +182,16 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
 
-	if (domain.grid.gaussianGridLatitudeLines) {
-		// gaussian grid has to be read entirely
-		ranges = null;
-	} else if (partial) {
-		mapBoundsIndexes = getIndicesFromBounds(
-			mapBounds[0],
-			mapBounds[1],
-			mapBounds[2],
-			mapBounds[3],
-			domain
-		);
-		ranges = [
-			{ start: mapBoundsIndexes[1], end: mapBoundsIndexes[3] },
-			{ start: mapBoundsIndexes[0], end: mapBoundsIndexes[2] }
-		];
+	const grid = GridFactory.create(domain.grid);
+	if (partial) {
+		ranges = grid.getRangeCovering(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
 	} else {
 		ranges = [
 			{ start: 0, end: domain.grid.ny },
 			{ start: 0, end: domain.grid.nx }
 		];
 	}
+
 	return { partial, domain, variable, ranges, omUrl };
 };
 

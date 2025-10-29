@@ -73,32 +73,43 @@ export type Interpolator = (
 	ranges: DimensionRange[]
 ) => number;
 
+interface BaseGrid {
+	nx: number;
+	ny: number;
+	zoom?: number;
+}
+
+export interface RegularGrid extends BaseGrid {
+	lonMin: number;
+	latMin: number;
+	dx: number;
+	dy: number;
+}
+
+export interface ProjectedGrid extends RegularGrid {
+	projection?: {
+		name: string;
+		λ0?: number;
+		ϕ0?: number;
+		ϕ1?: number;
+		ϕ2?: number;
+		rotation?: number[];
+		radius?: number;
+		latitude?: number[] | number;
+		longitude?: number[] | number;
+		bounds?: number[];
+		projectOrigin?: boolean;
+	};
+}
+
+export interface GaussianGrid extends BaseGrid {
+	gaussianGridLatitudeLines?: number;
+}
+
 export interface Domain {
 	value: string;
 	label?: string;
-	grid: {
-		nx: number;
-		ny: number;
-		lonMin: number;
-		latMin: number;
-		dx: number;
-		dy: number;
-		zoom?: number;
-		projection?: {
-			name: string;
-			λ0?: number;
-			ϕ0?: number;
-			ϕ1?: number;
-			ϕ2?: number;
-			rotation?: number[];
-			radius?: number;
-			latitude?: number[] | number;
-			longitude?: number[] | number;
-			bounds?: number[];
-			projectOrigin?: boolean;
-		};
-		gaussianGridLatitudeLines?: number;
-	};
+	grid: RegularGrid | ProjectedGrid | GaussianGrid;
 	time_interval: number;
 	model_interval: number;
 	windUVComponents: boolean;
