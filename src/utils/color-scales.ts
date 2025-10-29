@@ -5,7 +5,7 @@ import type { ColorScale, ColorScales, Interpolator, Variable } from '../types';
 
 const OPACITY = 75;
 
-export const getColor = (colorScale: ColorScale, px: number): number[] => {
+export const getColor = (colorScale: ColorScale, px: number): [number, number, number] => {
 	return colorScale.colors[
 		Math.min(
 			colorScale.colors.length - 1,
