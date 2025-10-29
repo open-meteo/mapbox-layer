@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
@@ -23,7 +22,7 @@ export default ts.config(
 			}
 		},
 		files: ['**/*.{js,ts,mjs,cjs}'],
-		ignores: ['eslint.config.js'],
+		ignores: ['eslint.config.js', 'prettier.config.js'],
 		rules: {
 			// Add any project-specific rules here
 			'@typescript-eslint/no-unused-vars': [
@@ -35,6 +34,14 @@ export default ts.config(
 			],
 			'@typescript-eslint/explicit-function-return-type': 'off',
 			'@typescript-eslint/explicit-module-boundary-types': 'off'
+		}
+	},
+	{
+		files: ['eslint.config.js'],
+		languageOptions: {
+			globals: globals.node, // Only Node globals
+			ecmaVersion: 'latest',
+			sourceType: 'module'
 		}
 	}
 );
