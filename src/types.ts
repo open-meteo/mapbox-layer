@@ -141,12 +141,6 @@ export interface Center {
 	lat: number;
 }
 
-export interface IndexAndFractions {
-	index: number;
-	xFraction: number;
-	yFraction: number;
-}
-
 export interface DimensionRange {
 	start: number;
 	end: number;

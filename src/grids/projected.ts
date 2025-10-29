@@ -153,7 +153,6 @@ export class ProjectionGrid implements GridInterface {
 	getRangeCovering(south: number, west: number, north: number, east: number): DimensionRange[] {
 		const dx = this.dx;
 		const dy = this.dy;
-
 		const nx = this.nx;
 		const ny = this.ny;
 
