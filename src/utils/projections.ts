@@ -1,6 +1,6 @@
 import { degreesToRadians, lat2tile, lon2tile, radiansToDegrees, tile2lat, tile2lon } from './math';
 
-import type { Bounds, DimensionRange, Domain } from '../types';
+import type { Bounds, DimensionRange, ProjectedGridData } from '../types';
 
 export interface Projection {
 	forward(latitude: number, longitude: number): [x: number, y: number];
@@ -24,7 +24,7 @@ export class MercatorProjection implements Projection {
 export class RotatedLatLonProjection implements Projection {
 	θ: number;
 	ϕ: number;
-	constructor(projectionData: Domain['grid']['projection']) {
+	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			const rotation = projectionData.rotation ?? [0, 0];
 			this.θ = degreesToRadians(90 + rotation[0]);
@@ -90,7 +90,7 @@ export class LambertConformalConicProjection implements Projection {
 	λ0;
 
 	R = 6370.997; // Radius of the Earth
-	constructor(projectionData: Domain['grid']['projection']) {
+	constructor(projectionData: ProjectedGridData['projection']) {
 		let λ0_dec;
 		let ϕ0_dec;
 		let ϕ1_dec;
@@ -166,7 +166,7 @@ export class LambertAzimuthalEqualAreaProjection implements Projection {
 	λ0;
 	ϕ1;
 	R = 6371229; // Radius of the Earth
-	constructor(projectionData: Domain['grid']['projection']) {
+	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			const λ0_dec = projectionData.λ0 as number;
 			const ϕ1_dec = projectionData.ϕ1 as number;
@@ -228,7 +228,7 @@ export class StereograpicProjection implements Projection {
 	sinϕ1: number; // Sinus of central latitude
 	cosϕ1: number; // Cosine of central latitude
 	R = 6371229; // Radius of Earth
-	constructor(projectionData: Domain['grid']['projection']) {
+	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			this.λ0 = degreesToRadians(projectionData.longitude as number);
 			this.sinϕ1 = Math.sin(degreesToRadians(projectionData.latitude as number));
@@ -278,7 +278,7 @@ const projections = {
 export type ProjectionName = keyof typeof projections;
 
 export class DynamicProjection {
-	constructor(projName: ProjectionName, opts: Domain['grid']['projection']) {
+	constructor(projName: ProjectionName, opts: ProjectedGridData['projection']) {
 		return new projections[projName](opts);
 	}
 }
@@ -294,7 +294,7 @@ export class ProjectionGrid {
 
 	constructor(
 		projection: Projection,
-		grid: Domain['grid'],
+		grid: ProjectedGridData,
 		ranges: DimensionRange[] = [
 			{ start: 0, end: grid.ny },
 			{ start: 0, end: grid.nx }
@@ -303,9 +303,9 @@ export class ProjectionGrid {
 		this.ranges = ranges;
 		this.projection = projection;
 
-		const latitude = grid.projection?.latitude ?? grid.latMin;
-		const longitude = grid.projection?.longitude ?? grid.lonMin;
-		const projectOrigin = grid.projection?.projectOrigin ?? true;
+		const latitude = grid.projection.latitude ?? grid.latMin;
+		const longitude = grid.projection.longitude ?? grid.lonMin;
+		const projectOrigin = grid.projection.projectOrigin ?? true;
 
 		this.nx = grid.nx;
 		this.ny = grid.ny;

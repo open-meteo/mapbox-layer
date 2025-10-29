@@ -12,7 +12,14 @@ import {
 	getRotatedSWNE
 } from './utils/projections';
 
-import { Bounds, DimensionRange, Domain } from './types';
+import {
+	Bounds,
+	DimensionRange,
+	Domain,
+	GaussianGridData,
+	ProjectedGridData,
+	RegularGridData
+} from './types';
 
 export interface GridBehavior {
 	getLinearInterpolatedValue(
@@ -33,7 +40,7 @@ class RegularGrid implements GridBehavior {
 	private _bounds?: Bounds;
 	private _center?: { lng: number; lat: number };
 
-	constructor(private data: Domain['grid']) {}
+	constructor(private data: RegularGridData) {}
 
 	getLinearInterpolatedValue(
 		values: Float32Array,
@@ -82,9 +89,8 @@ class RegularGrid implements GridBehavior {
 	}
 
 	getRangeCovering(south: number, west: number, north: number, east: number): DimensionRange[] {
-		let dx = this.data.dx;
-		let dy = this.data.dy;
-
+		const dx = this.data.dx;
+		const dy = this.data.dy;
 		const nx = this.data.nx;
 		const ny = this.data.ny;
 
@@ -146,10 +152,10 @@ class ProjectedGrid implements GridBehavior {
 	private _bounds?: Bounds;
 	private _center?: { lng: number; lat: number };
 
-	constructor(private data: Domain['grid']) {
+	constructor(private data: ProjectedGridData) {
 		// Create projection using existing system
 		this.projection = new DynamicProjection(
-			data.projection!.name as ProjectionName,
+			data.projection.name as ProjectionName,
 			data.projection
 		) as Projection;
 
@@ -247,7 +253,7 @@ class ProjectedGrid implements GridBehavior {
 class GaussianGrid implements GridBehavior {
 	private gaussianGrid: ExistingGaussianGrid;
 
-	constructor(private data: Domain['grid']) {
+	constructor(private data: GaussianGridData) {
 		this.gaussianGrid = new ExistingGaussianGrid(data.gaussianGridLatitudeLines!);
 	}
 
@@ -283,12 +289,14 @@ class GaussianGrid implements GridBehavior {
 
 export class GridFactory {
 	static create(data: Domain['grid']): GridBehavior {
-		if (data.gaussianGridLatitudeLines) {
+		if (data.type === 'gaussian') {
 			return new GaussianGrid(data);
-		} else if (data.projection) {
+		} else if (data.type === 'projected') {
 			return new ProjectedGrid(data);
-		} else {
+		} else if (data.type === 'regular') {
 			return new RegularGrid(data);
+		} else {
+			throw new Error('Unsupported grid type');
 		}
 	}
 }

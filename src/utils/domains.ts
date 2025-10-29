@@ -23,6 +23,7 @@ export const domainOptions: Array<Domain> = [
 	// 	value: 'bom_access_global',
 	// 	label: 'BOM Global',
 	// 	grid: {
+	//    type: 'regular',
 	// 		nx: 2048,
 	// 		ny: 1536,
 	// 		latMin: -89.941406,
@@ -40,6 +41,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dmi_harmonie_arome_europe',
 		label: 'DMI Harmonie Arome Europe',
 		grid: {
+			type: 'projected',
 			nx: 1906,
 			ny: 1606,
 			latMin: 39.671,
@@ -68,6 +70,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dwd_icon',
 		label: 'DWD ICON',
 		grid: {
+			type: 'regular',
 			nx: 2879,
 			ny: 1441,
 			latMin: -90,
@@ -84,6 +87,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dwd_icon_eu',
 		label: 'DWD ICON EU',
 		grid: {
+			type: 'regular',
 			nx: 1377,
 			ny: 657,
 			latMin: 29.5,
@@ -100,6 +104,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dwd_icon_d2',
 		label: 'DWD ICON D2',
 		grid: {
+			type: 'regular',
 			nx: 1215,
 			ny: 746,
 			latMin: 43.18,
@@ -116,6 +121,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dwd_gwam',
 		label: 'DWD GWAM',
 		grid: {
+			type: 'regular',
 			nx: 1440,
 			ny: 699,
 			latMin: -85.25,
@@ -132,6 +138,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'dwd_ewam',
 		label: 'DWD EWAM',
 		grid: {
+			type: 'regular',
 			nx: 526,
 			ny: 721,
 			latMin: 30,
@@ -150,6 +157,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ncep_gfs025',
 		label: 'GFS Global 0.25°',
 		grid: {
+			type: 'regular',
 			nx: 1440,
 			ny: 721,
 			latMin: -90,
@@ -166,6 +174,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ncep_gfs013',
 		label: 'GFS Global 0.13°',
 		grid: {
+			type: 'regular',
 			nx: 3072,
 			ny: 1536,
 			latMin: (-0.11714935 * (1536 - 1)) / 2,
@@ -182,6 +191,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ncep_hrrr_conus',
 		label: 'GFS HRRR Conus',
 		grid: {
+			type: 'projected',
 			nx: 1799,
 			ny: 1059,
 			latMin: 21.138,
@@ -207,6 +217,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ncep_nbm_conus',
 		label: 'GFS NBM Conus',
 		grid: {
+			type: 'projected',
 			nx: 2345,
 			ny: 1597,
 			latMin: 19.229,
@@ -233,6 +244,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ncep_nam_conus',
 		label: 'GFS NAM Conus',
 		grid: {
+			type: 'projected',
 			nx: 1799,
 			ny: 1059,
 			latMin: 21.138,
@@ -260,6 +272,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ecmwf_ifs025',
 		label: 'ECMWF IFS 0.25°',
 		grid: {
+			type: 'regular',
 			nx: 1440,
 			ny: 721,
 			latMin: -90,
@@ -276,6 +289,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ecmwf_aifs025_single',
 		label: 'ECMWF AIFS 0.25° Single ',
 		grid: {
+			type: 'regular',
 			nx: 1440,
 			ny: 721,
 			latMin: -90,
@@ -292,10 +306,9 @@ export const domainOptions: Array<Domain> = [
 		value: 'ecmwf_ifs',
 		label: 'ECMWF IFS HRES',
 		grid: {
+			type: 'gaussian',
 			nx: 6599680,
 			ny: 1,
-			latMin: -90,
-			lonMin: -180,
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 1280
 		},
@@ -309,6 +322,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'cmc_gem_gdps',
 		label: 'GEM Global',
 		grid: {
+			type: 'regular',
 			nx: 2400,
 			ny: 1201,
 			latMin: -90,
@@ -325,6 +339,7 @@ export const domainOptions: Array<Domain> = [
 	// 	value: 'cmc_gem_geps',
 	// 	label: 'GEM Global GEPS',
 	// 	grid: {
+	//    type: 'regular',
 	// 		nx: 2400,
 	// 		ny: 1201,
 	// 		latMin: -90,
@@ -341,6 +356,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'cmc_gem_hrdps',
 		label: 'GEM HRDPS Continental',
 		grid: {
+			type: 'projected',
 			nx: 2540,
 			ny: 1290,
 			latMin: 39.626034,
@@ -363,6 +379,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'cmc_gem_rdps',
 		label: 'GEM Regional',
 		grid: {
+			type: 'projected',
 			nx: 935,
 			ny: 824,
 			latMin: 18.14503,
@@ -386,6 +403,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'italia_meteo_arpae_icon_2i',
 		label: 'IM ARPAE ICON 2i',
 		grid: {
+			type: 'regular',
 			nx: 761,
 			ny: 761,
 			latMin: 33.7,
@@ -404,6 +422,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'jma_gsm',
 		label: 'JMA GSM',
 		grid: {
+			type: 'regular',
 			nx: 720,
 			ny: 361,
 			latMin: -90,
@@ -420,6 +439,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'jma_msm',
 		label: 'JMA MSM',
 		grid: {
+			type: 'regular',
 			nx: 481,
 			ny: 505,
 			latMin: 22.4,
@@ -438,6 +458,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteofrance_arpege_world025',
 		label: 'MF ARPEGE World',
 		grid: {
+			type: 'regular',
 			nx: 1440,
 			ny: 721,
 			latMin: -90,
@@ -454,6 +475,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteofrance_arpege_europe',
 		label: 'MF ARPEGE Europe',
 		grid: {
+			type: 'regular',
 			nx: 741,
 			ny: 521,
 			latMin: 20,
@@ -470,6 +492,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteofrance_arome_france0025',
 		label: 'MF AROME France',
 		grid: {
+			type: 'regular',
 			nx: 1121,
 			ny: 717,
 			latMin: 37.5,
@@ -487,6 +510,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteofrance_arome_france_hd',
 		label: 'MF AROME France HD',
 		grid: {
+			type: 'regular',
 			nx: 2801,
 			ny: 1791,
 			latMin: 37.5,
@@ -503,6 +527,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteofrance_wave',
 		label: 'MF Wave',
 		grid: {
+			type: 'regular',
 			nx: 4320,
 			ny: 2041,
 			latMin: -80 + 1 / 24,
@@ -521,6 +546,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'metno_nordic_pp',
 		label: 'MET Norway Nordic',
 		grid: {
+			type: 'projected',
 			nx: 1796,
 			ny: 2321,
 			latMin: 52.30272,
@@ -548,6 +574,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'kma_gdps',
 		label: 'KMA GDPS 12km',
 		grid: {
+			type: 'regular',
 			nx: 2560,
 			ny: 1920,
 			latMin: -90 + 180 / 1920 / 2,
@@ -564,6 +591,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'kma_ldps',
 		label: 'KMA LDPS 1.5km',
 		grid: {
+			type: 'projected',
 			nx: 602,
 			ny: 781,
 			latMin: 32.2569,
@@ -592,6 +620,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'knmi_harmonie_arome_europe',
 		label: 'KNMI Harmonie Arome Europe',
 		grid: {
+			type: 'projected',
 			nx: 676,
 			ny: 564,
 			latMin: 39.740627,
@@ -614,6 +643,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'knmi_harmonie_arome_netherlands',
 		label: 'KNMI Harmonie Arome Netherlands',
 		grid: {
+			type: 'regular',
 			nx: 390,
 			ny: 390,
 			latMin: 49,
@@ -632,6 +662,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteoswiss_icon_ch1',
 		label: 'MeteoSwiss ICON CH1',
 		grid: {
+			type: 'projected',
 			nx: 1089,
 			ny: 705,
 			latMin: 43.18,
@@ -655,6 +686,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'meteoswiss_icon_ch2',
 		label: 'MeteoSwiss ICON CH2',
 		grid: {
+			type: 'projected',
 			nx: 545,
 			ny: 353,
 			latMin: 43.18,
@@ -680,6 +712,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ukmo_global_deterministic_10km',
 		label: 'UK Met Office 10km',
 		grid: {
+			type: 'regular',
 			nx: 2560,
 			ny: 1920,
 			latMin: -90,
@@ -696,6 +729,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'ukmo_uk_deterministic_2km',
 		label: 'UK Met Office 2km',
 		grid: {
+			type: 'projected',
 			nx: 1042,
 			ny: 970,
 			latMin: 0, //-1036000
