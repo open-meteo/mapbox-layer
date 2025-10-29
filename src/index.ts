@@ -3,7 +3,7 @@ export * from './utils/contours';
 export * from './utils/constants';
 export * from './utils/domains';
 export * from './grids/index';
-export * from './utils/grid';
+export * from './utils/grid-points';
 export * from './utils/index';
 export * from './utils/interpolations';
 export * from './utils/math';
