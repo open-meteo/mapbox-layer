@@ -1,4 +1,5 @@
-import L, { GridLayerOptions, DoneCallback, Coords } from 'leaflet';
+import L, { Coords, DoneCallback, GridLayerOptions } from 'leaflet';
+
 import { defaultOmProtocolSettings, getTile, initOMFile, omProtocol } from './om-protocol';
 
 export interface OpenMeteoLeafletLayerOptions extends GridLayerOptions {
@@ -20,7 +21,7 @@ export class OpenMeteoLeafletLayer extends L.GridLayer {
 		tile.width = 256;
 		tile.height = 256;
 
-		getTile({ z: coords.z, x: coords.x, y: coords.y }, this.omUrl)
+		getTile({ z: coords.z, x: coords.x, y: coords.y }, this.omUrl, 'image')
 			.then((imageBitmap: ImageBitmap) => {
 				const ctx = tile.getContext('2d');
 				if (ctx) {

@@ -1,18 +1,20 @@
 import * as maplibregl from 'maplibre-gl';
 
-import type { Domain, Variable, DomainMetaData } from '../types';
+import type { Domain, DomainMetaData, Variable } from '../types';
 
 const now = new Date();
 now.setHours(now.getHours() + 1, 0, 0, 0);
-
-let omUrl: string;
 
 export const pad = (n: string | number) => {
 	return ('0' + n).slice(-2);
 };
 
+export function capitalize(s: string) {
+	return String(s[0]).toUpperCase() + String(s).slice(1);
+}
+
 export const closestDomainInterval = (time: Date, domain: Domain) => {
-	let newTime = new Date(time.getTime());
+	const newTime = new Date(time.getTime());
 	if (domain.time_interval > 1) {
 		if (time.getUTCHours() % domain.time_interval > 0) {
 			const closestUTCHour = time.getUTCHours() - (time.getUTCHours() % domain.time_interval);
