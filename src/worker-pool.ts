@@ -1,5 +1,5 @@
 import type { Data } from './om-protocol';
-// @ts-ignore
+// @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
 import type { ColorScale, DimensionRange, Domain, Variable } from './types';

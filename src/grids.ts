@@ -18,7 +18,8 @@ export interface GridBehavior {
 		values: Float32Array,
 		lat: number,
 		lon: number,
-		ranges: DimensionRange[] | null
+		ranges: DimensionRange[] | null,
+		bounds: Bounds | null
 	): number;
 
 	getBounds(): Bounds;
@@ -36,21 +37,22 @@ class RegularGrid implements GridBehavior {
 		values: Float32Array,
 		lat: number,
 		lon: number,
-		ranges: DimensionRange[] | null
+		ranges: DimensionRange[] | null,
+		bounds: Bounds | null
 	): number {
 		const defaultRanges = ranges || [
 			{ start: 0, end: this.data.ny },
 			{ start: 0, end: this.data.nx }
 		];
+		const boundsWithFallback = bounds || this.getBounds();
 
-		const bounds = this.getBounds();
 		const idx = getIndexFromLatLong(
 			lat,
 			lon,
 			this.data.dx,
 			this.data.dy,
 			defaultRanges[1].end - defaultRanges[1].start,
-			[bounds[1], bounds[0], bounds[3], bounds[2]] // [minLat, minLon, maxLat, maxLon]
+			boundsWithFallback
 		);
 
 		return interpolateLinear(values, idx.index, idx.xFraction, idx.yFraction, defaultRanges);
@@ -100,7 +102,8 @@ class ProjectedGrid implements GridBehavior {
 		values: Float32Array,
 		lat: number,
 		lon: number,
-		ranges: DimensionRange[] | null
+		ranges: DimensionRange[] | null,
+		_bounds: Bounds
 	): number {
 		const defaultRanges = ranges || [
 			{ start: 0, end: this.data.ny },

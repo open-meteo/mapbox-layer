@@ -510,6 +510,7 @@ export const getBorderPoints = (projectionGrid: ProjectionGrid) => {
 	}
 	return points;
 };
+
 export const getBoundsFromBorderPoints = (
 	borderPoints: number[][],
 	projection: Projection

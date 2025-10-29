@@ -10,7 +10,7 @@ import { drawOnTiles, hideZero } from './utils/variables';
 import { GridBehavior, GridFactory } from './grids';
 import { TileRequest } from './worker-pool';
 
-import type { DimensionRange, Variable } from './types';
+import type { Bounds, DimensionRange, Variable } from './types';
 
 const OPACITY = 75;
 
@@ -54,7 +54,8 @@ const drawArrow = (
 	boxSize: number,
 	variable: Variable,
 	grid: GridBehavior,
-	directions: Float32Array
+	directions: Float32Array,
+	bounds: Bounds | null
 ): void => {
 	const arrow = getArrowCanvas(boxSize);
 
@@ -64,8 +65,10 @@ const drawArrow = (
 	const lat = tile2lat(y + iCenter / tileSize, z);
 	const lon = tile2lon(x + jCenter / tileSize, z);
 
-	const px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
-	const direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon, ranges));
+	const px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
+	const direction = degreesToRadians(
+		grid.getLinearInterpolatedValue(directions, lat, lon, ranges, bounds)
+	);
 
 	arrow.rotate(direction);
 	const arrowPixelData = arrow.getImageData(0, 0, boxSize, boxSize).data;
@@ -131,7 +134,14 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		}
 
 		// const interpolationMethod = getInterpolationMethod(colorScale);
-
+		let bounds: Bounds | null = null;
+		if (ranges) {
+			const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
+			const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
+			const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
+			const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
+			bounds = [lonMin, latMin, lonMax, latMax];
+		}
 		const isWind = variable.value.includes('wind');
 		const isWeatherCode = variable.value === 'weather_code';
 		const isDirection =
@@ -148,7 +158,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			for (let j = 0; j < tileSize; j++) {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
-				let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
+				let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
 
 				if (isHideZero) {
 					if (px < 0.25) {
@@ -200,7 +210,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 						boxSize,
 						variable,
 						grid,
-						directions
+						directions,
+						bounds
 					);
 				}
 			}

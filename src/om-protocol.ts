@@ -69,8 +69,17 @@ export const getValueFromLatLong = (
 	}
 
 	const values = data.values;
+	let bounds: Bounds | null = null;
+	if (ranges) {
+		const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
+		const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
+		const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
+		const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
+		bounds = [lonMin, latMin, lonMax, latMax];
+	}
+
 	const grid = GridFactory.create(domain.grid);
-	let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
+	let px = grid.getLinearInterpolatedValue(values, lat, lon, ranges, bounds);
 	if (variable.value.includes('wind')) {
 		px = px * MS_TO_KMH;
 	}

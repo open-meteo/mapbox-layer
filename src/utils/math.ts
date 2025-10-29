@@ -115,21 +115,16 @@ export const getIndexFromLatLong = (
 	dx: number,
 	dy: number,
 	nx: number,
-	latLonMinMax: [minLat: number, minLon: number, maxLat: number, maxLon: number]
+	bounds: Bounds
 ): IndexAndFractions => {
-	if (
-		lat < latLonMinMax[0] ||
-		lat >= latLonMinMax[2] ||
-		lon < latLonMinMax[1] ||
-		lon >= latLonMinMax[3]
-	) {
+	if (lat < bounds[1] || lat >= bounds[3] || lon < bounds[0] || lon >= bounds[2]) {
 		return { index: NaN, xFraction: 0, yFraction: 0 };
 	} else {
-		const x = Math.floor((lon - latLonMinMax[1]) / dx);
-		const y = Math.floor((lat - latLonMinMax[0]) / dy);
+		const x = Math.floor((lon - bounds[0]) / dx);
+		const y = Math.floor((lat - bounds[1]) / dy);
 
-		const xFraction = ((lon - latLonMinMax[1]) % dx) / dx;
-		const yFraction = ((lat - latLonMinMax[0]) % dy) / dy;
+		const xFraction = ((lon - bounds[0]) % dx) / dx;
+		const yFraction = ((lat - bounds[1]) % dy) / dy;
 
 		const index = y * nx + x;
 		return { index, xFraction, yFraction };
