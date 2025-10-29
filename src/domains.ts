@@ -1,4 +1,4 @@
-import type { Domain } from '../types';
+import type { Domain } from './types';
 
 export const domainGroups = [
 	//'bom',

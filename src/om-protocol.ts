@@ -3,9 +3,9 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales, getColorScale } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
-import { domainOptions as defaultDomainOptions } from './utils/domains';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
+import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
