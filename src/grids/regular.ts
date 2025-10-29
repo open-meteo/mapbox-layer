@@ -1,9 +1,9 @@
 import { interpolateLinear } from '../utils/interpolations';
-import { getCenterFromGrid, getIndexFromLatLong } from '../utils/math';
+import { getCenterFromGrid } from '../utils/math';
 
 import { GridInterface } from './interface';
 
-import { Bounds, DimensionRange, RegularGridData } from '../types';
+import { Bounds, DimensionRange, IndexAndFractions, RegularGridData } from '../types';
 
 // Regular grid implementation
 export class RegularGrid implements GridInterface {
@@ -113,3 +113,25 @@ export class RegularGrid implements GridInterface {
 		return ranges;
 	}
 }
+
+const getIndexFromLatLong = (
+	lat: number,
+	lon: number,
+	dx: number,
+	dy: number,
+	nx: number,
+	bounds: Bounds
+): IndexAndFractions => {
+	if (lat < bounds[1] || lat >= bounds[3] || lon < bounds[0] || lon >= bounds[2]) {
+		return { index: NaN, xFraction: 0, yFraction: 0 };
+	} else {
+		const x = Math.floor((lon - bounds[0]) / dx);
+		const y = Math.floor((lat - bounds[1]) / dy);
+
+		const xFraction = ((lon - bounds[0]) % dx) / dx;
+		const yFraction = ((lat - bounds[1]) % dy) / dy;
+
+		const index = y * nx + x;
+		return { index, xFraction, yFraction };
+	}
+};

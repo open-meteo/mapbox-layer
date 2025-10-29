@@ -7,7 +7,7 @@ import {
 	tile2lon
 } from '../utils/math';
 
-import type { Bounds, DimensionRange, ProjectedGridData } from '../types';
+import type { ProjectedGridData } from '../types';
 
 export interface Projection {
 	forward(latitude: number, longitude: number): [x: number, y: number];
@@ -290,74 +290,6 @@ export class DynamicProjection {
 	}
 }
 
-export class ProjectionGrid {
-	projection;
-	nx;
-	ny;
-	origin;
-	dx; //meters
-	dy; //meters
-	ranges;
-
-	constructor(
-		projection: Projection,
-		grid: ProjectedGridData,
-		ranges: DimensionRange[] = [
-			{ start: 0, end: grid.ny },
-			{ start: 0, end: grid.nx }
-		]
-	) {
-		this.ranges = ranges;
-		this.projection = projection;
-
-		const latitude = grid.projection.latitude ?? grid.latMin;
-		const longitude = grid.projection.longitude ?? grid.lonMin;
-		const projectOrigin = grid.projection.projectOrigin ?? true;
-
-		this.nx = grid.nx;
-		this.ny = grid.ny;
-		if (latitude && Array === latitude.constructor && Array === longitude.constructor) {
-			const sw = projection.forward(latitude[0], longitude[0]);
-			const ne = projection.forward(latitude[1], longitude[1]);
-			this.origin = sw;
-			this.dx = (ne[0] - sw[0]) / this.nx;
-			this.dy = (ne[1] - sw[1]) / this.ny;
-		} else if (projectOrigin) {
-			this.dx = grid.dx;
-			this.dy = grid.dy;
-			this.origin = this.projection.forward(latitude as number, longitude as number);
-		} else {
-			this.dx = grid.dx;
-			this.dy = grid.dy;
-			this.origin = [latitude as number, longitude as number];
-		}
-	}
-
-	findPointInterpolated(lat: number, lon: number, ranges: DimensionRange[]) {
-		const [xPos, yPos] = this.projection.forward(lat, lon);
-
-		const minX = this.origin[0] + this.dx * ranges[1]['start'];
-		const minY = this.origin[1] + this.dy * ranges[0]['start'];
-
-		const x = (xPos - minX) / this.dx;
-		const y = (yPos - minY) / this.dy;
-
-		const xFraction = x - Math.floor(x);
-		const yFraction = y - Math.floor(y);
-
-		if (
-			x < 0 ||
-			x >= ranges[1]['end'] - ranges[1]['start'] ||
-			y < 0 ||
-			y >= ranges[0]['end'] - ranges[0]['start']
-		) {
-			return { index: NaN, xFraction: 0, yFraction: 0 };
-		}
-		const index = Math.floor(y) * (ranges[1]['end'] - ranges[1]['start']) + Math.floor(x);
-		return { index, xFraction, yFraction };
-	}
-}
-
 export const getRotatedSWNE = (
 	projection: Projection,
 	[south, west, north, east]: [number, number, number, number]
@@ -395,53 +327,4 @@ export const getRotatedSWNE = (
 	const le = Math.max(...pointsX);
 
 	return [ls, lw, ln, le];
-};
-
-export const getBorderPoints = (projectionGrid: ProjectionGrid) => {
-	const points = [];
-	for (let i = 0; i < projectionGrid.ny; i++) {
-		points.push([projectionGrid.origin[0], projectionGrid.origin[1] + i * projectionGrid.dy]);
-	}
-	for (let i = 0; i < projectionGrid.nx; i++) {
-		points.push([
-			projectionGrid.origin[0] + i * projectionGrid.dx,
-			projectionGrid.origin[1] + projectionGrid.ny * projectionGrid.dy
-		]);
-	}
-	for (let i = projectionGrid.ny; i >= 0; i--) {
-		points.push([
-			projectionGrid.origin[0] + projectionGrid.nx * projectionGrid.dx,
-			projectionGrid.origin[1] + i * projectionGrid.dy
-		]);
-	}
-	for (let i = projectionGrid.nx; i >= 0; i--) {
-		points.push([projectionGrid.origin[0] + i * projectionGrid.dx, projectionGrid.origin[1]]);
-	}
-	return points;
-};
-
-export const getBoundsFromBorderPoints = (
-	borderPoints: number[][],
-	projection: Projection
-): Bounds => {
-	let minLon = 180;
-	let minLat = 90;
-	let maxLon = -180;
-	let maxLat = -90;
-	for (const borderPoint of borderPoints) {
-		const borderPointLatLon = projection.reverse(borderPoint[0], borderPoint[1]);
-		if (borderPointLatLon[0] < minLat) {
-			minLat = borderPointLatLon[0];
-		}
-		if (borderPointLatLon[0] > maxLat) {
-			maxLat = borderPointLatLon[0];
-		}
-		if (borderPointLatLon[1] < minLon) {
-			minLon = borderPointLatLon[1];
-		}
-		if (borderPointLatLon[1] > maxLon) {
-			maxLon = borderPointLatLon[1];
-		}
-	}
-	return [minLon, minLat, maxLon, maxLat];
 };

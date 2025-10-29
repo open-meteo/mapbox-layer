@@ -1,6 +1,6 @@
 import { GaussianGrid } from './gaussian';
 import { GridInterface } from './interface';
-import { ProjectedGrid } from './projected';
+import { ProjectionGrid } from './projected';
 import { RegularGrid } from './regular';
 
 import { DimensionRange, Domain } from '../types';
@@ -10,7 +10,7 @@ export class GridFactory {
 		if (data.type === 'gaussian') {
 			return new GaussianGrid(data, ranges);
 		} else if (data.type === 'projected') {
-			return new ProjectedGrid(data, ranges);
+			return new ProjectionGrid(data, ranges);
 		} else if (data.type === 'regular') {
 			return new RegularGrid(data, ranges);
 		} else {

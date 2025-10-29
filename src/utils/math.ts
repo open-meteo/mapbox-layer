@@ -1,10 +1,4 @@
-import type {
-	Bounds,
-	Center,
-	IndexAndFractions,
-	ProjectedGridData,
-	RegularGridData
-} from '../types';
+import type { Center, ProjectedGridData, RegularGridData } from '../types';
 
 const PI = Math.PI;
 
@@ -49,13 +43,6 @@ export const secondDerivative = (fm1: number, f0: number, fp1: number): number =
 
 export const modPositive = (n: number, m: number): number => {
 	return ((n % m) + m) % m;
-};
-
-export const getCenterFromBounds = (bounds: Bounds): Center => {
-	return {
-		lng: (bounds[2] - bounds[0]) / 2 + bounds[0],
-		lat: (bounds[3] - bounds[1]) / 2 + bounds[1]
-	};
 };
 
 export const getCenterFromGrid = (grid: RegularGridData | ProjectedGridData): Center => {
@@ -113,26 +100,4 @@ export const hermite = (t: number, p0: number, p1: number, m0: number, m1: numbe
 	const h11 = t3 - t2;
 
 	return h00 * p0 + h10 * m0 + h01 * p1 + h11 * m1;
-};
-
-export const getIndexFromLatLong = (
-	lat: number,
-	lon: number,
-	dx: number,
-	dy: number,
-	nx: number,
-	bounds: Bounds
-): IndexAndFractions => {
-	if (lat < bounds[1] || lat >= bounds[3] || lon < bounds[0] || lon >= bounds[2]) {
-		return { index: NaN, xFraction: 0, yFraction: 0 };
-	} else {
-		const x = Math.floor((lon - bounds[0]) / dx);
-		const y = Math.floor((lat - bounds[1]) / dy);
-
-		const xFraction = ((lon - bounds[0]) % dx) / dx;
-		const yFraction = ((lat - bounds[1]) % dy) / dy;
-
-		const index = y * nx + x;
-		return { index, xFraction, yFraction };
-	}
 };
