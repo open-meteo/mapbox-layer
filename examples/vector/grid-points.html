@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Precipitation Example</title>
+		<title>Open-Meteo Mapbox Layer - Grid Points Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.css" />
@@ -9,7 +9,7 @@
 		<!-- Set to latest version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.4/dist/index.js"></script>
 		<!-- Local development -->
-		<!--<script src="../dist/index.js"></script>-->
+		<!--<script src="../../dist/index.js"></script>-->
 		<style>
 			html,
 			body,
@@ -27,6 +27,7 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
+				maxZoom: 12,
 				style: {
 					version: 8,
 					sources: {
@@ -49,10 +50,10 @@
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=precipitation`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m`;
 
 			map.on('load', () => {
-				map.addSource('omFileSource', {
+				map.addSource('omFileRasterSource', {
 					url: 'om://' + omUrl,
 					type: 'raster',
 					tileSize: 256,
@@ -60,9 +61,36 @@
 				});
 
 				map.addLayer({
-					id: 'omFileLayer',
+					id: 'omFileRasterLayer',
 					type: 'raster',
-					source: 'omFileSource'
+					source: 'omFileRasterSource'
+				});
+
+				map.addSource('omFileGridSource', {
+					url: 'om://' + omUrl + '?grid=true',
+					type: 'vector'
+				});
+
+				map.addLayer({
+					id: 'omFileGridPoints',
+					type: 'circle',
+					source: 'omFileGridSource',
+					'source-layer': 'grid',
+					layout: {},
+					paint: {
+						'circle-radius': [
+							'interpolate',
+							['exponential', 1.5],
+							['zoom'],
+							// zoom is 0 -> circle radius will be 1px
+							0,
+							1,
+							// zoom is 12 (or greater) -> circle radius will be 20px
+							12,
+							20
+						],
+						'circle-color': '#007cbf'
+					}
 				});
 			});
 		</script>

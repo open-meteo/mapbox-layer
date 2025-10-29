@@ -4,8 +4,11 @@
 		<title>Open-Meteo Mapbox Layer - Custom Colorscales</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.js"></script>
+		<!-- Set to latest version -->
+		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.4/dist/index.js"></script>-->
+		<!-- Local development -->
 		<script src="../dist/index.js"></script>
 		<style>
 			html,
@@ -138,17 +141,26 @@
 				}
 			};
 
-			const customVariableOptions = [{ value: 'ffmc', label: 'Fire POEP' }];
+			// const customVariableOptions = [{ value: 'ffmc', label: 'Fire POEP' }];
+			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+			omProtocolOptions.colorScales = customColorScales;
+			omProtocolOptions.parseUrlCallback = (url) => {
+				const [omUrl, omParams] = url.replace('om://', '').split('?');
+				const domain = OpenMeteoMapboxLayer.domainOptions.find((d) => d.value === 'dwd_icon_eu');
+				console.log(domain);
+				const variable = { value: 'ffmc', label: 'Fire POEP' };
+				return {
+					partial: false,
+					domain: domain,
+					variable: variable,
+					ranges: null,
+					omUrl: omUrl
+				};
+			};
 
-			// use the object as argument for the protocol
+			// use the settings as argument for the protocol
 			maplibregl.addProtocol('om', (params) =>
-				OpenMeteoMapboxLayer.omProtocol(
-					params,
-					undefined,
-					false,
-					customColorScales,
-					customVariableOptions
-				)
+				OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
 			);
 
 			const map = new maplibregl.Map({
@@ -170,11 +182,12 @@
 							source: 'osm'
 						}
 					]
-				}
+				},
+				hash: true
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://fsn1.your-objectstorage.com/testing-wf-indices/data_spatial/dwd_icon_eu/2025/10/21/0000Z/2025-10-21T1200.om?variable=ffmc`;
+			const omUrl = `https://fsn1.your-objectstorage.com/testing-wf-indices/data_spatial/dwd_icon_eu/2025/10/21/0000Z/2025-10-21T1200.om`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {

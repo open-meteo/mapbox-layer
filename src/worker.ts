@@ -1,37 +1,25 @@
-import { hideZero, drawOnTiles } from './utils/variables';
+import Pbf from 'pbf';
 
-import {
-	DynamicProjection,
-	getIndexAndFractions,
-	ProjectionGrid,
-	type Projection
-} from './utils/projections';
-
-import {
-	tile2lat,
-	tile2lon,
-	rotatePoint,
-	degreesToRadians,
-	getIndexFromLatLong
-} from './utils/math';
-
-import { getColor, getInterpolator, getOpacity } from './utils/color-scales';
-
-import type { Domain, Variable, Interpolator, DimensionRange, IndexAndFractions } from './types';
-
-import { GaussianGrid } from './utils/gaussian';
+import { getColor, getOpacity } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
+import { generateContours } from './utils/contours';
+import { generateGridPoints } from './utils/grid-points';
+import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math';
+import { drawOnTiles, hideZero } from './utils/variables';
 
-const TILE_SIZE = 256 * 2;
+import { GridFactory, GridInterface } from './grids/index';
+import { TileRequest } from './worker-pool';
+
+import type { Variable } from './types';
+
 const OPACITY = 75;
 
 let arrowCanvas: OffscreenCanvasRenderingContext2D | null = null;
-const getArrowCanvas = () => {
+const getArrowCanvas = (size: number) => {
 	if (arrowCanvas != null) {
 		return arrowCanvas;
 	}
 
-	const size = 64;
 	const canvas = new OffscreenCanvas(size, size);
 	const ctx = canvas.getContext('2d');
 	if (ctx == null) {
@@ -61,46 +49,25 @@ const drawArrow = (
 	y: number,
 	z: number,
 	values: Float32Array,
-	ranges: DimensionRange[],
-	boxSize = TILE_SIZE / 8,
-	domain: Domain,
+	tileSize: number,
+	boxSize: number,
 	variable: Variable,
-	gaussion: GaussianGrid | undefined,
-	directions: Float32Array,
-	interpolator: Interpolator,
-	projectionGrid: ProjectionGrid | null,
-	latLonMinMax: [minLat: number, minLon: number, maxLat: number, maxLon: number]
+	grid: GridInterface,
+	directions: Float32Array
 ): void => {
-	const arrow = getArrowCanvas();
+	const arrow = getArrowCanvas(boxSize);
 
 	const iCenter = iBase + Math.floor(boxSize / 2);
 	const jCenter = jBase + Math.floor(boxSize / 2);
 
-	const lat = tile2lat(y + iCenter / TILE_SIZE, z);
-	const lon = tile2lon(x + jCenter / TILE_SIZE, z);
+	const lat = tile2lat(y + iCenter / tileSize, z);
+	const lon = tile2lon(x + jCenter / tileSize, z);
 
-	const { index, xFraction, yFraction } = getIndexAndFractions(
-		lat,
-		lon,
-		domain,
-		projectionGrid,
-		ranges,
-		latLonMinMax
-	);
-
-	let px, direction;
-	if (gaussion) {
-		px = gaussion.getLinearInterpolatedValue(values, lat, lon);
-		direction = degreesToRadians(gaussion.getLinearInterpolatedValue(directions, lat, lon) + 180);
-	} else {
-		px = interpolator(values, index, xFraction, yFraction, ranges);
-		direction = degreesToRadians(
-			interpolator(directions, index, xFraction, yFraction, ranges) + 180
-		);
-	}
+	const px = grid.getLinearInterpolatedValue(values, lat, lon);
+	const direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon));
 
 	arrow.rotate(direction);
-	const arrowPixelData = arrow.getImageData(0, 0, 64, 64).data;
+	const arrowPixelData = arrow.getImageData(0, 0, boxSize, boxSize).data;
 
 	if (direction) {
 		for (let i = 0; i < boxSize; i++) {
@@ -115,7 +82,7 @@ const drawArrow = (
 				);
 				const newI = Math.floor(rotatedPoint[0]);
 				const newJ = Math.floor(rotatedPoint[1]);
-				const indTile = jBase + newJ + (iBase + newI) * TILE_SIZE;
+				const indTile = jBase + newJ + (iBase + newI) * tileSize;
 
 				let opacityValue;
 
@@ -137,78 +104,61 @@ const drawArrow = (
 	}
 };
 
-self.onmessage = async (message) => {
-	if (message.data.type == 'GT') {
+self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
+	if (message.data.type == 'getImage') {
 		const key = message.data.key;
+
 		const x = message.data.x;
 		const y = message.data.y;
 		const z = message.data.z;
+
+		const dark = message.data.dark;
 		const values = message.data.data.values;
 		const ranges = message.data.ranges;
-
+		const tileSize = message.data.tileSize;
 		const domain = message.data.domain;
 		const variable = message.data.variable;
 		const colorScale = message.data.colorScale;
 
-		const pixels = TILE_SIZE * TILE_SIZE;
+		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
-		const dark = message.data.dark;
 
-		let projectionGrid = null;
-		if (domain.grid.projection) {
-			const projectionName = domain.grid.projection.name;
-			const projection = new DynamicProjection(
-				projectionName,
-				domain.grid.projection
-			) as Projection;
-			projectionGrid = new ProjectionGrid(projection, domain.grid, ranges);
+		if (!values) {
+			throw new Error('No values provided');
 		}
 
-		const interpolator = getInterpolator(colorScale);
+		// const interpolationMethod = getInterpolationMethod(colorScale);
+		const grid = GridFactory.create(domain.grid, ranges);
 
-		const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-		const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-		const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-		const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
+		const isWind = variable.value.includes('wind');
+		const isWeatherCode = variable.value === 'weather_code';
+		const isDirection =
+			(variable.value.startsWith('wave') && !variable.value.includes('_period')) ||
+			(variable.value.startsWith('wind') &&
+				!variable.value.includes('_gusts') &&
+				!variable.value.includes('_wave')) ||
+			(drawOnTiles.includes(variable.value) &&
+				(variable.value.startsWith('wave') || variable.value.startsWith('wind')));
+		const isHideZero = hideZero.includes(variable.value);
 
-		let gaussian;
-		if (domain.grid.gaussianGridLatitudeLines) {
-			gaussian = new GaussianGrid(domain.grid.gaussianGridLatitudeLines);
-		}
+		for (let i = 0; i < tileSize; i++) {
+			const lat = tile2lat(y + i / tileSize, z);
+			for (let j = 0; j < tileSize; j++) {
+				const ind = j + i * tileSize;
+				const lon = tile2lon(x + j / tileSize, z);
+				let px = grid.getLinearInterpolatedValue(values, lat, lon);
 
-		for (let i = 0; i < TILE_SIZE; i++) {
-			const lat = tile2lat(y + i / TILE_SIZE, z);
-			for (let j = 0; j < TILE_SIZE; j++) {
-				const ind = j + i * TILE_SIZE;
-				const lon = tile2lon(x + j / TILE_SIZE, z);
-
-				let px = NaN;
-				if (gaussian && domain.grid.gaussianGridLatitudeLines) {
-					px = gaussian.getLinearInterpolatedValue(values, lat, lon);
-				} else {
-					const { index, xFraction, yFraction } = getIndexAndFractions(
-						lat,
-						lon,
-						domain,
-						projectionGrid,
-						ranges,
-						[latMin, lonMin, latMax, lonMax]
-					);
-
-					px = interpolator(values as Float32Array, index, xFraction, yFraction, ranges);
-				}
-
-				if (hideZero.includes(variable.value)) {
+				if (isHideZero) {
 					if (px < 0.25) {
 						px = NaN;
 					}
 				}
 
-				if (variable.value.includes('wind')) {
+				if (isWind) {
 					px = px * MS_TO_KMH;
 				}
 
-				if (isNaN(px) || px === Infinity || variable.value === 'weather_code') {
+				if (isNaN(px) || px === Infinity || isWeatherCode) {
 					rgba[4 * ind] = 0;
 					rgba[4 * ind + 1] = 0;
 					rgba[4 * ind + 2] = 0;
@@ -226,44 +176,57 @@ self.onmessage = async (message) => {
 			}
 		}
 
-		if (
-			(variable.value.startsWith('wave') && !variable.value.includes('_period')) ||
-			(variable.value.startsWith('wind') &&
-				!variable.value.includes('_gusts') &&
-				!variable.value.includes('_wave')) ||
-			drawOnTiles.includes(variable.value)
-		) {
-			if (variable.value.startsWith('wave') || variable.value.startsWith('wind')) {
-				const directions = message.data.data.directions;
+		if (isDirection) {
+			const directions = message.data.data.directions;
+			if (!directions) {
+				throw new Error('Directions are required for direction layer');
+			}
 
-				const boxSize = Math.floor(TILE_SIZE / 8);
-				for (let i = 0; i < TILE_SIZE; i += boxSize) {
-					for (let j = 0; j < TILE_SIZE; j += boxSize) {
-						drawArrow(
-							rgba,
-							i,
-							j,
-							x,
-							y,
-							z,
-							values,
-							ranges,
-							boxSize,
-							domain,
-							variable,
-							gaussian,
-							directions,
-							interpolator,
-							projectionGrid,
-							[latMin, lonMin, latMax, lonMax]
-						);
-					}
+			const boxSize = Math.floor(tileSize / 8);
+			for (let i = 0; i < tileSize; i += boxSize) {
+				for (let j = 0; j < tileSize; j += boxSize) {
+					drawArrow(rgba, i, j, x, y, z, values, tileSize, boxSize, variable, grid, directions);
 				}
 			}
 		}
 
-		const tile = await createImageBitmap(new ImageData(rgba, TILE_SIZE, TILE_SIZE));
+		const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
+			premultiplyAlpha: 'premultiply'
+		});
+		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
+	} else if (message.data.type == 'getArrayBuffer') {
+		const key = message.data.key;
 
-		postMessage({ type: 'RT', tile: tile, key: key });
+		const x = message.data.x;
+		const y = message.data.y;
+		const z = message.data.z;
+
+		const values = message.data.data.values;
+		const ranges = message.data.ranges;
+		const domain = message.data.domain;
+		const interval = message.data.interval;
+		const directions = message.data.data.directions;
+
+		if (!values) {
+			throw new Error('No values provided');
+		}
+
+		const pbf = new Pbf();
+
+		if (key.includes('grid=true')) {
+			if (domain.grid.type === 'gaussian') {
+				throw new Error('Gaussian grid type is not supported');
+			}
+			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
+		} else {
+			const grid = GridFactory.create(domain.grid, ranges);
+			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
+		}
+
+		const arrayBuffer = pbf.finish();
+		postMessage(
+			{ type: 'returnArrayBuffer', tile: arrayBuffer.buffer, key: key },
+			{ transfer: [arrayBuffer.buffer] }
+		);
 	}
 };

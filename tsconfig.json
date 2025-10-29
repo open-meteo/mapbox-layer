@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"target": "ES2022",
 		"module": "ESNext",
 		"allowJs": true,
 		"checkJs": true,
@@ -10,7 +11,8 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler",
-		"lib": ["ESNext", "DOM"]
+		"lib": ["ESNext", "DOM", "WebWorker"]
 	},
-	"include": ["./src/**/*"]
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist"]
 }
