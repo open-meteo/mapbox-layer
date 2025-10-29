@@ -1,6 +1,6 @@
 import Pbf from 'pbf';
 
-import { getColor, getInterpolationMethod, getOpacity } from './utils/color-scales';
+import { getColor, getOpacity } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { generateContours } from './utils/contours';
 import { generateGrid } from './utils/grid';
@@ -8,60 +8,11 @@ import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './utils/math'
 import { drawOnTiles, hideZero } from './utils/variables';
 
 import { GridBehavior, GridFactory } from './grids';
+import { TileRequest } from './worker-pool';
 
-import type { DimensionRange, Domain, Variable } from './types';
+import type { DimensionRange, Variable } from './types';
 
 const OPACITY = 75;
-
-interface GetImageMessage {
-	type: 'getImage';
-	key: string;
-	x: number;
-	y: number;
-	z: number;
-	dark: boolean;
-	data: {
-		values: Float32Array;
-		directions?: Float32Array;
-	};
-	ranges: DimensionRange[] | null;
-	tileSize: number;
-	domain: Domain;
-	variable: Variable;
-	colorScale: any; // Define proper type based on your color scale structure
-}
-
-interface GetArrayBufferMessage {
-	type: 'getArrayBuffer';
-	key: string;
-	x: number;
-	y: number;
-	z: number;
-	data: {
-		values: Float32Array;
-		directions?: Float32Array;
-	};
-	ranges: DimensionRange[] | null;
-	domain: Domain;
-	interval?: number;
-	colorScale: any;
-}
-
-type WorkerMessage = GetImageMessage | GetArrayBufferMessage;
-
-interface ImageResponse {
-	type: 'returnImage';
-	tile: ImageBitmap;
-	key: string;
-}
-
-interface ArrayBufferResponse {
-	type: 'returnArrayBuffer';
-	tile: ArrayBuffer;
-	key: string;
-}
-
-type WorkerResponse = ImageResponse | ArrayBufferResponse;
 
 let arrowCanvas: OffscreenCanvasRenderingContext2D | null = null;
 const getArrowCanvas = (size: number) => {
@@ -101,7 +52,6 @@ const drawArrow = (
 	ranges: DimensionRange[] | null,
 	tileSize: number,
 	boxSize: number,
-	domain: Domain,
 	variable: Variable,
 	grid: GridBehavior,
 	directions: Float32Array
@@ -115,7 +65,7 @@ const drawArrow = (
 	const lon = tile2lon(x + jCenter / tileSize, z);
 
 	const px = grid.getLinearInterpolatedValue(values, lat, lon, ranges);
-	const direction = grid.getLinearInterpolatedValue(directions, lat, lon, ranges);
+	const direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon, ranges));
 
 	arrow.rotate(direction);
 	const arrowPixelData = arrow.getImageData(0, 0, boxSize, boxSize).data;
@@ -155,7 +105,7 @@ const drawArrow = (
 	}
 };
 
-self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => {
+self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const key = message.data.key;
 
@@ -175,6 +125,10 @@ self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => 
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
 		const grid = GridFactory.create(domain.grid);
+
+		if (!values) {
+			throw new Error('No values provided');
+		}
 
 		// const interpolationMethod = getInterpolationMethod(colorScale);
 
@@ -226,6 +180,9 @@ self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => 
 
 		if (isDirection) {
 			const directions = message.data.data.directions;
+			if (!directions) {
+				throw new Error('Directions are required for direction layer');
+			}
 
 			const boxSize = Math.floor(tileSize / 8);
 			for (let i = 0; i < tileSize; i += boxSize) {
@@ -241,7 +198,6 @@ self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => 
 						ranges,
 						tileSize,
 						boxSize,
-						domain,
 						variable,
 						grid,
 						directions
@@ -265,7 +221,11 @@ self.onmessage = async (message: MessageEvent<WorkerMessage>): Promise<void> => 
 		const ranges = message.data.ranges;
 		const domain = message.data.domain;
 		const interval = message.data.interval;
-		const directions = message.data.directions;
+		const directions = message.data.data.directions;
+
+		if (!values) {
+			throw new Error('No values provided');
+		}
 
 		const pbf = new Pbf();
 

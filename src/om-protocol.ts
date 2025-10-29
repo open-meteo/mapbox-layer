@@ -4,7 +4,6 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 import { colorScales as defaultColorScales, getColorScale } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
 import { domainOptions as defaultDomainOptions } from './utils/domains';
-import { GaussianGrid } from './utils/gaussian';
 import {
 	getBorderPoints,
 	getBoundsFromBorderPoints,
@@ -26,7 +25,6 @@ import { TilePromise, WorkerPool } from './worker-pool';
 
 import type {
 	Bounds,
-	ColorScale,
 	ColorScales,
 	DimensionRange,
 	Domain,
@@ -64,8 +62,7 @@ const workerPool = new WorkerPool();
 export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
-	variable: Variable,
-	colorScale: ColorScale
+	variable: Variable
 ): { value: number; direction?: number } => {
 	if (!data?.values) {
 		return { value: NaN };

@@ -183,7 +183,7 @@ export const generateContours = (
 	pbf: Pbf,
 	values: Float32Array,
 	domain: Domain,
-	ranges: DimensionRange[],
+	ranges: DimensionRange[] | null,
 	x: number,
 	y: number,
 	z: number,
@@ -201,7 +201,7 @@ export const generateContours = (
 
 	const grid = GridFactory.create(domain.grid);
 	const multiplier = extent / width;
-	let tld: number, trd: number, bld: number, brd: number;
+	let tld: number, bld: number;
 	let i: number, j: number;
 	const segments: { [ele: number]: number[][] } = {};
 	const fragmentByStartByLevel: Map<number, Map<number, Fragment>> = new Map();
@@ -314,13 +314,13 @@ export const generateContours = (
 
 	const levels = segments;
 
-	for (let [level, segments] of Object.entries(levels)) {
-		for (let line of segments) {
+	for (const [level, segments] of Object.entries(levels)) {
+		for (const line of segments) {
 			const geom: number[] = [];
 			// move to first point in segments
-			let xt0, yt0, xt1, yt1;
+			let xt1, yt1;
 			geom.push(command(1, 1)); // MoveTo
-			[xt0, yt0] = [line[0], line[1]];
+			const [xt0, yt0] = [line[0], line[1]];
 			geom.push(zigzag(xt0));
 			geom.push(zigzag(yt0));
 			cursor = [xt0, yt0];

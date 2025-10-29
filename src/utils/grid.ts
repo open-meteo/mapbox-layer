@@ -8,7 +8,7 @@ import { Domain } from '../types';
 export const generateGrid = (
 	pbf: Pbf,
 	values: Float32Array,
-	directions: Float32Array,
+	directions: Float32Array | undefined,
 	domain: Domain,
 	x: number,
 	y: number,
