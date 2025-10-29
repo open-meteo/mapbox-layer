@@ -53,7 +53,7 @@ export const getValueFromLatLong = (
 	return { value: px };
 };
 
-const getTile = async (
+export const getTile = async (
 	{ z, x, y }: TileIndex,
 	omUrl: string,
 	type: 'image' | 'arrayBuffer'
@@ -73,8 +73,7 @@ const getTile = async (
 		interval,
 		domain,
 		variable,
-		colorScale:
-			setColorScales?.custom ?? setColorScales[variable.value] ?? getColorScale(variable.value),
+		colorScale: getColorScale(variable.value),
 		mapBounds: mapBounds
 	});
 };

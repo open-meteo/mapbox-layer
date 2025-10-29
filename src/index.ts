@@ -11,6 +11,7 @@ export * from './grids/index';
 export * from './domains';
 export * from './om-file-reader';
 export * from './om-protocol';
+export * from './leaflet';
 export * from './worker-pool';
 
 export * from './types';
