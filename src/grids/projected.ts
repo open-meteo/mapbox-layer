@@ -52,7 +52,7 @@ export class ProjectionGrid implements GridInterface {
 		}
 	}
 
-	findPointInterpolated(lat: number, lon: number, ranges: DimensionRange[]) {
+	private findPointInterpolated(lat: number, lon: number, ranges: DimensionRange[]) {
 		const [xPos, yPos] = this.projection.forward(lat, lon);
 
 		const minX = this.origin[0] + this.dx * ranges[1]['start'];
@@ -87,7 +87,7 @@ export class ProjectionGrid implements GridInterface {
 		);
 	}
 
-	getBorderPoints(): number[][] {
+	private getBorderPoints(): number[][] {
 		const points = [];
 		for (let i = 0; i < this.ny; i++) {
 			points.push([this.origin[0], this.origin[1] + i * this.dy]);

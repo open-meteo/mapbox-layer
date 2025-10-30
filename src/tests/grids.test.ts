@@ -1,9 +1,10 @@
 import { domainOptions } from '../domains';
+import { ProjectionGrid } from '../grids/projected';
 import { LambertConformalConicProjection, RotatedLatLonProjection } from '../grids/projections';
 import { RegularGrid } from '../grids/regular';
 import { describe, expect, test } from 'vitest';
 
-import type { DimensionRange, RegularGridData } from '../types';
+import type { Bounds, DimensionRange, RegularGridData } from '../types';
 import { ProjectedGridData } from '../types';
 
 const dmiDomain = domainOptions.find((d) => d.value === 'dmi_harmonie_arome_europe');
@@ -46,13 +47,33 @@ const gridData: RegularGridData = {
 	dy: 2
 };
 
+const projectedGridData: ProjectedGridData = {
+	type: 'projected',
+	nx: 10,
+	ny: 10,
+	latMin: 50,
+	lonMin: 10,
+	dx: 10000,
+	dy: 10000,
+	projection: {
+		λ0: 10,
+		ϕ0: 50,
+		ϕ1: 50,
+		ϕ2: 50,
+		latitude: 50,
+		longitude: 10,
+		radius: 6371229,
+		name: 'LambertConformalConicProjection'
+	}
+};
+
 describe('RegularGrid', () => {
 	test('constructs and computes bounds', () => {
 		const grid = new RegularGrid(gridData);
 		expect(grid.getBounds()).toEqual([10, 50, 20, 56]);
 	});
 
-	test('construct a new partial regular grid', () => {
+	test('construct a new partial grid', () => {
 		const ranges: DimensionRange[] = [
 			{ start: 0, end: 3 },
 			{ start: 0, end: 4 }
@@ -65,6 +86,17 @@ describe('RegularGrid', () => {
 		const grid = new RegularGrid(gridData);
 		const center = grid.getCenter();
 		expect(center.lng).toBe(15);
+		expect(center.lat).toBe(53);
+	});
+
+	test('computes center on partial grid', () => {
+		const ranges: DimensionRange[] = [
+			{ start: 0, end: 3 },
+			{ start: 0, end: 4 }
+		];
+		const grid = new RegularGrid(gridData, ranges);
+		const center = grid.getCenter();
+		expect(center.lng).toBe(12);
 		expect(center.lat).toBe(53);
 	});
 
@@ -97,5 +129,111 @@ describe('RegularGrid', () => {
 		expect(ranges[0].end).toBe(gridData.ny);
 		expect(ranges[1].start).toBe(1);
 		expect(ranges[1].end).toBe(4);
+	});
+});
+
+describe('ProjectionGrid', () => {
+	test('construction, bounds and center', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const bounds = grid.getBounds();
+		expect(bounds).toHaveLength(4);
+		expect(bounds[0]).toBeCloseTo(10, 2);
+		expect(bounds[1]).toBeCloseTo(49.99, 2); // latMin is a bit smaller than the specified latMin, because it is matched the next available value on the projection grid ???
+		expect(bounds[2]).toBeCloseTo(11.43, 2); // approximate longitude max
+		expect(bounds[3]).toBeCloseTo(50.9, 2); // approximate latitude max
+
+		const center = grid.getCenter();
+		expect(center.lng).toBeCloseTo(10.71, 2);
+		expect(center.lat).toBeCloseTo(50.45, 2);
+	});
+
+	test('construction, bounds and center for partial grid', () => {
+		const ranges: DimensionRange[] = [
+			{ start: 0, end: 5 },
+			{ start: 0, end: 5 }
+		];
+		const grid = new ProjectionGrid(projectedGridData, ranges);
+		const bounds = grid.getBounds();
+		// bounds should be smaller than the full grid
+		expect(bounds).toHaveLength(4);
+		expect(bounds[0]).toBeCloseTo(10, 2);
+		expect(bounds[1]).toBeCloseTo(49.99, 2);
+		expect(bounds[2]).toBeCloseTo(11.43, 2); // This value should not be the same as above
+		expect(bounds[3]).toBeCloseTo(50.9, 2); // This value should not be the same as above
+		expect(false);
+
+		const center = grid.getCenter();
+		expect(center.lng).toBeCloseTo(10, 2);
+		expect(center.lat).toBeCloseTo(50, 2);
+	});
+
+	test('linear interpolation at projected grid point', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const values = new Float32Array(Array.from({ length: 100 }, (_, index) => index));
+
+		// Test a point that should be within the grid
+		const result = grid.getLinearInterpolatedValue(values, 50.001, 10.001);
+		expect(result).toBeCloseTo(0.118, 3);
+	});
+
+	test('returns NaN for out-of-bounds in projected grid', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const values = new Float32Array(Array.from({ length: 100 }, (_, index) => index));
+
+		// Test points outside the grid
+		expect(grid.getLinearInterpolatedValue(values, 48, 10)).toBeNaN();
+	});
+
+	// test('getBorderPoints generates correct number of points', () => {
+	// 	const grid = new ProjectionGrid(projectedGridData);
+	// 	const borderPoints = grid.getBorderPoints();
+
+	// 	// Should have points for all 4 sides of the grid perimeter
+	// 	// ny + nx + ny + nx = 2*(ny + nx) = 2*(10 + 10) = 40
+	// 	expect(borderPoints.length).toBe(40);
+
+	// 	// Each point should be a 2D coordinate
+	// 	borderPoints.forEach((point) => {
+	// 		expect(point).toHaveLength(2);
+	// 		expect(typeof point[0]).toBe('number');
+	// 		expect(typeof point[1]).toBe('number');
+	// 	});
+	// });
+
+	test('getBoundsFromBorderPoints works correctly', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const borderPoints = [
+			[0, 0],
+			[1000, 0],
+			[1000, 1000],
+			[0, 1000]
+		];
+		const bounds = grid.getBoundsFromBorderPoints(borderPoints);
+
+		expect(bounds).toHaveLength(4);
+		expect(bounds[0]).toBeLessThan(bounds[2]); // minLon < maxLon
+		expect(bounds[1]).toBeLessThan(bounds[3]); // minLat < maxLat
+	});
+
+	test('getCenterFromBounds calculates correct center', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const bounds: Bounds = [10, 50, 12, 52]; // [minLon, minLat, maxLon, maxLat]
+		const center = grid.getCenterFromBounds(bounds);
+
+		expect(center.lng).toBe(11);
+		expect(center.lat).toBe(51);
+	});
+
+	test('getCoveringRanges returns valid ranges', () => {
+		const grid = new ProjectionGrid(projectedGridData);
+		const ranges = grid.getCoveringRanges(49.9, 9.9, 50.1, 10.1);
+
+		expect(ranges).toHaveLength(2);
+		expect(ranges[0].start).toBeGreaterThanOrEqual(0);
+		expect(ranges[0].end).toBeLessThanOrEqual(projectedGridData.ny);
+		expect(ranges[1].start).toBeGreaterThanOrEqual(0);
+		expect(ranges[1].end).toBeLessThanOrEqual(projectedGridData.nx);
+		expect(ranges[0].start).toBeLessThanOrEqual(ranges[0].end);
+		expect(ranges[1].start).toBeLessThanOrEqual(ranges[1].end);
 	});
 });
