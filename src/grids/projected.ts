@@ -51,7 +51,7 @@ export class ProjectionGrid implements GridInterface {
 		} else {
 			this.dx = data.dx;
 			this.dy = data.dy;
-			this.origin = [latitude as number, longitude as number];
+			this.origin = [longitude as number, latitude as number];
 		}
 
 		this.minX = this.origin[0] + this.dx * ranges[1].start;
