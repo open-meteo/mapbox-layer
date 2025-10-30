@@ -137,10 +137,10 @@ describe('ProjectionGrid', () => {
 		const grid = new ProjectionGrid(projectedGridData);
 		const bounds = grid.getBounds();
 		expect(bounds).toHaveLength(4);
-		expect(bounds[0]).toBeCloseTo(10, 2);
-		expect(bounds[1]).toBeCloseTo(49.99, 2); // latMin is a bit smaller than the specified latMin, because it is matched the next available value on the projection grid ???
-		expect(bounds[2]).toBeCloseTo(11.43, 2); // approximate longitude max
-		expect(bounds[3]).toBeCloseTo(50.9, 2); // approximate latitude max
+		expect(bounds[0]).toBeCloseTo(10, 3);
+		expect(bounds[1]).toBeCloseTo(49.992, 3); // latMin is a bit smaller than the specified latMin, because it is matched the next available value on the projection grid ???
+		expect(bounds[2]).toBeCloseTo(11.426, 3); // approximate longitude max
+		expect(bounds[3]).toBeCloseTo(50.899, 3); // approximate latitude max
 
 		const center = grid.getCenter();
 		expect(center.lng).toBeCloseTo(10.71, 2);
@@ -156,15 +156,14 @@ describe('ProjectionGrid', () => {
 		const bounds = grid.getBounds();
 		// bounds should be smaller than the full grid
 		expect(bounds).toHaveLength(4);
-		expect(bounds[0]).toBeCloseTo(10, 2);
-		expect(bounds[1]).toBeCloseTo(49.99, 2);
-		expect(bounds[2]).toBeCloseTo(11.43, 2); // This value should not be the same as above
-		expect(bounds[3]).toBeCloseTo(50.9, 2); // This value should not be the same as above
-		expect(false);
+		expect(bounds[0]).toBeCloseTo(10, 3);
+		expect(bounds[1]).toBeCloseTo(49.998, 3); // FIXME: Why is this not the same as above?
+		expect(bounds[2]).toBeCloseTo(10.706, 3); // approximate longitude max
+		expect(bounds[3]).toBeCloseTo(50.45, 3); // approximate latitude max
 
 		const center = grid.getCenter();
-		expect(center.lng).toBeCloseTo(10, 2);
-		expect(center.lat).toBeCloseTo(50, 2);
+		expect(center.lng).toBeCloseTo(10.35, 2);
+		expect(center.lat).toBeCloseTo(50.22, 2);
 	});
 
 	test('linear interpolation at projected grid point', () => {

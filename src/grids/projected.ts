@@ -8,10 +8,13 @@ export class ProjectionGrid implements GridInterface {
 	private projection: Projection;
 	private nx: number;
 	private ny: number;
+
+	private minX: number;
+	private minY: number;
+	// origin in projected coordinates
 	private origin: [x: number, y: number];
 	private dx: number; //meters
 	private dy: number; //meters
-	private ranges: DimensionRange[];
 	private bounds?: Bounds;
 	private center?: { lng: number; lat: number };
 
@@ -27,20 +30,20 @@ export class ProjectionGrid implements GridInterface {
 				{ start: 0, end: data.nx }
 			];
 		}
-		this.ranges = ranges;
+
+		this.nx = ranges[1].end - ranges[1].start;
+		this.ny = ranges[0].end - ranges[0].start;
 
 		const latitude = data.projection.latitude ?? data.latMin;
 		const longitude = data.projection.longitude ?? data.lonMin;
 		const projectOrigin = data.projection.projectOrigin ?? true;
 
-		this.nx = data.nx;
-		this.ny = data.ny;
 		if (latitude && Array === latitude.constructor && Array === longitude.constructor) {
 			const sw = this.projection.forward(latitude[0], longitude[0]);
 			const ne = this.projection.forward(latitude[1], longitude[1]);
 			this.origin = sw;
-			this.dx = (ne[0] - sw[0]) / this.nx;
-			this.dy = (ne[1] - sw[1]) / this.ny;
+			this.dx = (ne[0] - sw[0]) / data.nx;
+			this.dy = (ne[1] - sw[1]) / data.ny;
 		} else if (projectOrigin) {
 			this.dx = data.dx;
 			this.dy = data.dy;
@@ -50,13 +53,16 @@ export class ProjectionGrid implements GridInterface {
 			this.dy = data.dy;
 			this.origin = [latitude as number, longitude as number];
 		}
+
+		this.minX = this.origin[0] + this.dx * ranges[1].start;
+		this.minY = this.origin[1] + this.dy * ranges[0].start;
 	}
 
-	private findPointInterpolated(lat: number, lon: number, ranges: DimensionRange[]) {
+	private findPointInterpolated(lat: number, lon: number) {
 		const [xPos, yPos] = this.projection.forward(lat, lon);
 
-		const minX = this.origin[0] + this.dx * ranges[1]['start'];
-		const minY = this.origin[1] + this.dy * ranges[0]['start'];
+		const minX = this.minX;
+		const minY = this.minY;
 
 		const x = (xPos - minX) / this.dx;
 		const y = (yPos - minY) / this.dy;
@@ -64,27 +70,16 @@ export class ProjectionGrid implements GridInterface {
 		const xFraction = x - Math.floor(x);
 		const yFraction = y - Math.floor(y);
 
-		if (
-			x < 0 ||
-			x >= ranges[1]['end'] - ranges[1]['start'] ||
-			y < 0 ||
-			y >= ranges[0]['end'] - ranges[0]['start']
-		) {
+		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
 			return { index: NaN, xFraction: 0, yFraction: 0 };
 		}
-		const index = Math.floor(y) * (ranges[1]['end'] - ranges[1]['start']) + Math.floor(x);
+		const index = Math.floor(y) * this.nx + Math.floor(x);
 		return { index, xFraction, yFraction };
 	}
 
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
-		const idx = this.findPointInterpolated(lat, lon, this.ranges);
-		return interpolateLinear(
-			values,
-			idx.index,
-			idx.xFraction,
-			idx.yFraction,
-			this.ranges[1].end - this.ranges[1].start
-		);
+		const idx = this.findPointInterpolated(lat, lon);
+		return interpolateLinear(values, idx.index, idx.xFraction, idx.yFraction, this.nx);
 	}
 
 	private getBorderPoints(): number[][] {
@@ -137,6 +132,7 @@ export class ProjectionGrid implements GridInterface {
 	getBounds(): Bounds {
 		if (!this.bounds) {
 			const borderPoints = this.getBorderPoints();
+			console.log(borderPoints);
 			this.bounds = this.getBoundsFromBorderPoints(borderPoints);
 		}
 		return this.bounds;
