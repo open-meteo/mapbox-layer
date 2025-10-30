@@ -72,26 +72,6 @@ export class ProjectionGrid implements GridInterface {
 				throw new Error(`Unknown projection: ${_exhaustive}`);
 		}
 
-		// const latitude = data.projection.latitude ?? data.latMin;
-		// const longitude = data.projection.longitude ?? data.lonMin;
-		// const projectOrigin = data.projection.projectOrigin ?? true;
-
-		// if (latitude && Array === latitude.constructor && Array === longitude.constructor) {
-		// 	const sw = this.projection.forward(latitude[0], longitude[0]);
-		// 	const ne = this.projection.forward(latitude[1], longitude[1]);
-		// 	this.origin = sw;
-		// 	this.dx = (ne[0] - sw[0]) / data.nx;
-		// 	this.dy = (ne[1] - sw[1]) / data.ny;
-		// } else if (projectOrigin) {
-		// 	this.dx = data.dx;
-		// 	this.dy = data.dy;
-		// 	this.origin = this.projection.forward(latitude as number, longitude as number);
-		// } else {
-		// 	this.dx = data.dx;
-		// 	this.dy = data.dy;
-		// 	this.origin = [longitude as number, latitude as number];
-		// }
-
 		this.minX = this.origin[0] + this.dx * ranges[1].start;
 		this.minY = this.origin[1] + this.dy * ranges[0].start;
 	}
