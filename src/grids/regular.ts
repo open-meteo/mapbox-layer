@@ -41,7 +41,8 @@ export class RegularGrid implements GridInterface {
 		const xFraction = ((lon - this.bounds[0]) % this.data.dx) / this.data.dx;
 		const yFraction = ((lat - this.bounds[1]) % this.data.dy) / this.data.dy;
 
-		const index = y * this.data.nx + x;
+		const nx = this.ranges[1].end - this.ranges[1].start;
+		const index = y * nx + x;
 		return interpolateLinear(
 			values,
 			index,

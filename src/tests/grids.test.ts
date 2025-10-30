@@ -3,7 +3,7 @@ import { LambertConformalConicProjection, RotatedLatLonProjection } from '../gri
 import { RegularGrid } from '../grids/regular';
 import { describe, expect, test } from 'vitest';
 
-import type { RegularGridData } from '../types';
+import type { DimensionRange, RegularGridData } from '../types';
 import { ProjectedGridData } from '../types';
 
 const dmiDomain = domainOptions.find((d) => d.value === 'dmi_harmonie_arome_europe');
@@ -38,7 +38,7 @@ test('Test RotatedLatLon for KNMI', () => {
 // Example grid data
 const gridData: RegularGridData = {
 	type: 'regular',
-	nx: 4,
+	nx: 10,
 	ny: 3,
 	lonMin: 10,
 	latMin: 50,
@@ -49,49 +49,43 @@ const gridData: RegularGridData = {
 describe('RegularGrid', () => {
 	test('constructs and computes bounds', () => {
 		const grid = new RegularGrid(gridData);
+		expect(grid.getBounds()).toEqual([10, 50, 20, 56]);
+	});
+
+	test('construct a new partial regular grid', () => {
+		const ranges: DimensionRange[] = [
+			{ start: 0, end: 3 },
+			{ start: 0, end: 4 }
+		];
+		const grid = new RegularGrid(gridData, ranges);
 		expect(grid.getBounds()).toEqual([10, 50, 14, 56]);
 	});
 
 	test('computes center', () => {
 		const grid = new RegularGrid(gridData);
 		const center = grid.getCenter();
-		expect(center.lng).toBe(12);
+		expect(center.lng).toBe(15);
 		expect(center.lat).toBe(53);
 	});
 
 	test('linear interpolation at grid point', () => {
 		const grid = new RegularGrid(gridData);
-		// Fill values with 0, 1, 2, ... for easy checking
-		const values = new Float32Array([
-			0,
-			1,
-			2,
-			3, // row 0 (lat=50)
-			4,
-			5,
-			6,
-			7, // row 1 (lat=52)
-			8,
-			9,
-			10,
-			11 // row 2 (lat=54)
-		]);
-		// At (lat=52, lon=11), should be row 1, col 1 => index 5, value 5
-		expect(grid.getLinearInterpolatedValue(values, 52, 11)).toBe(5);
+		const values = new Float32Array(Array.from({ length: 30 }, (_, index) => index));
+		// At (lat=52, lon=11), should be row 1, col 1 => index 11, value 11
+		expect(grid.getLinearInterpolatedValue(values, 52, 11)).toBe(11);
 	});
 
 	test('linear interpolation between grid points', () => {
 		const grid = new RegularGrid(gridData);
-		const values = new Float32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-		// Between (52, 11) and (52, 12): should interpolate between index 5 and 6
+		const values = new Float32Array(Array.from({ length: 30 }, (_, index) => index));
+		// Between (52, 11) and (52, 12): should interpolate between index 11 and 12
 		const interpolated = grid.getLinearInterpolatedValue(values, 52, 11.5);
-		// Should be halfway between 5 and 6
-		expect(interpolated).toBeCloseTo(5.5);
+		expect(interpolated).toBeCloseTo(11.5);
 	});
 
 	test('returns NaN for out-of-bounds', () => {
 		const grid = new RegularGrid(gridData);
-		const values = new Float32Array(12);
+		const values = new Float32Array(Array.from({ length: 30 }, (_, index) => index));
 		expect(grid.getLinearInterpolatedValue(values, 100, 100)).toBeNaN();
 	});
 
@@ -102,6 +96,6 @@ describe('RegularGrid', () => {
 		expect(ranges[0].start).toBe(0);
 		expect(ranges[0].end).toBe(gridData.ny);
 		expect(ranges[1].start).toBe(1);
-		expect(ranges[1].end).toBe(gridData.nx);
+		expect(ranges[1].end).toBe(4);
 	});
 });
