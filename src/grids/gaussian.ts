@@ -8,13 +8,15 @@ import { Bounds, DimensionRange, GaussianGridData } from '../types';
  * Implementation of a Gaussian grid projection for mapping, specifically the O1280 version used by ECMWF IFS
  */
 export class GaussianGrid implements GridInterface {
-	private data: GaussianGridData;
+	private readonly nx: number;
+	private readonly ny: number;
 	private readonly latitudeLines: number;
 
 	/// 1280 for O1280
 	constructor(data: GaussianGridData, _ranges: DimensionRange[] | null = null) {
-		this.data = data;
 		this.latitudeLines = data.gaussianGridLatitudeLines;
+		this.nx = data.nx;
+		this.ny = data.ny;
 	}
 
 	getBounds(): Bounds {
@@ -34,8 +36,8 @@ export class GaussianGrid implements GridInterface {
 		_east: number
 	): DimensionRange[] {
 		const ranges = [
-			{ start: 0, end: this.data.ny },
-			{ start: 0, end: this.data.nx }
+			{ start: 0, end: this.ny },
+			{ start: 0, end: this.nx }
 		];
 
 		return ranges;
