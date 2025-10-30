@@ -82,7 +82,7 @@ interface BaseGridData {
 }
 
 // Union type for all grid types
-export type GridData = RegularGridData | AnyProjectionGrid | GaussianGridData;
+export type GridData = RegularGridData | AnyProjectionGridData | GaussianGridData;
 
 export interface GaussianGridData extends BaseGridData {
 	type: 'gaussian';
@@ -97,7 +97,7 @@ export interface RegularGridData extends BaseGridData {
 	dy: number;
 }
 
-export type AnyProjectionGrid =
+export type AnyProjectionGridData =
 	| ProjectionGridFromBounds
 	| ProjectionGridFromGeographicOrigin
 	| ProjectionGridFromProjectedOrigin;

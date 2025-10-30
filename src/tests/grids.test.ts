@@ -5,7 +5,7 @@ import { RegularGrid } from '../grids/regular';
 import { describe, expect, test } from 'vitest';
 
 import type {
-	AnyProjectionGrid,
+	AnyProjectionGridData,
 	DimensionRange,
 	LCCProjectionData,
 	ProjectionGridFromGeographicOrigin,
@@ -17,7 +17,7 @@ const dmiDomain = domainOptions.find((d) => d.value === 'dmi_harmonie_arome_euro
 const knmiDomain = domainOptions.find((d) => d.value === 'knmi_harmonie_arome_europe');
 
 test('Test LambertConformalConicProjection for DMI', () => {
-	const projectedGrid = dmiDomain?.grid as AnyProjectionGrid;
+	const projectedGrid = dmiDomain?.grid as AnyProjectionGridData;
 	const lccProjectionData = projectedGrid.projection as LCCProjectionData;
 	const proj = new LambertConformalConicProjection(lccProjectionData);
 	expect(proj.ρ0).toBe(0.6872809586016131);
@@ -34,7 +34,7 @@ test('Test LambertConformalConicProjection for DMI', () => {
 });
 
 test('Test RotatedLatLon for KNMI', () => {
-	const projectedGrid = knmiDomain?.grid as AnyProjectionGrid;
+	const projectedGrid = knmiDomain?.grid as AnyProjectionGridData;
 	const rotatedLatLonProjectionData = projectedGrid.projection as RotatedLatLonProjectionData;
 	const proj = new RotatedLatLonProjection(rotatedLatLonProjectionData);
 	expect(proj.θ).toBe(0.9599310885968813);
