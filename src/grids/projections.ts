@@ -7,13 +7,28 @@ import {
 	tile2lon
 } from '../utils/math';
 
-import type { ProjectedGridData } from '../types';
+import type {
+	LAEAProjectionData,
+	LCCProjectionData,
+	ProjectionData,
+	RotatedLatLonProjectionData,
+	StereographicProjectionData
+} from '../types';
 
-export type ProjectionName = keyof typeof projections;
-
-export class DynamicProjection {
-	constructor(projName: ProjectionName, opts: ProjectedGridData['projection']) {
-		return new projections[projName](opts);
+export function createProjection(opts: ProjectionData): Projection {
+	switch (opts.name) {
+		case 'StereographicProjection':
+			return new StereograpicProjection(opts);
+		case 'RotatedLatLonProjection':
+			return new RotatedLatLonProjection(opts);
+		case 'LambertConformalConicProjection':
+			return new LambertConformalConicProjection(opts);
+		case 'LambertAzimuthalEqualAreaProjection':
+			return new LambertAzimuthalEqualAreaProjection(opts);
+		default:
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = opts;
+			throw new Error(`Unknown projection: ${_exhaustive}`);
 	}
 }
 
@@ -40,14 +55,9 @@ export class RotatedLatLonProjection implements Projection {
 	θ: number;
 	ϕ: number;
 
-	constructor(projectionData: ProjectedGridData['projection']) {
-		if (projectionData) {
-			const rotation = projectionData.rotation ?? [0, 0];
-			this.θ = degreesToRadians(90 + rotation[0]);
-			this.ϕ = degreesToRadians(rotation[1]);
-		} else {
-			throw new Error('projectionData not defined');
-		}
+	constructor(projectionData: RotatedLatLonProjectionData) {
+		this.θ = degreesToRadians(90 + projectionData.rotation0);
+		this.ϕ = degreesToRadians(projectionData.rotation1);
 	}
 
 	forward(latitude: number, longitude: number): [x: number, y: number] {
@@ -106,22 +116,12 @@ export class LambertConformalConicProjection implements Projection {
 	λ0;
 	R = 6370.997; // Radius of the Earth
 
-	constructor(projectionData: ProjectedGridData['projection']) {
-		let λ0_dec;
-		let ϕ0_dec;
-		let ϕ1_dec;
-		let ϕ2_dec;
-		let radius;
-
-		if (projectionData) {
-			λ0_dec = projectionData.λ0;
-			ϕ0_dec = projectionData.ϕ0;
-			ϕ1_dec = projectionData.ϕ1;
-			ϕ2_dec = projectionData.ϕ2;
-			radius = projectionData.radius;
-		} else {
-			throw new Error('projectionData not defined');
-		}
+	constructor(projectionData: LCCProjectionData) {
+		const λ0_dec = projectionData.λ0;
+		const ϕ0_dec = projectionData.ϕ0;
+		const ϕ1_dec = projectionData.ϕ1;
+		const ϕ2_dec = projectionData.ϕ2;
+		const radius = projectionData.radius;
 
 		this.λ0 = degreesToRadians((((λ0_dec as number) + 180) % 360) - 180);
 		const ϕ0 = degreesToRadians(ϕ0_dec as number);
@@ -183,18 +183,14 @@ export class LambertAzimuthalEqualAreaProjection implements Projection {
 	ϕ1;
 	R = 6371229; // Radius of the Earth
 
-	constructor(projectionData: ProjectedGridData['projection']) {
-		if (projectionData) {
-			const λ0_dec = projectionData.λ0 as number;
-			const ϕ1_dec = projectionData.ϕ1 as number;
-			const radius = projectionData.radius;
-			this.λ0 = degreesToRadians(λ0_dec);
-			this.ϕ1 = degreesToRadians(ϕ1_dec);
-			if (radius) {
-				this.R = radius;
-			}
-		} else {
-			throw new Error('projectionData not defined');
+	constructor(projectionData: LAEAProjectionData) {
+		const λ0_dec = projectionData.λ0 as number;
+		const ϕ1_dec = projectionData.ϕ1 as number;
+		const radius = projectionData.radius;
+		this.λ0 = degreesToRadians(λ0_dec);
+		this.ϕ1 = degreesToRadians(ϕ1_dec);
+		if (radius) {
+			this.R = radius;
 		}
 	}
 
@@ -246,16 +242,12 @@ export class StereograpicProjection implements Projection {
 	cosϕ1: number; // Cosine of central latitude
 	R = 6371229; // Radius of Earth
 
-	constructor(projectionData: ProjectedGridData['projection']) {
-		if (projectionData) {
-			this.λ0 = degreesToRadians(projectionData.longitude as number);
-			this.sinϕ1 = Math.sin(degreesToRadians(projectionData.latitude as number));
-			this.cosϕ1 = Math.cos(degreesToRadians(projectionData.latitude as number));
-			if (projectionData.radius) {
-				this.R = projectionData.radius;
-			}
-		} else {
-			throw new Error('projectionData not defined');
+	constructor(projectionData: StereographicProjectionData) {
+		this.λ0 = degreesToRadians(projectionData.longitude as number);
+		this.sinϕ1 = Math.sin(degreesToRadians(projectionData.latitude as number));
+		this.cosϕ1 = Math.cos(degreesToRadians(projectionData.latitude as number));
+		if (projectionData.radius) {
+			this.R = projectionData.radius;
 		}
 	}
 
@@ -284,11 +276,3 @@ export class StereograpicProjection implements Projection {
 		return [lat, lon];
 	}
 }
-
-const projections = {
-	MercatorProjection,
-	StereograpicProjection,
-	RotatedLatLonProjection,
-	LambertConformalConicProjection,
-	LambertAzimuthalEqualAreaProjection
-};

@@ -1,29 +1,40 @@
 import { GridInterface } from './interface';
 import { interpolateLinear } from './interpolations';
-import { DynamicProjection, Projection, ProjectionName } from './projections';
+import { Projection, createProjection } from './projections';
 
-import { Bounds, Center, DimensionRange, ProjectedGridData } from '../types';
+import {
+	Bounds,
+	Center,
+	DimensionRange,
+	ProjectionGridFromBounds,
+	ProjectionGridFromGeographicOrigin,
+	ProjectionGridFromProjectedOrigin
+} from '../types';
 
 export class ProjectionGrid implements GridInterface {
 	private projection: Projection;
-	private nx: number;
-	private ny: number;
 
-	private minX: number;
-	private minY: number;
 	// origin in projected coordinates
 	private origin: [x: number, y: number];
 	private dx: number; //meters
 	private dy: number; //meters
+
+	// minX and minY are the same as origin[0] and origin[1], if the grid is not "reduced" via the ranges
+	private minX: number;
+	private minY: number;
+	private nx: number;
+	private ny: number;
+
 	private bounds?: Bounds;
 	private center?: { lng: number; lat: number };
 
-	constructor(data: ProjectedGridData, ranges: DimensionRange[] | null = null) {
-		this.projection = new DynamicProjection(
-			data.projection.name as ProjectionName,
-			data.projection
-		) as Projection;
-
+	constructor(
+		data:
+			| ProjectionGridFromBounds
+			| ProjectionGridFromProjectedOrigin
+			| ProjectionGridFromGeographicOrigin,
+		ranges: DimensionRange[] | null = null
+	) {
 		if (!ranges) {
 			ranges = [
 				{ start: 0, end: data.ny },
@@ -34,47 +45,55 @@ export class ProjectionGrid implements GridInterface {
 		this.nx = ranges[1].end - ranges[1].start;
 		this.ny = ranges[0].end - ranges[0].start;
 
-		const latitude = data.projection.latitude ?? data.latMin;
-		const longitude = data.projection.longitude ?? data.lonMin;
-		const projectOrigin = data.projection.projectOrigin ?? true;
-
-		if (latitude && Array === latitude.constructor && Array === longitude.constructor) {
-			const sw = this.projection.forward(latitude[0], longitude[0]);
-			const ne = this.projection.forward(latitude[1], longitude[1]);
-			this.origin = sw;
-			this.dx = (ne[0] - sw[0]) / data.nx;
-			this.dy = (ne[1] - sw[1]) / data.ny;
-		} else if (projectOrigin) {
-			this.dx = data.dx;
-			this.dy = data.dy;
-			this.origin = this.projection.forward(latitude as number, longitude as number);
-		} else {
-			this.dx = data.dx;
-			this.dy = data.dy;
-			this.origin = [longitude as number, latitude as number];
+		switch (data.type) {
+			case 'projectedFromBounds':
+				this.projection = createProjection(data.projection);
+				let sw = this.projection.forward(data.latitudeBounds[0], data.longitudeBounds[0]);
+				let ne = this.projection.forward(data.latitudeBounds[1], data.longitudeBounds[1]);
+				this.origin = sw;
+				this.dx = (ne[0] - sw[0]) / (data.nx - 1);
+				this.dy = (ne[1] - sw[1]) / (data.ny - 1);
+				break;
+			case 'projectedFromGeographicOrigin':
+				this.projection = createProjection(data.projection);
+				this.origin = this.projection.forward(data.latitude, data.longitude);
+				this.dx = data.dx;
+				this.dy = data.dy;
+				break;
+			case 'projectedFromProjectedOrigin':
+				this.projection = createProjection(data.projection);
+				this.origin = [data.longitudeProjectionOrigin, data.latitudeProjectionOrigin];
+				this.dx = data.dx;
+				this.dy = data.dy;
+				break;
+			default:
+				// This ensures exhaustiveness checking
+				const _exhaustive: never = data;
+				throw new Error(`Unknown projection: ${_exhaustive}`);
 		}
+
+		// const latitude = data.projection.latitude ?? data.latMin;
+		// const longitude = data.projection.longitude ?? data.lonMin;
+		// const projectOrigin = data.projection.projectOrigin ?? true;
+
+		// if (latitude && Array === latitude.constructor && Array === longitude.constructor) {
+		// 	const sw = this.projection.forward(latitude[0], longitude[0]);
+		// 	const ne = this.projection.forward(latitude[1], longitude[1]);
+		// 	this.origin = sw;
+		// 	this.dx = (ne[0] - sw[0]) / data.nx;
+		// 	this.dy = (ne[1] - sw[1]) / data.ny;
+		// } else if (projectOrigin) {
+		// 	this.dx = data.dx;
+		// 	this.dy = data.dy;
+		// 	this.origin = this.projection.forward(latitude as number, longitude as number);
+		// } else {
+		// 	this.dx = data.dx;
+		// 	this.dy = data.dy;
+		// 	this.origin = [longitude as number, latitude as number];
+		// }
 
 		this.minX = this.origin[0] + this.dx * ranges[1].start;
 		this.minY = this.origin[1] + this.dy * ranges[0].start;
-	}
-
-	private findPointInterpolated(lat: number, lon: number) {
-		const [xPos, yPos] = this.projection.forward(lat, lon);
-
-		const minX = this.minX;
-		const minY = this.minY;
-
-		const x = (xPos - minX) / this.dx;
-		const y = (yPos - minY) / this.dy;
-
-		const xFraction = x - Math.floor(x);
-		const yFraction = y - Math.floor(y);
-
-		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
-			return { index: NaN, xFraction: 0, yFraction: 0 };
-		}
-		const index = Math.floor(y) * this.nx + Math.floor(x);
-		return { index, xFraction, yFraction };
 	}
 
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
@@ -82,58 +101,10 @@ export class ProjectionGrid implements GridInterface {
 		return interpolateLinear(values, idx.index, idx.xFraction, idx.yFraction, this.nx);
 	}
 
-	private getBorderPoints(): number[][] {
-		const points = [];
-		for (let i = 0; i < this.ny; i++) {
-			points.push([this.origin[0], this.origin[1] + i * this.dy]);
-		}
-		for (let i = 0; i < this.nx; i++) {
-			points.push([this.origin[0] + i * this.dx, this.origin[1] + this.ny * this.dy]);
-		}
-		for (let i = this.ny; i >= 0; i--) {
-			points.push([this.origin[0] + this.nx * this.dx, this.origin[1] + i * this.dy]);
-		}
-		for (let i = this.nx; i >= 0; i--) {
-			points.push([this.origin[0] + i * this.dx, this.origin[1]]);
-		}
-		return points;
-	}
-
-	getBoundsFromBorderPoints(borderPoints: number[][]): Bounds {
-		let minLon = 180;
-		let minLat = 90;
-		let maxLon = -180;
-		let maxLat = -90;
-		for (const borderPoint of borderPoints) {
-			const borderPointLatLon = this.projection.reverse(borderPoint[0], borderPoint[1]);
-			if (borderPointLatLon[0] < minLat) {
-				minLat = borderPointLatLon[0];
-			}
-			if (borderPointLatLon[0] > maxLat) {
-				maxLat = borderPointLatLon[0];
-			}
-			if (borderPointLatLon[1] < minLon) {
-				minLon = borderPointLatLon[1];
-			}
-			if (borderPointLatLon[1] > maxLon) {
-				maxLon = borderPointLatLon[1];
-			}
-		}
-		return [minLon, minLat, maxLon, maxLat];
-	}
-
-	getCenterFromBounds(bounds: Bounds): Center {
-		return {
-			lng: (bounds[2] - bounds[0]) / 2 + bounds[0],
-			lat: (bounds[3] - bounds[1]) / 2 + bounds[1]
-		};
-	}
-
 	getBounds(): Bounds {
 		if (!this.bounds) {
-			const borderPoints = this.getBorderPoints();
-			console.log(borderPoints);
-			this.bounds = this.getBoundsFromBorderPoints(borderPoints);
+			const borderPoints = this.getProjectedBorderPoints();
+			this.bounds = this.calculateGeographicBounds(borderPoints);
 		}
 		return this.bounds;
 	}
@@ -161,7 +132,7 @@ export class ProjectionGrid implements GridInterface {
 			yPrecision = 2;
 		}
 
-		let [s, w, n, e] = getRotatedSWNE(this.projection, [south, west, north, east]);
+		let [s, w, n, e] = getProjectedBounds(this.projection, [south, west, north, east]);
 
 		// round to nearest grid point + / - 1
 		s = Number((s - (s % dy)).toFixed(yPrecision));
@@ -195,43 +166,103 @@ export class ProjectionGrid implements GridInterface {
 		];
 		return ranges;
 	}
+
+	private findPointInterpolated(lat: number, lon: number) {
+		const [xPos, yPos] = this.projection.forward(lat, lon);
+
+		const x = (xPos - this.minX) / this.dx;
+		const y = (yPos - this.minY) / this.dy;
+
+		const xFraction = x - Math.floor(x);
+		const yFraction = y - Math.floor(y);
+
+		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
+			return { index: NaN, xFraction: 0, yFraction: 0 };
+		}
+		const index = Math.floor(y) * this.nx + Math.floor(x);
+		return { index, xFraction, yFraction };
+	}
+
+	private getProjectedBorderPoints(): number[][] {
+		const points = [];
+		for (let i = 0; i < this.ny; i++) {
+			points.push([this.minX, this.minY + i * this.dy]);
+		}
+		for (let i = 0; i < this.nx; i++) {
+			points.push([this.minX + i * this.dx, this.minY + this.ny * this.dy]);
+		}
+		for (let i = this.ny; i >= 0; i--) {
+			points.push([this.minX + this.nx * this.dx, this.minY + i * this.dy]);
+		}
+		for (let i = this.nx; i >= 0; i--) {
+			points.push([this.minX + i * this.dx, this.minY]);
+		}
+		return points;
+	}
+
+	private calculateGeographicBounds(borderPoints: number[][]): Bounds {
+		let minLon = 180;
+		let minLat = 90;
+		let maxLon = -180;
+		let maxLat = -90;
+		for (const borderPoint of borderPoints) {
+			const borderPointLatLon = this.projection.reverse(borderPoint[0], borderPoint[1]);
+			if (borderPointLatLon[0] < minLat) {
+				minLat = borderPointLatLon[0];
+			}
+			if (borderPointLatLon[0] > maxLat) {
+				maxLat = borderPointLatLon[0];
+			}
+			if (borderPointLatLon[1] < minLon) {
+				minLon = borderPointLatLon[1];
+			}
+			if (borderPointLatLon[1] > maxLon) {
+				maxLon = borderPointLatLon[1];
+			}
+		}
+		return [minLon, minLat, maxLon, maxLat];
+	}
+
+	private getCenterFromBounds(bounds: Bounds): Center {
+		return {
+			lng: (bounds[2] - bounds[0]) / 2 + bounds[0],
+			lat: (bounds[3] - bounds[1]) / 2 + bounds[1]
+		};
+	}
 }
 
-const getRotatedSWNE = (
+const getProjectedBounds = (
 	projection: Projection,
-	[south, west, north, east]: [number, number, number, number]
+	[south, west, north, east]: [number, number, number, number],
+	resolution: number = 0.01
 ): [localSouth: number, localWest: number, localNorth: number, localEast: number] => {
-	const pointsX = [];
-	const pointsY = [];
+	let minX = Infinity;
+	let minY = Infinity;
+	let maxX = -Infinity;
+	let maxY = -Infinity;
 
-	// loop over viewport bounds with resolution of 0.01 degree
-	// project these to local points
-	for (let i = south; i < north; i += 0.01) {
-		const point = projection.forward(i, west);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = west; i < east; i += 0.01) {
-		const point = projection.forward(north, i);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = north; i > south; i -= 0.01) {
-		const point = projection.forward(i, east);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = east; i > west; i -= 0.01) {
-		const point = projection.forward(south, i);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
+	const updateBounds = (lat: number, lon: number) => {
+		const [x, y] = projection.forward(lat, lon);
+		minX = Math.min(minX, x);
+		maxX = Math.max(maxX, x);
+		minY = Math.min(minY, y);
+		maxY = Math.max(maxY, y);
+	};
+
+	const stepsLat = Math.ceil((north - south) / resolution);
+	const stepsLon = Math.ceil((east - west) / resolution);
+
+	// West and east edge
+	for (let i = 0; i <= stepsLat; i++) {
+		updateBounds(north - i * resolution, east); // East edge
+		updateBounds(south + i * resolution, west); // West edge
 	}
 
-	// then find out minima and maxima
-	const ls = Math.min(...pointsY);
-	const lw = Math.min(...pointsX);
-	const ln = Math.max(...pointsY);
-	const le = Math.max(...pointsX);
+	// North and south edge
+	for (let i = 0; i <= stepsLon; i++) {
+		updateBounds(north, west + i * resolution); // North edge
+		updateBounds(south, east - i * resolution); // South edge
+	}
 
-	return [ls, lw, ln, le];
+	return [minY, minX, maxY, maxX];
 };

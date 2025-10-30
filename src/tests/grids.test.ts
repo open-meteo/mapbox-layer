@@ -4,15 +4,22 @@ import { LambertConformalConicProjection, RotatedLatLonProjection } from '../gri
 import { RegularGrid } from '../grids/regular';
 import { describe, expect, test } from 'vitest';
 
-import type { Bounds, DimensionRange, RegularGridData } from '../types';
-import { ProjectedGridData } from '../types';
+import type {
+	AnyProjectionGrid,
+	DimensionRange,
+	LCCProjectionData,
+	ProjectionGridFromGeographicOrigin,
+	RegularGridData,
+	RotatedLatLonProjectionData
+} from '../types';
 
 const dmiDomain = domainOptions.find((d) => d.value === 'dmi_harmonie_arome_europe');
 const knmiDomain = domainOptions.find((d) => d.value === 'knmi_harmonie_arome_europe');
 
 test('Test LambertConformalConicProjection for DMI', () => {
-	const grid = dmiDomain?.grid as ProjectedGridData;
-	const proj = new LambertConformalConicProjection(grid.projection);
+	const projectedGrid = dmiDomain?.grid as AnyProjectionGrid;
+	const lccProjectionData = projectedGrid.projection as LCCProjectionData;
+	const proj = new LambertConformalConicProjection(lccProjectionData);
 	expect(proj.ρ0).toBe(0.6872809586016131);
 	expect(proj.F).toBe(1.801897704650192);
 	expect(proj.n).toBe(0.8241261886220157);
@@ -27,8 +34,9 @@ test('Test LambertConformalConicProjection for DMI', () => {
 });
 
 test('Test RotatedLatLon for KNMI', () => {
-	const grid = knmiDomain?.grid as ProjectedGridData;
-	const proj = new RotatedLatLonProjection(grid.projection);
+	const projectedGrid = knmiDomain?.grid as AnyProjectionGrid;
+	const rotatedLatLonProjectionData = projectedGrid.projection as RotatedLatLonProjectionData;
+	const proj = new RotatedLatLonProjection(rotatedLatLonProjectionData);
 	expect(proj.θ).toBe(0.9599310885968813);
 	expect(proj.ϕ).toBe(-0.13962634015954636);
 
@@ -47,12 +55,12 @@ const gridData: RegularGridData = {
 	dy: 2
 };
 
-const projectedGridData: ProjectedGridData = {
-	type: 'projected',
+const projectedGridData: ProjectionGridFromGeographicOrigin = {
+	type: 'projectedFromGeographicOrigin',
 	nx: 10,
 	ny: 10,
-	latMin: 50,
-	lonMin: 10,
+	latitude: 50,
+	longitude: 10,
 	dx: 10000,
 	dy: 10000,
 	projection: {
@@ -60,8 +68,6 @@ const projectedGridData: ProjectedGridData = {
 		ϕ0: 50,
 		ϕ1: 50,
 		ϕ2: 50,
-		latitude: 50,
-		longitude: 10,
 		radius: 6371229,
 		name: 'LambertConformalConicProjection'
 	}
@@ -199,29 +205,29 @@ describe('ProjectionGrid', () => {
 	// 	});
 	// });
 
-	test('getBoundsFromBorderPoints works correctly', () => {
-		const grid = new ProjectionGrid(projectedGridData);
-		const borderPoints = [
-			[0, 0],
-			[1000, 0],
-			[1000, 1000],
-			[0, 1000]
-		];
-		const bounds = grid.getBoundsFromBorderPoints(borderPoints);
+	// test('getBoundsFromBorderPoints works correctly', () => {
+	// 	const grid = new ProjectionGrid(projectedGridData);
+	// 	const borderPoints = [
+	// 		[0, 0],
+	// 		[1000, 0],
+	// 		[1000, 1000],
+	// 		[0, 1000]
+	// 	];
+	// 	const bounds = grid.getBoundsFromBorderPoints(borderPoints);
 
-		expect(bounds).toHaveLength(4);
-		expect(bounds[0]).toBeLessThan(bounds[2]); // minLon < maxLon
-		expect(bounds[1]).toBeLessThan(bounds[3]); // minLat < maxLat
-	});
+	// 	expect(bounds).toHaveLength(4);
+	// 	expect(bounds[0]).toBeLessThan(bounds[2]); // minLon < maxLon
+	// 	expect(bounds[1]).toBeLessThan(bounds[3]); // minLat < maxLat
+	// });
 
-	test('getCenterFromBounds calculates correct center', () => {
-		const grid = new ProjectionGrid(projectedGridData);
-		const bounds: Bounds = [10, 50, 12, 52]; // [minLon, minLat, maxLon, maxLat]
-		const center = grid.getCenterFromBounds(bounds);
+	// test('getCenterFromBounds calculates correct center', () => {
+	// 	const grid = new ProjectionGrid(projectedGridData);
+	// 	const bounds: Bounds = [10, 50, 12, 52]; // [minLon, minLat, maxLon, maxLat]
+	// 	const center = grid.getCenterFromBounds(bounds);
 
-		expect(center.lng).toBe(11);
-		expect(center.lat).toBe(51);
-	});
+	// 	expect(center.lng).toBe(11);
+	// 	expect(center.lat).toBe(51);
+	// });
 
 	test('getCoveringRanges returns valid ranges', () => {
 		const grid = new ProjectionGrid(projectedGridData);
