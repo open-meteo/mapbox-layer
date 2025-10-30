@@ -9,6 +9,14 @@ import {
 
 import type { ProjectedGridData } from '../types';
 
+export type ProjectionName = keyof typeof projections;
+
+export class DynamicProjection {
+	constructor(projName: ProjectionName, opts: ProjectedGridData['projection']) {
+		return new projections[projName](opts);
+	}
+}
+
 export interface Projection {
 	forward(latitude: number, longitude: number): [x: number, y: number];
 	reverse(x: number, y: number): [latitude: number, longitude: number];
@@ -31,6 +39,7 @@ export class MercatorProjection implements Projection {
 export class RotatedLatLonProjection implements Projection {
 	θ: number;
 	ϕ: number;
+
 	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			const rotation = projectionData.rotation ?? [0, 0];
@@ -95,8 +104,8 @@ export class LambertConformalConicProjection implements Projection {
 	F;
 	n;
 	λ0;
-
 	R = 6370.997; // Radius of the Earth
+
 	constructor(projectionData: ProjectedGridData['projection']) {
 		let λ0_dec;
 		let ϕ0_dec;
@@ -173,6 +182,7 @@ export class LambertAzimuthalEqualAreaProjection implements Projection {
 	λ0;
 	ϕ1;
 	R = 6371229; // Radius of the Earth
+
 	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			const λ0_dec = projectionData.λ0 as number;
@@ -235,6 +245,7 @@ export class StereograpicProjection implements Projection {
 	sinϕ1: number; // Sinus of central latitude
 	cosϕ1: number; // Cosine of central latitude
 	R = 6371229; // Radius of Earth
+
 	constructor(projectionData: ProjectedGridData['projection']) {
 		if (projectionData) {
 			this.λ0 = degreesToRadians(projectionData.longitude as number);
@@ -280,51 +291,4 @@ const projections = {
 	RotatedLatLonProjection,
 	LambertConformalConicProjection,
 	LambertAzimuthalEqualAreaProjection
-};
-
-export type ProjectionName = keyof typeof projections;
-
-export class DynamicProjection {
-	constructor(projName: ProjectionName, opts: ProjectedGridData['projection']) {
-		return new projections[projName](opts);
-	}
-}
-
-export const getRotatedSWNE = (
-	projection: Projection,
-	[south, west, north, east]: [number, number, number, number]
-): [localSouth: number, localWest: number, localNorth: number, localEast: number] => {
-	const pointsX = [];
-	const pointsY = [];
-
-	// loop over viewport bounds with resolution of 0.01 degree
-	// project these to local points
-	for (let i = south; i < north; i += 0.01) {
-		const point = projection.forward(i, west);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = west; i < east; i += 0.01) {
-		const point = projection.forward(north, i);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = north; i > south; i -= 0.01) {
-		const point = projection.forward(i, east);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-	for (let i = east; i > west; i -= 0.01) {
-		const point = projection.forward(south, i);
-		pointsX.push(point[0]);
-		pointsY.push(point[1]);
-	}
-
-	// then find out minima and maxima
-	const ls = Math.min(...pointsY);
-	const lw = Math.min(...pointsX);
-	const ln = Math.max(...pointsY);
-	const le = Math.max(...pointsX);
-
-	return [ls, lw, ln, le];
 };

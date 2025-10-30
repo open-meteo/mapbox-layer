@@ -1,6 +1,6 @@
 import { GridInterface } from './interface';
 import { interpolateLinear } from './interpolations';
-import { DynamicProjection, Projection, ProjectionName, getRotatedSWNE } from './projections';
+import { DynamicProjection, Projection, ProjectionName } from './projections';
 
 import { Bounds, Center, DimensionRange, ProjectedGridData } from '../types';
 
@@ -196,3 +196,42 @@ export class ProjectionGrid implements GridInterface {
 		return ranges;
 	}
 }
+
+const getRotatedSWNE = (
+	projection: Projection,
+	[south, west, north, east]: [number, number, number, number]
+): [localSouth: number, localWest: number, localNorth: number, localEast: number] => {
+	const pointsX = [];
+	const pointsY = [];
+
+	// loop over viewport bounds with resolution of 0.01 degree
+	// project these to local points
+	for (let i = south; i < north; i += 0.01) {
+		const point = projection.forward(i, west);
+		pointsX.push(point[0]);
+		pointsY.push(point[1]);
+	}
+	for (let i = west; i < east; i += 0.01) {
+		const point = projection.forward(north, i);
+		pointsX.push(point[0]);
+		pointsY.push(point[1]);
+	}
+	for (let i = north; i > south; i -= 0.01) {
+		const point = projection.forward(i, east);
+		pointsX.push(point[0]);
+		pointsY.push(point[1]);
+	}
+	for (let i = east; i > west; i -= 0.01) {
+		const point = projection.forward(south, i);
+		pointsX.push(point[0]);
+		pointsY.push(point[1]);
+	}
+
+	// then find out minima and maxima
+	const ls = Math.min(...pointsY);
+	const lw = Math.min(...pointsX);
+	const ln = Math.max(...pointsY);
+	const le = Math.max(...pointsX);
+
+	return [ls, lw, ln, le];
+};
