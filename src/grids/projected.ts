@@ -147,7 +147,7 @@ export class ProjectionGrid implements GridInterface {
 		return ranges;
 	}
 
-	private findPointInterpolated(lat: number, lon: number) {
+	findPointInterpolated(lat: number, lon: number) {
 		const [xPos, yPos] = this.projection.forward(lat, lon);
 
 		const x = (xPos - this.minX) / this.dx;
@@ -156,6 +156,7 @@ export class ProjectionGrid implements GridInterface {
 		const xFraction = x - Math.floor(x);
 		const yFraction = y - Math.floor(y);
 
+		// console.log('x, y, xFraction, yFraction ', x, y, xFraction, yFraction);
 		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
 			return { index: NaN, xFraction: 0, yFraction: 0 };
 		}
@@ -187,17 +188,19 @@ export class ProjectionGrid implements GridInterface {
 		let maxLat = -90;
 		for (const borderPoint of borderPoints) {
 			const borderPointLatLon = this.projection.reverse(borderPoint[0], borderPoint[1]);
-			if (borderPointLatLon[0] < minLat) {
-				minLat = borderPointLatLon[0];
+			const lon = ((borderPointLatLon[1] + 180) % 360) - 180;
+			const lat = borderPointLatLon[0];
+			if (lat < minLat) {
+				minLat = lat;
 			}
-			if (borderPointLatLon[0] > maxLat) {
-				maxLat = borderPointLatLon[0];
+			if (lat > maxLat) {
+				maxLat = lat;
 			}
-			if (borderPointLatLon[1] < minLon) {
-				minLon = borderPointLatLon[1];
+			if (lon < minLon) {
+				minLon = lon;
 			}
-			if (borderPointLatLon[1] > maxLon) {
-				maxLon = borderPointLatLon[1];
+			if (lon > maxLon) {
+				maxLon = lon;
 			}
 		}
 		return [minLon, minLat, maxLon, maxLat];

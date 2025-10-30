@@ -364,17 +364,16 @@ export const domainOptions: Array<Domain> = [
 		value: 'cmc_gem_rdps',
 		label: 'GEM Regional',
 		grid: {
-			type: 'projectedFromGeographicOrigin',
+			type: 'projectedFromBounds',
 			nx: 935,
 			ny: 824,
-			latitude: 18.14503,
-			longitude: 217.10745,
-			dx: 0.15,
-			dy: 0.15,
+			latitudeBounds: [18.14503, 45.405453],
+			longitudeBounds: [217.10745, 349.8256],
 			zoom: 1,
 			projection: {
 				latitude: 90,
 				longitude: 249,
+				radius: 6371229,
 				name: 'StereographicProjection'
 			}
 		},

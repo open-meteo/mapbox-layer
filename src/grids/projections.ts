@@ -18,7 +18,7 @@ import type {
 export function createProjection(opts: ProjectionData): Projection {
 	switch (opts.name) {
 		case 'StereographicProjection':
-			return new StereograpicProjection(opts);
+			return new StereographicProjection(opts);
 		case 'RotatedLatLonProjection':
 			return new RotatedLatLonProjection(opts);
 		case 'LambertConformalConicProjection':
@@ -236,16 +236,16 @@ export class LambertAzimuthalEqualAreaProjection implements Projection {
 	}
 }
 
-export class StereograpicProjection implements Projection {
+export class StereographicProjection implements Projection {
 	λ0: number; // Central longitude
 	sinϕ1: number; // Sinus of central latitude
 	cosϕ1: number; // Cosine of central latitude
 	R = 6371229; // Radius of Earth
 
 	constructor(projectionData: StereographicProjectionData) {
-		this.λ0 = degreesToRadians(projectionData.longitude as number);
-		this.sinϕ1 = Math.sin(degreesToRadians(projectionData.latitude as number));
-		this.cosϕ1 = Math.cos(degreesToRadians(projectionData.latitude as number));
+		this.λ0 = degreesToRadians(projectionData.longitude);
+		this.sinϕ1 = Math.sin(degreesToRadians(projectionData.latitude));
+		this.cosϕ1 = Math.cos(degreesToRadians(projectionData.latitude));
 		if (projectionData.radius) {
 			this.R = projectionData.radius;
 		}

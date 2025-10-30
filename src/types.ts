@@ -1,5 +1,3 @@
-import { StereograpicProjection } from './grids/projections';
-
 export type TileJSON = {
 	tilejson: '2.2.0';
 	tiles: Array<string>;
