@@ -172,9 +172,28 @@ describe('ProjectionGrid', () => {
 		expect(center.lat).toBeCloseTo(50.22, 2);
 	});
 
-	test('linear interpolation at projected grid point', () => {
+	test('linear interpolation', () => {
 		const grid = new ProjectionGrid(projectedGridData);
 		const values = new Float32Array(Array.from({ length: 100 }, (_, index) => index));
+
+		// Test a point that should be within the grid
+		const result = grid.getLinearInterpolatedValue(values, 50.001, 10.001);
+		expect(result).toBeCloseTo(0.118, 3);
+	});
+
+	test('linear interpolation for partial grid', () => {
+		const ranges: DimensionRange[] = [
+			{ start: 0, end: 5 },
+			{ start: 0, end: 5 }
+		];
+		const grid = new ProjectionGrid(projectedGridData, ranges);
+		const values = new Float32Array([
+			...Array.from({ length: 5 }, (_, index) => index),
+			...Array.from({ length: 5 }, (_, index) => index + 10),
+			...Array.from({ length: 5 }, (_, index) => index + 20),
+			...Array.from({ length: 5 }, (_, index) => index + 30),
+			...Array.from({ length: 5 }, (_, index) => index + 40)
+		]);
 
 		// Test a point that should be within the grid
 		const result = grid.getLinearInterpolatedValue(values, 50.001, 10.001);
@@ -188,46 +207,6 @@ describe('ProjectionGrid', () => {
 		// Test points outside the grid
 		expect(grid.getLinearInterpolatedValue(values, 48, 10)).toBeNaN();
 	});
-
-	// test('getBorderPoints generates correct number of points', () => {
-	// 	const grid = new ProjectionGrid(projectedGridData);
-	// 	const borderPoints = grid.getBorderPoints();
-
-	// 	// Should have points for all 4 sides of the grid perimeter
-	// 	// ny + nx + ny + nx = 2*(ny + nx) = 2*(10 + 10) = 40
-	// 	expect(borderPoints.length).toBe(40);
-
-	// 	// Each point should be a 2D coordinate
-	// 	borderPoints.forEach((point) => {
-	// 		expect(point).toHaveLength(2);
-	// 		expect(typeof point[0]).toBe('number');
-	// 		expect(typeof point[1]).toBe('number');
-	// 	});
-	// });
-
-	// test('getBoundsFromBorderPoints works correctly', () => {
-	// 	const grid = new ProjectionGrid(projectedGridData);
-	// 	const borderPoints = [
-	// 		[0, 0],
-	// 		[1000, 0],
-	// 		[1000, 1000],
-	// 		[0, 1000]
-	// 	];
-	// 	const bounds = grid.getBoundsFromBorderPoints(borderPoints);
-
-	// 	expect(bounds).toHaveLength(4);
-	// 	expect(bounds[0]).toBeLessThan(bounds[2]); // minLon < maxLon
-	// 	expect(bounds[1]).toBeLessThan(bounds[3]); // minLat < maxLat
-	// });
-
-	// test('getCenterFromBounds calculates correct center', () => {
-	// 	const grid = new ProjectionGrid(projectedGridData);
-	// 	const bounds: Bounds = [10, 50, 12, 52]; // [minLon, minLat, maxLon, maxLat]
-	// 	const center = grid.getCenterFromBounds(bounds);
-
-	// 	expect(center.lng).toBe(11);
-	// 	expect(center.lat).toBe(51);
-	// });
 
 	test('getCoveringRanges returns valid ranges', () => {
 		const grid = new ProjectionGrid(projectedGridData);

@@ -156,7 +156,6 @@ export class ProjectionGrid implements GridInterface {
 		const xFraction = x - Math.floor(x);
 		const yFraction = y - Math.floor(y);
 
-		// console.log('x, y, xFraction, yFraction ', x, y, xFraction, yFraction);
 		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
 			return { index: NaN, xFraction: 0, yFraction: 0 };
 		}
