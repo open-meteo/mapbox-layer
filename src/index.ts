@@ -6,6 +6,7 @@ export * from './utils/index';
 export * from './utils/math';
 export * from './utils/pbf';
 export * from './utils/variables';
+export * from './utils/arrows';
 export * from './grids/index';
 
 export * from './domains';
