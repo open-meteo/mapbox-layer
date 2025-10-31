@@ -62,7 +62,7 @@ export class ProjectionGrid implements GridInterface {
 				break;
 			case 'projectedFromProjectedOrigin':
 				this.projection = createProjection(data.projection);
-				this.origin = [data.longitudeProjectionOrigin, data.latitudeProjectionOrigin];
+				this.origin = [data.projectedLongitudeOrigin, data.projectedLatitudeOrigin];
 				this.dx = data.dx;
 				this.dy = data.dy;
 				break;

@@ -127,8 +127,8 @@ export interface ProjectionGridFromProjectedOrigin extends BaseGridData {
 	ny: number;
 	dx: number;
 	dy: number;
-	latitudeProjectionOrigin: number;
-	longitudeProjectionOrigin: number;
+	projectedLatitudeOrigin: number;
+	projectedLongitudeOrigin: number;
 }
 
 export type ProjectionData =
