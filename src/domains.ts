@@ -351,8 +351,8 @@ export const domainOptions: Array<Domain> = [
 			longitudeBounds: [-133.62952, -40.708557],
 			zoom: 1,
 			projection: {
-				rotation0: -36.0885,
-				rotation1: 245.305,
+				rotatedLat: -36.0885,
+				rotatedLon: 245.305,
 				name: 'RotatedLatLonProjection'
 			}
 		},
@@ -605,8 +605,8 @@ export const domainOptions: Array<Domain> = [
 			longitudeBounds: [-25.162262, 38.75702],
 			zoom: 3.5,
 			projection: {
-				rotation0: -35,
-				rotation1: -8,
+				rotatedLat: -35,
+				rotatedLon: -8,
 				name: 'RotatedLatLonProjection'
 			}
 		},
@@ -646,8 +646,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.01,
 			zoom: 5.2,
 			projection: {
-				rotation0: 43.0,
-				rotation1: 190.0,
+				rotatedLat: 43.0,
+				rotatedLon: 190.0,
 				name: 'RotatedLatLonProjection'
 			}
 		},
@@ -668,8 +668,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.02,
 			zoom: 5.2,
 			projection: {
-				rotation0: 43.0,
-				rotation1: 190.0,
+				rotatedLat: 43.0,
+				rotatedLon: 190.0,
 				name: 'RotatedLatLonProjection'
 			}
 		},

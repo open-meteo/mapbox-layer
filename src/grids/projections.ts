@@ -56,8 +56,8 @@ export class RotatedLatLonProjection implements Projection {
 	ϕ: number;
 
 	constructor(projectionData: RotatedLatLonProjectionData) {
-		this.θ = degreesToRadians(90 + projectionData.rotation0);
-		this.ϕ = degreesToRadians(projectionData.rotation1);
+		this.θ = degreesToRadians(90 + projectionData.rotatedLat);
+		this.ϕ = degreesToRadians(projectionData.rotatedLon);
 	}
 
 	forward(latitude: number, longitude: number): [x: number, y: number] {

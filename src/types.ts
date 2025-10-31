@@ -146,8 +146,8 @@ export interface StereographicProjectionData {
 
 export interface RotatedLatLonProjectionData {
 	name: 'RotatedLatLonProjection';
-	rotation0: number;
-	rotation1: number;
+	rotatedLat: number;
+	rotatedLon: number;
 }
 
 export interface LCCProjectionData {
