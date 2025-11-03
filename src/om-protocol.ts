@@ -125,7 +125,17 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 		setDomainOptions = omProtocolSettings.domainOptions;
 		setVariableOptions = omProtocolSettings.variableOptions;
 
-		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
+		const {
+			partial: partialConst,
+			domain: domainConst,
+			variable: variableConst,
+			ranges: rangesConst,
+			omUrl
+		} = omProtocolSettings.parseUrlCallback(url);
+		partial = partialConst;
+		domain = domainConst;
+		variable = variableConst;
+		ranges = rangesConst;
 
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader({ useSAB: useSAB });
@@ -156,13 +166,14 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 	const [omUrl, omParams] = url.replace('om://', '').split('?');
 
 	const urlParams = new URLSearchParams(omParams);
-	dark = urlParams.get('dark') === 'true';
-	partial = urlParams.get('partial') === 'true';
-	interval = Number(urlParams.get('interval'));
-	domain = setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
-	variable =
+	const dark = urlParams.get('dark') === 'true';
+	const partial = urlParams.get('partial') === 'true';
+	const interval = Number(urlParams.get('interval'));
+	const domain =
+		setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
+	const variable =
 		setVariableOptions.find((v) => urlParams.get('variable') === v.value) ?? setVariableOptions[0];
-	mapBounds = urlParams
+	const mapBounds = urlParams
 		.get('bounds')
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
