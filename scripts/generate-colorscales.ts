@@ -132,8 +132,9 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 60,
 		steps: 100,
 		colors: [
-			{ colors: ['purple', 'blue'], steps: 40 },
-			{ colors: ['blue', 'green'], steps: 16 },
+			{ colors: ['white', 'purple'], steps: 20 },
+			{ colors: ['purple', 'navy'], steps: 20 },
+			{ colors: ['mediumblue', 'green'], steps: 16 },
 			{ colors: ['green', 'orange'], steps: 12 },
 			{ colors: ['orange', 'red'], steps: 14 },
 			{ colors: ['red', 'purple'], steps: 18 }
