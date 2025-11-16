@@ -56,8 +56,28 @@ export type ColorScale = {
 	colors: [number, number, number][];
 	opacity?: number;
 	scalefactor: number;
+	getOpacity?: (px: number) => number;
 	interpolationMethod: InterpolationMethod;
 };
+
+export interface ColorSegment {
+	colors: string[];
+	steps: number;
+}
+
+export interface AliasConfig {
+	source: string;
+}
+
+export interface ColorScaleDefinition {
+	min: number;
+	max: number;
+	steps: number;
+	colors: string[] | ColorSegment[];
+	getOpacity?: (px: number) => number;
+	interpolationMethod: 'linear' | 'none';
+	unit: string;
+}
 
 export type ColorScales = {
 	[key: string]: ColorScale;

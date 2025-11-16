@@ -4,28 +4,12 @@ import { writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-import { type ColorScale as GeneratedColorScale } from '../src/types';
+import type { AliasConfig, ColorScale, ColorScaleDefinition, ColorSegment } from '../src/types';
+
+const OPACITY = 75;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-interface ColorScaleDefinition {
-	min: number;
-	max: number;
-	steps: number;
-	colors: string[] | ColorSegment[];
-	interpolationMethod: 'linear' | 'none';
-	unit: string;
-}
-
-interface ColorSegment {
-	colors: string[];
-	steps: number;
-}
-
-interface AliasConfig {
-	source: string;
-}
 
 function interpolateColorScale(
 	colors: string[],
@@ -60,28 +44,34 @@ function interpolateColorScale(
 
 const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	cape: {
+		unit: '',
 		min: 0,
 		max: 4000,
 		steps: 100,
-		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
+		colors: ['green', 'orange', 'red'],
 		interpolationMethod: 'linear',
-		unit: ''
+		getOpacity: (px) => {
+			return (px ** 1.5 / 1000) * 100;
+		}
 	},
 	cloud_base: {
+		unit: 'm',
 		min: 0,
 		max: 20900,
 		steps: 100,
-		colors: ['#FFF', '#c3c2c2'],
-		interpolationMethod: 'linear',
-		unit: 'm'
+		colors: ['#fff', '#c3c2c2'],
+		interpolationMethod: 'linear'
 	},
 	cloud_cover: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
-		colors: ['#FFF', '#c3c2c2'],
+		colors: ['#fff', '#c3c2c2'],
 		interpolationMethod: 'linear',
-		unit: '%'
+		getOpacity: () => {
+			return 100;
+		}
 	},
 	convective_cloud_top: {
 		min: 0,
@@ -107,7 +97,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		min: 950,
 		max: 1050,
 		steps: 50,
-		colors: ['#4444FF', '#FFFFFF', '#FF4444'],
+		colors: ['#4444ff', '#fff', '#ff4444'],
 		interpolationMethod: 'linear',
 		unit: 'hPa'
 	},
@@ -212,12 +202,12 @@ const aliases: Record<string, AliasConfig> = {
 	}
 };
 
-function generateColorScales(): Record<string, GeneratedColorScale> {
-	const colorScales: Record<string, GeneratedColorScale> = {};
+function generateColorScales(): Record<string, ColorScale> {
+	const colorScales: Record<string, ColorScale> = {};
 
 	// Helper function to generate a single color scale
-	function generateSingleColorScale(definition: ColorScaleDefinition): GeneratedColorScale {
-		const { min, max, steps, colors, interpolationMethod, unit } = definition;
+	function generateSingleColorScale(definition: ColorScaleDefinition): ColorScale {
+		const { min, max, steps, colors } = definition;
 
 		let generatedColors: [number, number, number][];
 
@@ -241,24 +231,16 @@ function generateColorScales(): Record<string, GeneratedColorScale> {
 			generatedColors = interpolateColorScale(colorStrings, steps, 'hsl');
 		}
 
-		return {
-			min,
-			max,
-			steps,
-			scalefactor: steps / (max - min),
-			colors: generatedColors,
-			interpolationMethod,
-			unit
-		};
+		return { ...definition, scalefactor: steps / (max - min), colors: generatedColors };
 	}
 
 	// Generate base color scales
-	Object.entries(colorScaleDefinitions).forEach(([key, definition]) => {
+	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
 		colorScales[key] = generateSingleColorScale(definition);
-	});
+	}
 
 	// Generate aliases
-	Object.entries(aliases).forEach(([aliasName, aliasConfig]) => {
+	for (const [aliasName, aliasConfig] of Object.entries(aliases)) {
 		const { source } = aliasConfig;
 
 		// Get the source (could be a base definition or another alias)
@@ -268,18 +250,43 @@ function generateColorScales(): Record<string, GeneratedColorScale> {
 		}
 		// Simple copy
 		colorScales[aliasName] = { ...sourceColorScale };
-	});
+	}
 
 	return colorScales;
 }
 
 function generateTypeScript(): void {
 	const colorScales = generateColorScales();
+	console.log(colorScales['cloud_cover']['getOpacity']);
 
-	const content = `import type { ColorScales } from '../types';
+	let content = `import type { ColorScales } from '../types';
 
-export const colorScales: ColorScales = ${JSON.stringify(colorScales, null, '\t')};
-`;
+export const colorScales: ColorScales = {`;
+	for (const [key, colorScale] of Object.entries(colorScales)) {
+		const { min, max, steps, colors, unit, getOpacity, interpolationMethod, scalefactor } =
+			colorScale;
+
+		content += `
+	'${key}': {
+		unit: '${unit}',
+		min: ${min},
+		max: ${max},
+		steps: ${steps},
+		colors: [`;
+		for (let color of colors) {
+			content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
+		}
+		content += `],
+		interpolationMethod: '${interpolationMethod}',
+		scalefactor: ${scalefactor},`;
+
+		if (getOpacity) {
+			content += `		getOpacity: ${getOpacity},`;
+		}
+		content += `
+	},`;
+	}
+	content += `}`;
 
 	const outputPath = join(__dirname, '../src/utils/color-scales.ts');
 	writeFileSync(outputPath, content);

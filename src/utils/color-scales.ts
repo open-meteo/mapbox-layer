@@ -2,120 +2,123 @@ import type { ColorScales } from '../types';
 
 export const colorScales: ColorScales = {
 	cape: {
+		unit: '',
 		min: 0,
 		max: 4000,
 		steps: 100,
-		scalefactor: 0.025,
 		colors: [
-			[0, 147, 146],
-			[2, 150, 146],
-			[5, 153, 145],
-			[7, 156, 145],
-			[10, 158, 144],
-			[13, 161, 143],
-			[16, 163, 142],
-			[20, 165, 141],
-			[23, 167, 140],
-			[27, 169, 139],
-			[31, 171, 138],
-			[35, 172, 137],
-			[39, 173, 136],
-			[43, 175, 135],
-			[48, 176, 134],
-			[52, 176, 134],
-			[57, 177, 133],
-			[57, 177, 133],
-			[59, 181, 129],
-			[62, 185, 125],
-			[64, 189, 121],
-			[69, 190, 117],
-			[75, 191, 114],
-			[81, 192, 111],
-			[86, 193, 109],
-			[92, 194, 108],
-			[97, 195, 107],
-			[102, 196, 106],
-			[110, 197, 108],
-			[120, 198, 113],
-			[130, 199, 118],
-			[139, 200, 124],
-			[148, 202, 129],
-			[156, 203, 134],
-			[156, 203, 134],
-			[161, 205, 135],
-			[166, 207, 136],
-			[171, 210, 137],
-			[176, 212, 138],
-			[181, 214, 140],
-			[186, 216, 141],
-			[192, 218, 142],
-			[197, 220, 143],
-			[202, 221, 145],
-			[208, 223, 146],
-			[213, 225, 148],
-			[219, 227, 149],
-			[224, 228, 151],
-			[229, 230, 153],
-			[231, 228, 154],
-			[233, 226, 156],
-			[233, 226, 156],
-			[233, 224, 154],
-			[233, 222, 152],
-			[234, 220, 150],
-			[234, 217, 148],
-			[234, 215, 146],
-			[234, 212, 143],
-			[235, 210, 141],
-			[235, 207, 139],
-			[235, 204, 137],
-			[236, 201, 135],
-			[236, 198, 132],
-			[236, 194, 130],
-			[237, 191, 128],
-			[237, 187, 126],
-			[238, 184, 123],
-			[238, 180, 121],
-			[238, 180, 121],
-			[238, 177, 120],
-			[237, 174, 120],
-			[237, 171, 119],
-			[236, 167, 119],
-			[236, 164, 118],
-			[236, 161, 118],
-			[235, 158, 117],
-			[235, 155, 117],
-			[234, 151, 116],
-			[234, 148, 116],
-			[234, 145, 115],
-			[233, 142, 115],
-			[233, 138, 114],
-			[232, 135, 114],
-			[232, 132, 113],
-			[232, 132, 113],
-			[231, 126, 111],
-			[229, 121, 109],
-			[228, 115, 108],
-			[226, 110, 106],
-			[225, 104, 104],
-			[223, 102, 106],
-			[221, 101, 108],
-			[220, 99, 110],
-			[218, 98, 113],
-			[216, 96, 115],
-			[214, 95, 117],
-			[213, 93, 119],
-			[211, 92, 122],
-			[209, 90, 124],
-			[207, 89, 126]
+			[0, 128, 0],
+			[4, 131, 0],
+			[7, 133, 0],
+			[11, 136, 0],
+			[15, 138, 0],
+			[19, 141, 0],
+			[24, 144, 0],
+			[28, 146, 0],
+			[33, 149, 0],
+			[38, 151, 0],
+			[42, 154, 0],
+			[48, 157, 0],
+			[53, 159, 0],
+			[58, 162, 0],
+			[64, 164, 0],
+			[69, 167, 0],
+			[75, 169, 0],
+			[81, 172, 0],
+			[87, 175, 0],
+			[93, 177, 0],
+			[99, 180, 0],
+			[106, 182, 0],
+			[112, 185, 0],
+			[119, 188, 0],
+			[126, 190, 0],
+			[133, 193, 0],
+			[140, 195, 0],
+			[148, 198, 0],
+			[155, 201, 0],
+			[163, 203, 0],
+			[170, 206, 0],
+			[178, 208, 0],
+			[186, 211, 0],
+			[195, 214, 0],
+			[203, 216, 0],
+			[211, 219, 0],
+			[220, 221, 0],
+			[224, 219, 0],
+			[226, 215, 0],
+			[229, 211, 0],
+			[232, 207, 0],
+			[234, 203, 0],
+			[237, 199, 0],
+			[239, 195, 0],
+			[242, 190, 0],
+			[245, 185, 0],
+			[247, 180, 0],
+			[250, 175, 0],
+			[252, 170, 0],
+			[255, 165, 0],
+			[255, 165, 0],
+			[255, 162, 0],
+			[255, 158, 0],
+			[255, 155, 0],
+			[255, 152, 0],
+			[255, 148, 0],
+			[255, 145, 0],
+			[255, 141, 0],
+			[255, 138, 0],
+			[255, 135, 0],
+			[255, 131, 0],
+			[255, 128, 0],
+			[255, 125, 0],
+			[255, 121, 0],
+			[255, 118, 0],
+			[255, 114, 0],
+			[255, 111, 0],
+			[255, 108, 0],
+			[255, 104, 0],
+			[255, 101, 0],
+			[255, 98, 0],
+			[255, 94, 0],
+			[255, 91, 0],
+			[255, 88, 0],
+			[255, 84, 0],
+			[255, 81, 0],
+			[255, 77, 0],
+			[255, 74, 0],
+			[255, 71, 0],
+			[255, 67, 0],
+			[255, 64, 0],
+			[255, 61, 0],
+			[255, 57, 0],
+			[255, 54, 0],
+			[255, 51, 0],
+			[255, 47, 0],
+			[255, 44, 0],
+			[255, 40, 0],
+			[255, 37, 0],
+			[255, 34, 0],
+			[255, 30, 0],
+			[255, 27, 0],
+			[255, 24, 0],
+			[255, 20, 0],
+			[255, 17, 0],
+			[255, 13, 0],
+			[255, 10, 0],
+			[255, 7, 0],
+			[255, 3, 0],
+			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: ''
+		scalefactor: 0.025,
+		getOpacity: (px) => {
+			return (px ** 1.5 / 1e3) * 100;
+		}
 	},
 	cloud_base: {
+		unit: 'm',
 		min: 0,
 		max: 20900,
 		steps: 100,
-		scalefactor: 0.004784688995215311,
 		colors: [
 			[255, 255, 255],
 			[254, 254, 254],
@@ -219,13 +222,13 @@ export const colorScales: ColorScales = {
 			[195, 194, 194]
 		],
 		interpolationMethod: 'linear',
-		unit: 'm'
+		scalefactor: 0.004784688995215311
 	},
 	cloud_cover: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
-		scalefactor: 1,
 		colors: [
 			[255, 255, 255],
 			[254, 254, 254],
@@ -329,13 +332,16 @@ export const colorScales: ColorScales = {
 			[195, 194, 194]
 		],
 		interpolationMethod: 'linear',
-		unit: '%'
+		scalefactor: 1,
+		getOpacity: () => {
+			return 100;
+		}
 	},
 	convective_cloud_top: {
+		unit: 'm',
 		min: 0,
 		max: 6000,
 		steps: 100,
-		scalefactor: 0.016666666666666666,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -439,13 +445,13 @@ export const colorScales: ColorScales = {
 			[41, 128, 185]
 		],
 		interpolationMethod: 'none',
-		unit: 'm'
+		scalefactor: 0.016666666666666666
 	},
 	precipitation: {
+		unit: 'mm',
 		min: 0,
 		max: 20,
 		steps: 20,
-		scalefactor: 1,
 		colors: [
 			[0, 0, 255],
 			[0, 112, 223],
@@ -469,13 +475,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'mm'
+		scalefactor: 1
 	},
 	pressure: {
+		unit: 'hPa',
 		min: 950,
 		max: 1050,
 		steps: 50,
-		scalefactor: 0.5,
 		colors: [
 			[68, 68, 255],
 			[76, 76, 255],
@@ -529,13 +535,13 @@ export const colorScales: ColorScales = {
 			[255, 68, 68]
 		],
 		interpolationMethod: 'linear',
-		unit: 'hPa'
+		scalefactor: 0.5
 	},
 	relative: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
-		scalefactor: 1,
 		colors: [
 			[207, 89, 126],
 			[209, 90, 124],
@@ -639,13 +645,13 @@ export const colorScales: ColorScales = {
 			[0, 147, 146]
 		],
 		interpolationMethod: 'linear',
-		unit: '%'
+		scalefactor: 1
 	},
 	shortwave: {
+		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
 		steps: 100,
-		scalefactor: 0.1,
 		colors: [
 			[0, 147, 146],
 			[2, 150, 146],
@@ -749,13 +755,13 @@ export const colorScales: ColorScales = {
 			[207, 89, 126]
 		],
 		interpolationMethod: 'linear',
-		unit: 'W/m^2'
+		scalefactor: 0.1
 	},
 	temperature: {
+		unit: 'C°',
 		min: -40,
 		max: 60,
 		steps: 100,
-		scalefactor: 1,
 		colors: [
 			[255, 255, 255],
 			[255, 235, 255],
@@ -859,13 +865,13 @@ export const colorScales: ColorScales = {
 			[128, 0, 128]
 		],
 		interpolationMethod: 'linear',
-		unit: 'C°'
+		scalefactor: 1
 	},
 	temperature_2m_anomaly: {
+		unit: 'K',
 		min: -5,
 		max: 5,
 		steps: 20,
-		scalefactor: 2,
 		colors: [
 			[0, 0, 255],
 			[28, 28, 255],
@@ -889,13 +895,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'K'
+		scalefactor: 2
 	},
 	thunderstorm: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
-		scalefactor: 1,
 		colors: [
 			[0, 0, 255],
 			[0, 16, 251],
@@ -999,13 +1005,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: '%'
+		scalefactor: 1
 	},
 	swell: {
+		unit: 'm',
 		min: 0,
 		max: 10,
 		steps: 50,
-		scalefactor: 5,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -1059,13 +1065,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'm'
+		scalefactor: 5
 	},
 	uv: {
+		unit: '',
 		min: 0,
 		max: 12,
 		steps: 12,
-		scalefactor: 1,
 		colors: [
 			[0, 147, 146],
 			[57, 177, 133],
@@ -1081,13 +1087,13 @@ export const colorScales: ColorScales = {
 			[207, 89, 126]
 		],
 		interpolationMethod: 'linear',
-		unit: ''
+		scalefactor: 1
 	},
 	wind: {
+		unit: 'km/h',
 		min: 0,
 		max: 70,
 		steps: 40,
-		scalefactor: 0.5714285714285714,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -1131,13 +1137,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'km/h'
+		scalefactor: 0.5714285714285714
 	},
 	rain: {
+		unit: 'mm',
 		min: 0,
 		max: 20,
 		steps: 20,
-		scalefactor: 1,
 		colors: [
 			[0, 0, 255],
 			[0, 112, 223],
@@ -1161,13 +1167,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'mm'
+		scalefactor: 1
 	},
 	convective_cloud_base: {
+		unit: 'm',
 		min: 0,
 		max: 6000,
 		steps: 100,
-		scalefactor: 0.016666666666666666,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -1271,13 +1277,13 @@ export const colorScales: ColorScales = {
 			[41, 128, 185]
 		],
 		interpolationMethod: 'none',
-		unit: 'm'
+		scalefactor: 0.016666666666666666
 	},
 	wave: {
+		unit: 'm',
 		min: 0,
 		max: 10,
 		steps: 50,
-		scalefactor: 5,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -1331,6 +1337,6 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'm'
+		scalefactor: 5
 	}
 };
