@@ -5,17 +5,17 @@
 [![npm version](https://img.shields.io/npm/v/@openmeteo/mapbox-layer?label=@openmeteo/mapbox-layer)](https://www.npmjs.com/package/@openmeteo/mapbox-layer)
 
 > **⚠️ Notice**
-> This package is still under construction and is not yet fully production‑ready.
+> This package is still under construction and is not yet fully production-ready.
 > API changes may occur and some features might be incomplete.
 
 ## Overview
 
-This repository demonstrates how to use the **Open‑Meteo File Protocol** (`.om`) with Mapbox / MapLibre GL JS.
+This repository demonstrates how to use the **Open-Meteo File Protocol** (`.om`) with Mapbox / MapLibre GL JS.
 The `.om` files are hosted on an S3 bucket and can be accessed directly via the `om` protocol:
 
-The actual weather API implementation lives in the [open‑meteo/open‑meteo](https://github.com/open-meteo/open-meteo) repository.
+The actual weather API implementation lives in the [open-meteo/open-meteo](https://github.com/open-meteo/open-meteo) repository.
 
-An interactive demo is available at [maps.open‑meteo.com](https://maps.open‑meteo.com/).
+An interactive demo is available at [maps.open-meteo.com](https://maps.open-meteo.com/).
 
 ## Installation
 
@@ -26,11 +26,11 @@ npm install @openmeteo/mapbox-layer
 ```
 
 ```ts
-...
+// ...
 import { omProtocol } from '@openmeteo/mapbox-layer';
 
-// standard mapbox / maplibre setup
-...
+// Standard Mapbox / MapLibre GL JS setup
+// ...
 
 maplibregl.addProtocol('om', omProtocol);
 
@@ -56,18 +56,24 @@ map.on('load', () => {
 
 For a standalone example, see `examples/temperature.html`.
 
+<!-- x-release-please-start-version -->
+
 ```ts
 ...
-<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.3/dist/index.js"></script>
+<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.7/dist/index.js"></script>
 ...
+```
 
+<!-- x-release-please-end -->
+
+```ts
 <script>
 	// Standard Mapbox / MapLibre GL JS setup
 	// ...
 
-	maplibregl.addProtocol('om', omProtocol);
+	maplibregl.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
 
-	const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
+	const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m`;
 
 	map.on('load', () => {
 		map.addSource('omFileSource', {
@@ -88,7 +94,7 @@ For a standalone example, see `examples/temperature.html`.
 
 ## Examples
 
-The repository contains an `examples` directory with ready‑to‑run demos:
+The repository contains an `examples` directory with ready-to-run demos:
 
 - `examples/temperature.html` – shows temperature data from an OM file.
 - `examples/precipitation.html` – displays precipitation using a similar setup.
@@ -123,8 +129,8 @@ map.on('load', () => {
 });
 ```
 
-For the contouring there is the `examples/vector` directory with ready‑to‑run demos:
+For the contouring there is the `examples/vector` directory with ready-to-run demos:
 
 - `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map
 - `examples/vector/grid-points.html` – displays all grid points for a model, with value data on each point.
-- `examples/vector/temperature_labels.html` – displays all grid points for a model, using value data to show temperature labels.
+- `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.

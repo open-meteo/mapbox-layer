@@ -53,7 +53,7 @@ export type ColorScale = {
 	max: number;
 	unit: string;
 	steps: number;
-	colors: number[][];
+	colors: [number, number, number][];
 	opacity?: number;
 	scalefactor: number;
 	interpolationMethod: InterpolationMethod;
@@ -73,38 +73,103 @@ export type Interpolator = (
 	ranges: DimensionRange[]
 ) => number;
 
+interface BaseGridData {
+	nx: number;
+	ny: number;
+	zoom?: number;
+}
+
+// Union type for all grid types
+export type GridData = RegularGridData | AnyProjectionGridData | GaussianGridData;
+
+export interface GaussianGridData extends BaseGridData {
+	type: 'gaussian';
+	gaussianGridLatitudeLines: number;
+}
+
+export interface RegularGridData extends BaseGridData {
+	type: 'regular';
+	lonMin: number;
+	latMin: number;
+	dx: number;
+	dy: number;
+}
+
+export type AnyProjectionGridData =
+	| ProjectionGridFromBounds
+	| ProjectionGridFromGeographicOrigin
+	| ProjectionGridFromProjectedOrigin;
+
+export interface ProjectionGridFromBounds extends BaseGridData {
+	type: 'projectedFromBounds';
+	projection: ProjectionData;
+	nx: number;
+	ny: number;
+	latitudeBounds: [min: number, max: number];
+	longitudeBounds: [min: number, max: number];
+}
+
+export interface ProjectionGridFromGeographicOrigin extends BaseGridData {
+	type: 'projectedFromGeographicOrigin';
+	projection: ProjectionData;
+	nx: number;
+	ny: number;
+	dx: number;
+	dy: number;
+	latitude: number;
+	longitude: number;
+}
+
+export interface ProjectionGridFromProjectedOrigin extends BaseGridData {
+	type: 'projectedFromProjectedOrigin';
+	projection: ProjectionData;
+	nx: number;
+	ny: number;
+	dx: number;
+	dy: number;
+	projectedLatitudeOrigin: number;
+	projectedLongitudeOrigin: number;
+}
+
+export type ProjectionData =
+	| StereographicProjectionData
+	| RotatedLatLonProjectionData
+	| LCCProjectionData
+	| LAEAProjectionData;
+
+export interface StereographicProjectionData {
+	name: 'StereographicProjection';
+	latitude: number;
+	longitude: number;
+	radius?: number;
+}
+
+export interface RotatedLatLonProjectionData {
+	name: 'RotatedLatLonProjection';
+	rotatedLat: number;
+	rotatedLon: number;
+}
+
+export interface LCCProjectionData {
+	name: 'LambertConformalConicProjection';
+	λ0: number;
+	ϕ0: number;
+	ϕ1: number;
+	ϕ2: number;
+	radius?: number;
+}
+
+export interface LAEAProjectionData {
+	name: 'LambertAzimuthalEqualAreaProjection';
+	λ0: number;
+	ϕ1: number;
+	radius: number;
+}
+
 export interface Domain {
 	value: string;
 	label?: string;
-	grid: {
-		nx: number;
-		ny: number;
-		lonMin: number;
-		latMin: number;
-		dx: number;
-		dy: number;
-		zoom?: number;
-		projection?: {
-			name: string;
-			λ0?: number;
-			ϕ0?: number;
-			ϕ1?: number;
-			ϕ2?: number;
-			rotation?: number[];
-			radius?: number;
-			latitude?: number[] | number;
-			longitude?: number[] | number;
-			bounds?: number[];
-			projectOrigin?: boolean;
-		};
-		center?:
-			| {
-					lng: number;
-					lat: number;
-			  }
-			| Function;
-		gaussianGridLatitudeLines?: number;
-	};
+	grid: GridData;
 	time_interval: number;
 	model_interval: number;
 	windUVComponents: boolean;
@@ -124,12 +189,6 @@ export type Bounds = [
 export interface Center {
 	lng: number;
 	lat: number;
-}
-
-export interface IndexAndFractions {
-	index: number;
-	xFraction: number;
-	yFraction: number;
 }
 
 export interface DimensionRange {

@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Temperature Labels Example</title>
+		<title>Open-Meteo Mapbox Layer - Pressure Contouring Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.9.0/dist/maplibre-gl.js"></script>
-		<!-- Set to latest version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.3/dist/index.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.js"></script>
+		<!-- x-release-please-start-version -->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.7/dist/index.js"></script>
+		<!-- x-release-please-end -->
+
 		<!-- Local development -->
 		<!--<script src="../../dist/index.js"></script>-->
 		<style>
@@ -23,14 +25,6 @@
 	<body>
 		<div id="map"></div>
 		<script>
-			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-			omProtocolOptions.customThresholds = [];
-
-			// use the settings as argument for the protocol
-			maplibregl.addProtocol('om', (params) =>
-				OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
-			);
-
 			maplibregl.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
 
 			const map = new maplibregl.Map({
@@ -59,7 +53,7 @@
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=wind_u_component_10m`;
 
 			map.on('load', () => {
 				map.addSource('omFileRasterSource', {
@@ -76,7 +70,7 @@
 				});
 
 				map.addSource('omFileVectorSource', {
-					url: 'om://' + omUrl,
+					url: 'om://' + omUrl + '&arrows=true',
 					type: 'vector'
 				});
 
@@ -84,41 +78,33 @@
 					id: 'omFileVectorLayer',
 					type: 'line',
 					source: 'omFileVectorSource',
-					'source-layer': 'contours',
+					'source-layer': 'wind-arrows',
 					paint: {
-						'line-width': [
+						'line-color': [
 							'case',
-							['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-							3,
+							['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
+							'rgba(0,0,0, 0.6)',
 							[
 								'case',
-								['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-								2,
+								['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
+								'rgba(0,0,0, 0.5)',
 								[
 									'case',
-									['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
-									1.5,
-									1
+									['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
+									'rgba(0,0,0, 0.4)',
+									[
+										'case',
+										['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
+										'rgba(0,0,0, 0.3)',
+										'rgba(0,0,0, 0.2)'
+									]
 								]
 							]
-						]
-					}
-				});
-
-				map.addLayer({
-					id: 'omFileVectorLayerLabels',
-					type: 'symbol',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
+						],
+						'line-width': 2
+					},
 					layout: {
-						'symbol-placement': 'line-center',
-						'symbol-spacing': 1,
-						'text-font': ['Noto Sans Regular'],
-						'text-field': ['to-string', ['get', 'value']],
-						'text-padding': 1,
-						'text-offset': [0, -0.6]
-						//'text-allow-overlap': true,
-						//'text-ignore-placement': true
+						'line-cap': 'round'
 					}
 				});
 			});

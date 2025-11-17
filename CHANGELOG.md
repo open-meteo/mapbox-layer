@@ -1,52 +1,113 @@
 # Changelog
 
-## [0.0.3](https://github.com/open-meteo/mapbox-layer/compare/v0.0.2...v0.0.3) (2025-10-23)
+## [0.0.7](https://github.com/open-meteo/mapbox-layer/compare/v0.0.6...v0.0.7) (2025-11-12)
 
 
 ### Features
 
-* Contouring for pressure maps ([1052a1a](https://github.com/open-meteo/mapbox-layer/commit/1052a1a7e2551e278ffa09f584c2514c2b73904b))
-* Typed omProtocol settings object ([7439ee7](https://github.com/open-meteo/mapbox-layer/commit/7439ee7037a3e7d0f6f112b003ad1e7283b6f9c3))
+* add GFS Wave ([f82775d](https://github.com/open-meteo/mapbox-layer/commit/f82775d6d801ccf0b542ed6762bec12442978541))
 
 
 ### Bug Fixes
 
-* Move getIndexAndFractions outside of worker ([2ec1fd6](https://github.com/open-meteo/mapbox-layer/commit/2ec1fd641b0a008e1840aecf542796d205f7ce3e))
-* release please publish step ([dec7921](https://github.com/open-meteo/mapbox-layer/commit/dec792199a0efcb1af620dedf754bfe4a6019eee))
-* wrap longitude ([1f50d79](https://github.com/open-meteo/mapbox-layer/commit/1f50d79f921f2f30f69cccc1b011f4c3b6d1c462))
+* bump the openmeteo group with 3 updates ([50c5bdf](https://github.com/open-meteo/mapbox-layer/commit/50c5bdf0c0ea72e006cec41a21286b9a2345b525))
+* bump the openmeteo group with 3 updates ([71efdce](https://github.com/open-meteo/mapbox-layer/commit/71efdce800cf3ecb00a8cd3bf25ea4d7f7f02a2c))
+* ranges ([102570a](https://github.com/open-meteo/mapbox-layer/commit/102570adc386ecc5e79f4421342f40c2f12ab40a))
+* reenable minify ([9fe90d0](https://github.com/open-meteo/mapbox-layer/commit/9fe90d079902258852d1271ac63fc279467c640e))
+
+## [0.0.6](https://github.com/open-meteo/mapbox-layer/compare/v0.0.5...v0.0.6) (2025-11-03)
+
+
+### Features
+
+* Add new seasonal data sources SEAS5 and EC46 from ECMWF ([ba178b0](https://github.com/open-meteo/mapbox-layer/commit/ba178b0911854dfb45521acdd2660fe57f1f0058))
+* script to generate color scales ([#67](https://github.com/open-meteo/mapbox-layer/issues/67)) ([1c565e3](https://github.com/open-meteo/mapbox-layer/commit/1c565e36019952c1e38714558c60ae342fa352ef))
+* Wind arrows from arrayBuffer ([fe76420](https://github.com/open-meteo/mapbox-layer/commit/fe764205d3c680a440bd474a328a37d14bf04859))
+
+
+### Bug Fixes
+
+* add marker for all examples and catch all in config ([f8c9b5a](https://github.com/open-meteo/mapbox-layer/commit/f8c9b5a257ed92be9d3b97a6666794428f8361fb))
+* bump the openmeteo group with 4 updates ([5ee2e00](https://github.com/open-meteo/mapbox-layer/commit/5ee2e00fab73db820655db97ad9e777f84987d4b))
+* bump the openmeteo group with 4 updates ([8b4bd12](https://github.com/open-meteo/mapbox-layer/commit/8b4bd12d4cf42db8076a8c47fbe59541c7955c29))
+* comment wrap for readme ([2efc058](https://github.com/open-meteo/mapbox-layer/commit/2efc058ef648c170fdf04a2c537b431a6822cca6))
+* explicit defintions in extra files release please ([4bae205](https://github.com/open-meteo/mapbox-layer/commit/4bae205c3378b94e7b47840dc5debab35508dd6e))
+* link in readme is not correct ([#71](https://github.com/open-meteo/mapbox-layer/issues/71)) ([4a81823](https://github.com/open-meteo/mapbox-layer/commit/4a81823ee909b21e4a1a20f9495c86e974058dc8))
+* try cathcall with extension ([78a1fca](https://github.com/open-meteo/mapbox-layer/commit/78a1fca271348f45c1b1a51b1ac7fd9a8ef7d618))
+
+## [0.0.5](https://github.com/open-meteo/mapbox-layer/compare/v0.0.4...v0.0.5) (2025-10-31)
+
+
+### Features
+
+* better tests and type safety for projected grids ([#68](https://github.com/open-meteo/mapbox-layer/issues/68)) ([fb565a1](https://github.com/open-meteo/mapbox-layer/commit/fb565a19a96d8ed4ab131803404803e25bfc7540))
+* cleanup projections ([#58](https://github.com/open-meteo/mapbox-layer/issues/58)) ([e2b011a](https://github.com/open-meteo/mapbox-layer/commit/e2b011a361f775bd65d866341f2164364357829e))
+
+
+### Bug Fixes
+
+* eslint setup ([#59](https://github.com/open-meteo/mapbox-layer/issues/59)) ([4a100d4](https://github.com/open-meteo/mapbox-layer/commit/4a100d4ad4f8f8ea3d150373e3afefa1f4deaf03))
+* umd file name ([130f9e8](https://github.com/open-meteo/mapbox-layer/commit/130f9e83171321a42931ec0ddbdf7318b5bc1fca))
+
+## [0.0.4](https://github.com/open-meteo/mapbox-layer/compare/v0.0.3...v0.0.4) (2025-10-28)
+
+### Features
+
+- simplify omaps reader interface ([48d81c7](https://github.com/open-meteo/mapbox-layer/commit/48d81c7750bf2e054849feb9362a13e0be08bb7b))
+- Transfer buffer after worker process ([d222d54](https://github.com/open-meteo/mapbox-layer/commit/d222d543c3a6ac8ae5e07bc0673962a3fddf54ce))
+
+### Bug Fixes
+
+- bump the openmeteo group with 2 updates ([bab5e70](https://github.com/open-meteo/mapbox-layer/commit/bab5e70eda3c1627f6545290a8c23d0537c9d5f5))
+- bump the openmeteo group with 2 updates ([312896d](https://github.com/open-meteo/mapbox-layer/commit/312896dd74efac24b9d956348ff00d08ae523791))
+- detached buffer during contouring in worker ([64224f6](https://github.com/open-meteo/mapbox-layer/commit/64224f67b37f18a5ed0de30841948dd549221ba9))
+- detached buffer during contouring in worker ([b2d2eaf](https://github.com/open-meteo/mapbox-layer/commit/b2d2eafd4158614a30829c9cf15b67e5ff9500c0))
+- inconsistent colorscales between chrome and firefox ([3eac2e2](https://github.com/open-meteo/mapbox-layer/commit/3eac2e2c08c943f91a4cb50d488fb1365993f8ff))
+- inconsistent colorscales between chrome and firefox ([c847469](https://github.com/open-meteo/mapbox-layer/commit/c847469be7a5e1693cf68ad8dec4ae930e7da1bd))
+- Temporary fix for the dates in examples ([10a2671](https://github.com/open-meteo/mapbox-layer/commit/10a2671f73147b43c75d8595f2494842b45d4e1d))
+
+## [0.0.3](https://github.com/open-meteo/mapbox-layer/compare/v0.0.2...v0.0.3) (2025-10-23)
+
+### Features
+
+- Contouring for pressure maps ([1052a1a](https://github.com/open-meteo/mapbox-layer/commit/1052a1a7e2551e278ffa09f584c2514c2b73904b))
+- Typed omProtocol settings object ([7439ee7](https://github.com/open-meteo/mapbox-layer/commit/7439ee7037a3e7d0f6f112b003ad1e7283b6f9c3))
+
+### Bug Fixes
+
+- Move getIndexAndFractions outside of worker ([2ec1fd6](https://github.com/open-meteo/mapbox-layer/commit/2ec1fd641b0a008e1840aecf542796d205f7ce3e))
+- release please publish step ([dec7921](https://github.com/open-meteo/mapbox-layer/commit/dec792199a0efcb1af620dedf754bfe4a6019eee))
+- wrap longitude ([1f50d79](https://github.com/open-meteo/mapbox-layer/commit/1f50d79f921f2f30f69cccc1b011f4c3b6d1c462))
 
 ## [0.0.2](https://github.com/open-meteo/mapbox-layer/compare/v0.0.1...v0.0.2) (2025-10-21)
 
-
 ### Bug Fixes
 
-* Expose gaussian ([18b644d](https://github.com/open-meteo/mapbox-layer/commit/18b644d8e318a868fc4bfdeb613528c47d548dfb))
+- Expose gaussian ([18b644d](https://github.com/open-meteo/mapbox-layer/commit/18b644d8e318a868fc4bfdeb613528c47d548dfb))
 
 ## 0.0.1 (2025-10-21)
 
-
 ### Features
 
-* Support Gaussian grids like O1280 for IFS HRES ([50f30ed](https://github.com/open-meteo/mapbox-layer/commit/50f30edf89a9f06808a13c4240112bf8755a862c))
-* Support Gaussian grids like O1280 for IFS HRES ([aa18946](https://github.com/open-meteo/mapbox-layer/commit/aa1894617c101649b5ddedf4c63b0e47048f435d))
-
+- Support Gaussian grids like O1280 for IFS HRES ([50f30ed](https://github.com/open-meteo/mapbox-layer/commit/50f30edf89a9f06808a13c4240112bf8755a862c))
+- Support Gaussian grids like O1280 for IFS HRES ([aa18946](https://github.com/open-meteo/mapbox-layer/commit/aa1894617c101649b5ddedf4c63b0e47048f435d))
 
 ### Bug Fixes
 
-* add test workflow ([3308b28](https://github.com/open-meteo/mapbox-layer/commit/3308b2876af2edabcc464bc199c0b7018c6031f7))
-* Arrow with offscreen canvas ([453bed1](https://github.com/open-meteo/mapbox-layer/commit/453bed1644859a05d361202e2d7c5f73a172ac97))
-* bump actions/checkout from 4 to 5 ([fab2e3d](https://github.com/open-meteo/mapbox-layer/commit/fab2e3d825e6359aab1049ac91688a0600eb92f6))
-* bump actions/checkout from 4 to 5 ([72fbf84](https://github.com/open-meteo/mapbox-layer/commit/72fbf8428ba2527757c435bee53267f822dd0ee3))
-* bump actions/setup-node from 4 to 6 ([b6ad5d6](https://github.com/open-meteo/mapbox-layer/commit/b6ad5d6f12e1396206999a2237167b62e47968d9))
-* bump actions/setup-node from 4 to 6 ([229bf76](https://github.com/open-meteo/mapbox-layer/commit/229bf76759301c655d1a0f5a37cfa61eea7b9033))
-* bump actions/setup-node from 5 to 6 ([7f43162](https://github.com/open-meteo/mapbox-layer/commit/7f43162c407e8455a6d909eec9040bc146853c2c))
-* bump actions/setup-node from 5 to 6 ([292cff1](https://github.com/open-meteo/mapbox-layer/commit/292cff163ae3586c15fcd8adb69fc79a23c758c3))
-* bump amannn/action-semantic-pull-request from 5.5.3 to 6.1.1 ([8c54ec8](https://github.com/open-meteo/mapbox-layer/commit/8c54ec8d6bf1c4e1f25cf67562f908d690946a71))
-* bump amannn/action-semantic-pull-request from 5.5.3 to 6.1.1 ([407c4bd](https://github.com/open-meteo/mapbox-layer/commit/407c4bd582e97cd1db47bc02549538d2c0d5884e))
-* Expose all functions ([740060f](https://github.com/open-meteo/mapbox-layer/commit/740060f5319e63cc9729d6d4b37bec563c1565c3))
-* fastAtan2 special values ([e0ce642](https://github.com/open-meteo/mapbox-layer/commit/e0ce64221ff6e110ccdccc0c106155807f2051f4))
-* initial release version is 0.0.1 ([8bb0824](https://github.com/open-meteo/mapbox-layer/commit/8bb08244f35053b9839269d439e71f16461aa57c))
-* negative lon values ([b5381b9](https://github.com/open-meteo/mapbox-layer/commit/b5381b9f2d6580b575ead90d5f2214ca0897d5a4))
-* release please config ([a6a0491](https://github.com/open-meteo/mapbox-layer/commit/a6a04913831d20267931456b5bc9e7b491bc0f34))
-* release please manifest version ([28e4a72](https://github.com/open-meteo/mapbox-layer/commit/28e4a725b3461a79d4839234b5ae5eeac8291dd3))
-* Wind values for ifs hres ([07ed3e5](https://github.com/open-meteo/mapbox-layer/commit/07ed3e5fd9ca8d5d58166619c461c3294e5861e8))
+- add test workflow ([3308b28](https://github.com/open-meteo/mapbox-layer/commit/3308b2876af2edabcc464bc199c0b7018c6031f7))
+- Arrow with offscreen canvas ([453bed1](https://github.com/open-meteo/mapbox-layer/commit/453bed1644859a05d361202e2d7c5f73a172ac97))
+- bump actions/checkout from 4 to 5 ([fab2e3d](https://github.com/open-meteo/mapbox-layer/commit/fab2e3d825e6359aab1049ac91688a0600eb92f6))
+- bump actions/checkout from 4 to 5 ([72fbf84](https://github.com/open-meteo/mapbox-layer/commit/72fbf8428ba2527757c435bee53267f822dd0ee3))
+- bump actions/setup-node from 4 to 6 ([b6ad5d6](https://github.com/open-meteo/mapbox-layer/commit/b6ad5d6f12e1396206999a2237167b62e47968d9))
+- bump actions/setup-node from 4 to 6 ([229bf76](https://github.com/open-meteo/mapbox-layer/commit/229bf76759301c655d1a0f5a37cfa61eea7b9033))
+- bump actions/setup-node from 5 to 6 ([7f43162](https://github.com/open-meteo/mapbox-layer/commit/7f43162c407e8455a6d909eec9040bc146853c2c))
+- bump actions/setup-node from 5 to 6 ([292cff1](https://github.com/open-meteo/mapbox-layer/commit/292cff163ae3586c15fcd8adb69fc79a23c758c3))
+- bump amannn/action-semantic-pull-request from 5.5.3 to 6.1.1 ([8c54ec8](https://github.com/open-meteo/mapbox-layer/commit/8c54ec8d6bf1c4e1f25cf67562f908d690946a71))
+- bump amannn/action-semantic-pull-request from 5.5.3 to 6.1.1 ([407c4bd](https://github.com/open-meteo/mapbox-layer/commit/407c4bd582e97cd1db47bc02549538d2c0d5884e))
+- Expose all functions ([740060f](https://github.com/open-meteo/mapbox-layer/commit/740060f5319e63cc9729d6d4b37bec563c1565c3))
+- fastAtan2 special values ([e0ce642](https://github.com/open-meteo/mapbox-layer/commit/e0ce64221ff6e110ccdccc0c106155807f2051f4))
+- initial release version is 0.0.1 ([8bb0824](https://github.com/open-meteo/mapbox-layer/commit/8bb08244f35053b9839269d439e71f16461aa57c))
+- negative lon values ([b5381b9](https://github.com/open-meteo/mapbox-layer/commit/b5381b9f2d6580b575ead90d5f2214ca0897d5a4))
+- release please config ([a6a0491](https://github.com/open-meteo/mapbox-layer/commit/a6a04913831d20267931456b5bc9e7b491bc0f34))
+- release please manifest version ([28e4a72](https://github.com/open-meteo/mapbox-layer/commit/28e4a725b3461a79d4839234b5ae5eeac8291dd3))
+- Wind values for ifs hres ([07ed3e5](https://github.com/open-meteo/mapbox-layer/commit/07ed3e5fd9ca8d5d58166619c461c3294e5861e8))

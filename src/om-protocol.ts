@@ -1,53 +1,20 @@
+import { setupGlobalCache } from '@openmeteo/file-reader';
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { setupGlobalCache } from '@openmeteo/file-reader';
-
-import { WorkerPool } from './worker-pool';
-
-import { getIndexFromLatLong } from './utils/math';
-
-import {
-	getBorderPoints,
-	getBoundsFromGrid,
-	getIndicesFromBounds,
-	getBoundsFromBorderPoints,
-	getIndexAndFractions
-} from './utils/projections';
-
-import {
-	getInterpolator,
-	colorScales as defaultColorScales,
-	getColorScale
-} from './utils/color-scales';
-
-import { domainOptions as defaultDomainOptions } from './utils/domains';
+import { colorScales as defaultColorScales } from './utils/color-scales';
+import { MS_TO_KMH } from './utils/constants';
+import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
-import {
-	DynamicProjection,
-	ProjectionGrid,
-	type Projection,
-	type ProjectionName
-} from './utils/projections';
-
+import { domainOptions as defaultDomainOptions } from './domains';
+import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
 
-import { GaussianGrid } from './utils/gaussian';
-
-import { MS_TO_KMH } from './utils/constants';
-
-import type {
-	Bounds,
-	Domain,
-	Variable,
-	TileJSON,
-	TileIndex,
-	ColorScale,
-	DimensionRange,
-	ColorScales
-} from './types';
-
 import { capitalize, pad } from './utils';
+
+import { TilePromise, WorkerPool } from './worker-pool';
+
+import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
 
 const now = new Date();
 
@@ -60,11 +27,7 @@ let variable: Variable;
 let mapBounds: number[];
 let omFileReader: OMapsFileReader;
 let resolutionFactor = 1;
-let mapBoundsIndexes: number[];
-let ranges: DimensionRange[];
-
-let projection: Projection;
-let projectionGrid: ProjectionGrid;
+let ranges: DimensionRange[] | null;
 
 setupGlobalCache();
 
@@ -80,48 +43,26 @@ const workerPool = new WorkerPool();
 export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
-	variable: Variable,
-	colorScale: ColorScale
+	variable: Variable
 ): { value: number; direction?: number } => {
 	if (!data?.values) {
 		return { value: NaN };
 	}
 
 	const values = data.values;
-	const lonMin = domain.grid.lonMin + domain.grid.dx * ranges[1]['start'];
-	const latMin = domain.grid.latMin + domain.grid.dy * ranges[0]['start'];
-	const lonMax = domain.grid.lonMin + domain.grid.dx * ranges[1]['end'];
-	const latMax = domain.grid.latMin + domain.grid.dy * ranges[0]['end'];
-
-	if (domain.grid.gaussianGridLatitudeLines) {
-		const gaussian = new GaussianGrid(domain.grid.gaussianGridLatitudeLines);
-		const value = gaussian.getLinearInterpolatedValue(values, lat, lon);
-		return { value: value };
-	} else {
-		const { index, xFraction, yFraction } = getIndexAndFractions(
-			lat,
-			((((lon + 180) % 360) + 360) % 360) - 180,
-			domain,
-			projectionGrid,
-			ranges,
-			[latMin, lonMin, latMax, lonMax]
-		);
-
-		const interpolator = getInterpolator(colorScale);
-		let px = interpolator(values, index, xFraction, yFraction, ranges);
-		if (variable.value.includes('wind')) {
-			px = px * MS_TO_KMH;
-		}
-
-		return { value: px };
+	const grid = GridFactory.create(domain.grid, ranges);
+	let px = grid.getLinearInterpolatedValue(values, lat, ((lon + 180) % 360) - 180);
+	if (variable.value.includes('wind')) {
+		px = px * MS_TO_KMH;
 	}
+	return { value: px };
 };
 
 const getTile = async (
 	{ z, x, y }: TileIndex,
 	omUrl: string,
 	type: 'image' | 'arrayBuffer'
-): Promise<ImageBitmap> => {
+): TilePromise => {
 	const key = `${omUrl}/${tileSize}/${z}/${x}/${y}`;
 
 	return await workerPool.requestTile({
@@ -162,27 +103,9 @@ const renderTile = async (url: string, type: 'image' | 'arrayBuffer') => {
 };
 
 const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
-	let bounds: Bounds;
-	if (domain.grid.projection) {
-		const projectionName = domain.grid.projection.name;
-		projection = new DynamicProjection(
-			projectionName as ProjectionName,
-			domain.grid.projection
-		) as Projection;
-		projectionGrid = new ProjectionGrid(projection, domain.grid);
-
-		const borderPoints = getBorderPoints(projectionGrid);
-		bounds = getBoundsFromBorderPoints(borderPoints, projection);
-	} else {
-		bounds = getBoundsFromGrid(
-			domain.grid.lonMin,
-			domain.grid.latMin,
-			domain.grid.dx,
-			domain.grid.dy,
-			domain.grid.nx,
-			domain.grid.ny
-		);
-	}
+	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
+	const grid = GridFactory.create(domain.grid, null);
+	const bounds = grid.getBounds();
 
 	return {
 		tilejson: '2.2.0',
@@ -197,7 +120,10 @@ const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
 let setColorScales: ColorScales;
 let setDomainOptions: Domain[];
 let setVariableOptions: Variable[];
-export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings): Promise<void> => {
+export const initProtocol = (
+	url: string,
+	omProtocolSettings: OmProtocolSettings
+): Promise<void> => {
 	return new Promise(async (resolve, reject) => {
 		const { useSAB } = omProtocolSettings;
 		tileSize = omProtocolSettings.tileSize;
@@ -206,7 +132,7 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 		setDomainOptions = omProtocolSettings.domainOptions;
 		setVariableOptions = omProtocolSettings.variableOptions;
 
-		const { partial, domain, variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
+		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
 		const uri =
 			domain.value && domain.value.startsWith('dwd_icon')
@@ -251,17 +177,15 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 		}
 
 		if (!omFileReader) {
-			omFileReader = new OMapsFileReader(domain, partial, useSAB);
+			omFileReader = new OMapsFileReader({ useSAB: useSAB });
 		}
 
-		console.log(parsedOmUrl);
-
-		omFileReader.setReaderData(domain, partial);
 		omFileReader
-			.init(parsedOmUrl)
+			.setToOmFile(parsedOmUrl)
 			.then(() => {
-				omFileReader.readVariable(variable, ranges).then((values) => {
+				omFileReader.readVariable(variable.value, ranges).then((values) => {
 					data = values;
+
 					resolve();
 
 					if (omProtocolSettings.postReadCallback) {
@@ -294,32 +218,23 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
 
+	// We initialize the grid with the ranges set to null
+	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
+	const gridGetter = GridFactory.create(domain.grid, null);
 	if (partial) {
-		mapBoundsIndexes = getIndicesFromBounds(
-			mapBounds[0],
-			mapBounds[1],
-			mapBounds[2],
-			mapBounds[3],
-			domain
-		);
-		ranges = [
-			{ start: mapBoundsIndexes[1], end: mapBoundsIndexes[3] },
-			{ start: mapBoundsIndexes[0], end: mapBoundsIndexes[2] }
-		];
+		ranges = gridGetter.getCoveringRanges(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
 	} else {
 		ranges = [
 			{ start: 0, end: domain.grid.ny },
 			{ start: 0, end: domain.grid.nx }
 		];
 	}
-	return { partial, domain, variable, ranges, omUrl };
+	return { variable, ranges, omUrl };
 };
 
 export interface OmParseUrlCallbackResult {
-	partial: boolean;
-	domain: Domain;
 	variable: Variable;
-	ranges: DimensionRange[];
+	ranges: DimensionRange[] | null;
 	omUrl: string;
 }
 
@@ -347,14 +262,15 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
+// let protocolPromise: Promise<void>;
 export const omProtocol = async (
 	params: RequestParameters,
 	abortController?: AbortController,
 	omProtocolSettings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | ImageBitmap>> => {
+): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	if (params.type == 'json') {
 		try {
-			await initOMFile(params.url, omProtocolSettings);
+			await initProtocol(params.url, omProtocolSettings);
 		} catch (e) {
 			throw new Error(e as string);
 		}
