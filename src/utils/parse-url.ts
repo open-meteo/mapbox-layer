@@ -47,8 +47,6 @@ export const validUrl = (url: string) => {
 
 	const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;
 
-	console.log(groups);
-
 	if (!domainOptions.find((d) => d.value == domain)) return false;
 	if (Number(run_year) < 2025) return false;
 

@@ -144,7 +144,9 @@ export const initProtocol = (
 			parsedOmUrl = parseCurrent(parsedOmUrl);
 		}
 
-		console.log(validUrl(parsedOmUrl));
+		if (!validUrl(parsedOmUrl)) {
+			throw new Error('OM File invalid');
+		}
 
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader({ useSAB: useSAB });
