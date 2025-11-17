@@ -15,6 +15,7 @@ import { capitalize, pad } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
+import { parseCurrent, parseLatest } from './utils/parse-url';
 
 const now = new Date();
 
@@ -135,40 +136,12 @@ export const initProtocol = (
 		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
 		let parsedOmUrl = omUrl;
-		if (omUrl.includes('%latest%') || omUrl.includes('%in-progress%')) {
-			const inProgress = omUrl.includes('%in-progress%');
-			const latest = await fetch(
-				`https://map-tiles.open-meteo.com/data_spatial/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
-			).then((response) => response.json());
-
-			const latestDate = new Date(latest.reference_time);
-
-			parsedOmUrl = parsedOmUrl.replace(
-				inProgress ? '%in-progress%' : '%latest%',
-				`${latestDate.getUTCFullYear()}/${pad(latestDate.getUTCMonth() + 1)}/${pad(latestDate.getUTCDate())}/${pad(latestDate.getUTCHours())}00Z`
-			);
+		if (parsedOmUrl.includes('%latest%') || parsedOmUrl.includes('%in-progress%')) {
+			parsedOmUrl = await parseLatest(parsedOmUrl, domain, parsedOmUrl.includes('%in-progress%'));
 		}
 
-		if (omUrl.includes('%current')) {
-			let date = new Date(now);
-			const regex = /%current([\s\S]*?)%/;
-			const matches = parsedOmUrl.match(regex);
-			const modifier = matches ? matches[1] : null;
-
-			if (modifier) {
-				const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
-				const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
-				if (splitModifier && splitModifier[1] == 'D') {
-					date.setDate(date.getDate() + modifierAmount);
-				} else if (splitModifier && splitModifier[1] == 'H') {
-					date.setHours(date.getHours() + modifierAmount);
-				}
-			}
-
-			parsedOmUrl = parsedOmUrl.replace(
-				regex,
-				`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00`
-			);
+		if (parsedOmUrl.includes('%current')) {
+			parsedOmUrl = parseCurrent(parsedOmUrl);
 		}
 
 		if (!omFileReader) {
