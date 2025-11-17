@@ -51,7 +51,9 @@
 			});
 
 			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest_modelrun%/%current%.om?variable=temperature_2m`;
+			// actual example of a omUrl:
+			// const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current+1H%.om?variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {

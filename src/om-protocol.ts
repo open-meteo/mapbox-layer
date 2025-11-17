@@ -198,7 +198,7 @@ let setColorScales: ColorScales;
 let setDomainOptions: Domain[];
 let setVariableOptions: Variable[];
 export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings): Promise<void> => {
-	return new Promise((resolve, reject) => {
+	return new Promise(async (resolve, reject) => {
 		const { useSAB } = omProtocolSettings;
 		tileSize = omProtocolSettings.tileSize;
 		setColorScales = omProtocolSettings.colorScales;
@@ -208,27 +208,53 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 
 		const { partial, domain, variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
+		const uri =
+			domain.value && domain.value.startsWith('dwd_icon')
+				? `https://s3.servert.ch`
+				: `https://map-tiles.open-meteo.com`;
+
 		let parsedOmUrl = omUrl;
-		if (omUrl.includes('%latest_modelrun%')) {
-			const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-			utcDate.setUTCHours(
-				Math.round(now.getUTCHours() / domain.model_interval - 1) * domain.model_interval
-			);
+		if (omUrl.includes('%latest%') || omUrl.includes('%in-progress%')) {
+			const inProgress = omUrl.includes('%in-progress%');
+			const latest = await fetch(
+				`${uri}/data_spatial/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
+			).then((response) => response.json());
+
+			const latestDate = new Date(latest.reference_time);
+
 			parsedOmUrl = parsedOmUrl.replace(
-				'%latest_modelrun%',
-				`${utcDate.getUTCFullYear()}/${pad(utcDate.getUTCMonth() + 1)}/${pad(utcDate.getUTCDate())}/${pad(utcDate.getUTCHours())}00Z`
+				inProgress ? '%in-progress%' : '%latest%',
+				`${latestDate.getUTCFullYear()}/${pad(latestDate.getUTCMonth() + 1)}/${pad(latestDate.getUTCDate())}/${pad(latestDate.getUTCHours())}00Z`
 			);
 		}
-		if (omUrl.includes('%current%')) {
+
+		if (omUrl.includes('%current')) {
+			let date = new Date(now);
+			const regex = /%current([\s\S]*?)%/;
+			const matches = parsedOmUrl.match(regex);
+			const modifier = matches ? matches[1] : null;
+
+			if (modifier) {
+				const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
+				const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
+				if (splitModifier && splitModifier[1] == 'D') {
+					date.setDate(date.getDate() + modifierAmount);
+				} else if (splitModifier && splitModifier[1] == 'H') {
+					date.setHours(date.getHours() + modifierAmount);
+				}
+			}
+
 			parsedOmUrl = parsedOmUrl.replace(
-				'%current%',
-				`${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}00`
+				regex,
+				`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00`
 			);
 		}
 
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader(domain, partial, useSAB);
 		}
+
+		console.log(parsedOmUrl);
 
 		omFileReader.setReaderData(domain, partial);
 		omFileReader
