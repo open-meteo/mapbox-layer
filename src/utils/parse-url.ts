@@ -35,9 +35,12 @@ export const parseLatest = async (parsedOmUrl: string, domain: Domain, inProgres
 	const latestDate = new Date(latest.reference_time);
 
 	if (parsedOmUrl.includes('%valid_times_')) {
-		const validTimeRegex = /%valid_times_(?<index>[0-9])%/;
+		const validTimeRegex = /%valid_times_(?<index>-?[0-9])%/;
 		const validTimeMatch = parsedOmUrl.match(validTimeRegex);
-		const validTimeIndex = Number(validTimeMatch?.groups?.index);
+		let validTimeIndex = Number(validTimeMatch?.groups?.index);
+		if (validTimeIndex === -1) {
+			validTimeIndex = Number(Object.keys(latest.valid_times).reverse()[0]);
+		}
 		const validTimeDate = new Date(latest.valid_times[validTimeIndex]);
 		parsedOmUrl = parsedOmUrl.replace(
 			validTimeRegex,
