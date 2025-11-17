@@ -15,7 +15,7 @@ import { capitalize, pad } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
-import { parseCurrent, parseLatest } from './utils/parse-url';
+import { parseCurrent, parseLatest, validUrl } from './utils/parse-url';
 
 const now = new Date();
 
@@ -143,6 +143,8 @@ export const initProtocol = (
 		if (parsedOmUrl.includes('%current')) {
 			parsedOmUrl = parseCurrent(parsedOmUrl);
 		}
+
+		console.log(validUrl(parsedOmUrl));
 
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader({ useSAB: useSAB });

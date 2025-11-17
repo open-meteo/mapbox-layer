@@ -1,4 +1,5 @@
 import { pad } from '.';
+import { domainOptions } from '../domains';
 import { Domain } from '../types';
 
 const now = new Date();
@@ -36,4 +37,20 @@ export const parseLatest = async (parsedOmUrl: string, domain: Domain, inProgres
 		inProgress ? '%in-progress%' : '%latest%',
 		`${latestDate.getUTCFullYear()}/${pad(latestDate.getUTCMonth() + 1)}/${pad(latestDate.getUTCDate())}/${pad(latestDate.getUTCHours())}00Z`
 	);
+};
+
+export const validUrl = (url: string) => {
+	const regex =
+		/(http|https):\/\/(?<uri>[\s\S]+)\/data_spatial\/(?<domain>[\s\S]+)\/(?<run_year>[\s\S]+)\/(?<run_month>[\s\S]+)\/(?<run_date>[\s\S]+)\/(?<run_time>[\s\S]+)\/(?<file>[\s\S]+)\.om(?<params>[\s\S]+)?/;
+	const groups = url.match(regex)?.groups;
+	if (!groups) return false;
+
+	const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;
+
+	console.log(groups);
+
+	if (!domainOptions.find((d) => d.value == domain)) return false;
+	if (Number(run_year) < 2025) return false;
+
+	return true;
 };
