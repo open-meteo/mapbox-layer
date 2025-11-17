@@ -134,16 +134,11 @@ export const initProtocol = (
 
 		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
-		const uri =
-			domain.value && domain.value.startsWith('dwd_icon')
-				? `https://s3.servert.ch`
-				: `https://map-tiles.open-meteo.com`;
-
 		let parsedOmUrl = omUrl;
 		if (omUrl.includes('%latest%') || omUrl.includes('%in-progress%')) {
 			const inProgress = omUrl.includes('%in-progress%');
 			const latest = await fetch(
-				`${uri}/data_spatial/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
+				`https://map-tiles.open-meteo.com/data_spatial/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
 			).then((response) => response.json());
 
 			const latestDate = new Date(latest.reference_time);
