@@ -1,5 +1,6 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
+
 import { Domain } from '../types';
 
 const now = new Date();
@@ -32,6 +33,17 @@ export const parseLatest = async (parsedOmUrl: string, domain: Domain, inProgres
 	).then((response) => response.json());
 
 	const latestDate = new Date(latest.reference_time);
+
+	if (parsedOmUrl.includes('%valid_times_')) {
+		const validTimeRegex = /%valid_times_(?<index>[0-9])%/;
+		const validTimeMatch = parsedOmUrl.match(validTimeRegex);
+		const validTimeIndex = Number(validTimeMatch?.groups?.index);
+		const validTimeDate = new Date(latest.valid_times[validTimeIndex]);
+		parsedOmUrl = parsedOmUrl.replace(
+			validTimeRegex,
+			`${validTimeDate.getUTCFullYear()}-${pad(validTimeDate.getUTCMonth() + 1)}-${pad(validTimeDate.getUTCDate())}T${pad(validTimeDate.getUTCHours())}00`
+		);
+	}
 
 	return parsedOmUrl.replace(
 		inProgress ? '%in-progress%' : '%latest%',
