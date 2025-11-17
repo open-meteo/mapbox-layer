@@ -47,7 +47,9 @@ import type {
 	ColorScales
 } from './types';
 
-import { capitalize } from './utils';
+import { capitalize, pad } from './utils';
+
+const now = new Date();
 
 let dark = false;
 let partial = false;
@@ -206,20 +208,38 @@ export const initOMFile = (url: string, omProtocolSettings: OmProtocolSettings):
 
 		const { partial, domain, variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
+		let parsedOmUrl = omUrl;
+		if (omUrl.includes('%latest_modelrun%')) {
+			const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+			utcDate.setUTCHours(
+				Math.round(now.getUTCHours() / domain.model_interval - 1) * domain.model_interval
+			);
+			parsedOmUrl = parsedOmUrl.replace(
+				'%latest_modelrun%',
+				`${utcDate.getUTCFullYear()}/${pad(utcDate.getUTCMonth() + 1)}/${pad(utcDate.getUTCDate())}/${pad(utcDate.getUTCHours())}00Z`
+			);
+		}
+		if (omUrl.includes('%current%')) {
+			parsedOmUrl = parsedOmUrl.replace(
+				'%current%',
+				`${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}00`
+			);
+		}
+
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader(domain, partial, useSAB);
 		}
 
 		omFileReader.setReaderData(domain, partial);
 		omFileReader
-			.init(omUrl)
+			.init(parsedOmUrl)
 			.then(() => {
 				omFileReader.readVariable(variable, ranges).then((values) => {
 					data = values;
 					resolve();
 
 					if (omProtocolSettings.postReadCallback) {
-						omProtocolSettings.postReadCallback(omFileReader, omUrl, data);
+						omProtocolSettings.postReadCallback(omFileReader, parsedOmUrl, data);
 					}
 				});
 			})
