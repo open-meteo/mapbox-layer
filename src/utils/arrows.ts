@@ -41,13 +41,13 @@ export const generateArrows = (
 			const geom = [];
 
 			// make scale to zoomlevel
-			let index = grid.getIndex(lat, lon)
-			if (index % domain.grid.nx < 20) {
-				continue
-			}
-			if (index /  domain.grid.ny > (domain.grid.nx -20)) {
-				continue
-			}
+			// let index = grid.getIndex(lat, lon)
+			// if (index % domain.grid.nx < 20) {
+			// 	continue
+			// }
+			// if (index /  domain.grid.ny > (domain.grid.nx -20)) {
+			// 	continue
+			// }
 
 			let speed = grid.getLinearInterpolatedValue(values, lat, lon);
 			let direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon) + 180);
