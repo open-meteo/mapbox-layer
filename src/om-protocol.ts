@@ -117,37 +117,36 @@ const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
 let setColorScales: ColorScales;
 let setDomainOptions: Domain[];
 let setVariableOptions: Variable[];
-export const initProtocol = (
+export const initProtocol = async (
 	url: string,
 	omProtocolSettings: OmProtocolSettings
 ): Promise<void> => {
-	return new Promise(async (resolve, reject) => {
-		const { useSAB } = omProtocolSettings;
-		tileSize = omProtocolSettings.tileSize;
-		setColorScales = omProtocolSettings.colorScales;
-		resolutionFactor = omProtocolSettings.resolutionFactor;
-		setDomainOptions = omProtocolSettings.domainOptions;
-		setVariableOptions = omProtocolSettings.variableOptions;
+	const { useSAB } = omProtocolSettings;
+	tileSize = omProtocolSettings.tileSize;
+	setColorScales = omProtocolSettings.colorScales;
+	resolutionFactor = omProtocolSettings.resolutionFactor;
+	setDomainOptions = omProtocolSettings.domainOptions;
+	setVariableOptions = omProtocolSettings.variableOptions;
 
-		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
+	const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
 
-		let parsedOmUrl = omUrl;
-		if (parsedOmUrl.includes('%latest%') || parsedOmUrl.includes('%in-progress%')) {
-			parsedOmUrl = await parseLatest(parsedOmUrl, domain, parsedOmUrl.includes('%in-progress%'));
-		}
+	let parsedOmUrl = omUrl;
+	if (parsedOmUrl.includes('%latest%') || parsedOmUrl.includes('%in-progress%')) {
+		parsedOmUrl = await parseLatest(parsedOmUrl, domain, parsedOmUrl.includes('%in-progress%'));
+	}
 
-		if (parsedOmUrl.includes('%current')) {
-			parsedOmUrl = parseCurrent(parsedOmUrl);
-		}
+	if (parsedOmUrl.includes('%current')) {
+		parsedOmUrl = parseCurrent(parsedOmUrl);
+	}
 
-		if (!validUrl(parsedOmUrl)) {
-			throw new Error('OM File invalid');
-		}
+	if (!validUrl(parsedOmUrl)) {
+		throw new Error('OM File invalid');
+	}
+	if (!omFileReader) {
+		omFileReader = new OMapsFileReader({ useSAB: useSAB });
+	}
 
-		if (!omFileReader) {
-			omFileReader = new OMapsFileReader({ useSAB: useSAB });
-		}
-
+	return new Promise((resolve, reject) => {
 		omFileReader
 			.setToOmFile(parsedOmUrl)
 			.then(() => {
