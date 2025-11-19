@@ -1,8 +1,9 @@
-import { describe, expect, test } from 'vitest';
-import { parseCurrent, parseLatest, validUrl } from '../utils/parse-url';
 import { domainOptions } from '../domains';
-import { Domain } from '../types';
 import { pad } from '../utils';
+import { parseCurrent, parseLatest, validUrl } from '../utils/parse-url';
+import { describe, expect, test } from 'vitest';
+
+import { Domain } from '../types';
 
 const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current+1H%.om?variable=temperature_2m`;
 const dwdDomain = domainOptions.find((d) => d.value === 'dwd_icon') as Domain;
