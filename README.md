@@ -56,11 +56,17 @@ map.on('load', () => {
 
 For a standalone example, see `examples/temperature.html`.
 
+<!-- x-release-please-start-version -->
+
 ```ts
 ...
-<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.4/dist/index.js"></script>
+<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.7/dist/index.js"></script>
 ...
+```
 
+<!-- x-release-please-end -->
+
+```ts
 <script>
 	// Standard Mapbox / MapLibre GL JS setup
 	// ...
