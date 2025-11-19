@@ -21,6 +21,13 @@ export const getOpacity = (
 ): number => {
 	if (colorScale.opacity) {
 		return 255 * (colorScale.opacity / 100);
+	} else if (colorScale.getOpacity) {
+		if (typeof colorScale.getOpacity == 'function') {
+			return 255 * (colorScale.getOpacity(px) / 100) * (OPACITY / 100);
+		} else {
+			let getOpacity = eval(colorScale.getOpacity);
+			return 255 * (getOpacity(px) / 100) * (OPACITY / 100);
+		}
 	} else if (v == 'cloud_cover' || v == 'thunderstorm_probability') {
 		// scale opacity with percentage
 		return 255 * (px ** 1.5 / 1000) * (OPACITY / 100);
