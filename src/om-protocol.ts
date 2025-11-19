@@ -83,9 +83,6 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 	let inst = protocolInstances.get(settings);
 	if (inst) return inst;
 
-	console.warn('settings identity', settings);
-	console.warn('existing instance?', protocolInstances.has(settings));
-
 	inst = {
 		useSAB: settings.useSAB,
 		colorScales: settings.colorScales,
@@ -101,13 +98,14 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 
 const getStateKeyFromUrl = (url: string): string => {
 	const match = url.match(URL_REGEX);
+	// FIXME: removing arrows=true avoids duplicate decoding for raster and vector layers (for windspeeds)
+	// This should be generic over any vector layer settings.
 	if (match) {
-		console.log('Match found:', match);
 		// match[1] is "<omUrl>?query" without the leading "om://"
-		return match[1];
+		return match[1].replace('arrows=true', '');
 	}
 	// JSON request or non-tile URL: just strip the om:// prefix
-	return url.replace(/^om:\/\//, '');
+	return url.replace(/^om:\/\//, '').replace('arrows=true', '');
 };
 
 const getOrCreateUrlState = (
