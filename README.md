@@ -1,6 +1,6 @@
 # Open-Meteo Mapbox Layer
 
-[![Test](https://github.com/open-meteo/mapbox-layer/actions/workflows/test.yml/badge.svg)](https://github.com/open-meteo/mapbox-layer/actions/workflows/test.yml)
+[![Tests](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml/badge.svg)](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml)
 [![GitHub license](https://img.shields.io/github/license/open-meteo/mapbox-layer)](https://github.com/open-meteo/mapbox-layer/blob/main/LICENSE)
 [![npm version](https://img.shields.io/npm/v/@openmeteo/mapbox-layer?label=@openmeteo/mapbox-layer)](https://www.npmjs.com/package/@openmeteo/mapbox-layer)
 
@@ -131,6 +131,8 @@ map.on('load', () => {
 
 For the contouring there is the `examples/vector` directory with ready-to-run demos:
 
-- `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map
+- `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map.
 - `examples/vector/grid-points.html` – displays all grid points for a model, with value data on each point.
+- `examples/vector/temperature-anomaly.html` – shows a seasonal forecast map with temperature anomalies.
 - `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.
+- `examples/vector/wind-arrows.html` – displays wind map with directional arrows.
