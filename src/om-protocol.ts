@@ -77,6 +77,7 @@ export interface Data {
 
 setupGlobalCache();
 const workerPool = new WorkerPool();
+// FIXME: WeakMap is very problematic if users pass settings via new objects instead of reusing existing ones
 const protocolInstances = new WeakMap<OmProtocolSettings, OmProtocolInstance>();
 
 const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
