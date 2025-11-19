@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.8](https://github.com/open-meteo/mapbox-layer/compare/v0.0.7...v0.0.8) (2025-11-19)
+
+
+### Features
+
+* Add GEM HRDPS West & ECMWF WAM + 0.25 ([e1035b7](https://github.com/open-meteo/mapbox-layer/commit/e1035b75ee6bfe4b941c1d16e99952a4f4af0ccb))
+* Add GFS Wave 025 ([5169f48](https://github.com/open-meteo/mapbox-layer/commit/5169f482b171addefdfb3f9c16f9430461d50133))
+* run lint during ci ([#83](https://github.com/open-meteo/mapbox-layer/issues/83)) ([29fd82e](https://github.com/open-meteo/mapbox-layer/commit/29fd82e37e9690138f88987c74e0fdf93dda34da))
+
 ## [0.0.7](https://github.com/open-meteo/mapbox-layer/compare/v0.0.6...v0.0.7) (2025-11-12)
 
 
