@@ -6,7 +6,7 @@ import { Domain } from '../types';
 const now = new Date();
 
 export const parseCurrent = (parsedOmUrl: string) => {
-	let date = new Date(now);
+	const date = new Date(now);
 	const regex = /%current([\s\S]*?)%/;
 	const matches = parsedOmUrl.match(regex);
 	const modifier = matches ? matches[1] : null;
@@ -60,7 +60,8 @@ export const validUrl = (url: string) => {
 	const groups = url.match(regex)?.groups;
 	if (!groups) return false;
 
-	const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;
+	// const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;
+	const { domain, run_year } = groups;
 
 	if (!domainOptions.find((d) => d.value == domain)) return false;
 	if (Number(run_year) < 2025) return false;

@@ -10,12 +10,10 @@ import { variableOptions as defaultVariableOptions } from './utils/variables';
 import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
-import { capitalize, pad } from './utils';
+import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
-
-const now = new Date();
 
 let dark = false;
 let partial = false;
