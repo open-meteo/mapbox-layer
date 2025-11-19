@@ -15,7 +15,6 @@ import { TilePromise, WorkerPool } from './worker-pool';
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
 
 interface OmProtocolInstance {
-	useSAB: boolean;
 	colorScales: ColorScales;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
@@ -77,15 +76,14 @@ export interface Data {
 
 setupGlobalCache();
 const workerPool = new WorkerPool();
-// FIXME: WeakMap is very problematic if users pass settings via new objects instead of reusing existing ones
-const protocolInstances = new WeakMap<OmProtocolSettings, OmProtocolInstance>();
+
+// THIS is shared global state. The protocol can be added only once with different settings!
+let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 
 const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
-	let inst = protocolInstances.get(settings);
-	if (inst) return inst;
+	if (omProtocolInstance) return omProtocolInstance;
 
-	inst = {
-		useSAB: settings.useSAB,
+	const inst = {
 		colorScales: settings.colorScales,
 		domainOptions: settings.domainOptions,
 		variableOptions: settings.variableOptions,
@@ -93,8 +91,18 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
-	protocolInstances.set(settings, inst);
+	omProtocolInstance = inst;
 	return inst;
+};
+
+/// needs to be called before setUrl using the old source url
+export const clearOmUrlData = (url: string) => {
+	if (!omProtocolInstance) return;
+	const key = getStateKeyFromUrl(url);
+	const state = omProtocolInstance.stateByKey.get(key);
+	if (!state) return;
+	state.data = null;
+	state.dataPromise = null;
 };
 
 const getStateKeyFromUrl = (url: string): string => {
@@ -144,7 +152,6 @@ const getOrCreateUrlState = (
 };
 
 const ensureData = async (
-	url: string,
 	omUrl: string,
 	protocol: OmProtocolInstance,
 	state: OmUrlState,
@@ -176,8 +183,17 @@ export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
 	variable: Variable,
-	state: OmUrlState
+	omUrl: string
 ): { value: number; direction?: number } => {
+	const key = getStateKeyFromUrl(omUrl);
+	if (!omProtocolInstance) {
+		throw new Error('OmProtocolInstance is not initialized');
+	}
+	const state = omProtocolInstance.stateByKey.get(key);
+	if (!state) {
+		throw new Error('State not found');
+	}
+
 	if (!state.data?.values) {
 		return { value: NaN };
 	}
@@ -241,7 +257,7 @@ const renderTile = async (
 	const x = parseInt(result[3]);
 	const y = parseInt(result[4]);
 
-	const data = await ensureData(url, omUrl, protocol, state, settings);
+	const data = await ensureData(omUrl, protocol, state, settings);
 	return getTile({ z, x, y }, protocol, state, data, omUrl, type);
 };
 
