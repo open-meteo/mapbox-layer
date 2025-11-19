@@ -1,7 +1,7 @@
 import Pbf from 'pbf';
 
 interface Feature {
-	id?: number;
+	id: number;
 	type: number;
 	properties: Record<string, unknown>;
 	geom: number[];
