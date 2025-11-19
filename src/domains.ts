@@ -255,6 +255,23 @@ export const domainOptions: Array<Domain> = [
 		windUVComponents: true
 	},
 	{
+		value: 'ncep_gfswave025',
+		label: 'GFS Wave 0.25°',
+		grid: {
+			type: 'regular',
+			nx: 1440,
+			ny: 721,
+			latMin: -90,
+			lonMin: -180,
+			dx: 0.25,
+			dy: 0.25,
+			zoom: 1
+		},
+		time_interval: 1,
+		model_interval: 6,
+		windUVComponents: true
+	},
+	{
 		value: 'ncep_gfswave016',
 		label: 'GFS Wave 0.16°',
 		grid: {
@@ -322,6 +339,37 @@ export const domainOptions: Array<Domain> = [
 		windUVComponents: true
 	},
 	{
+		value: 'ecmwf_wam025',
+		label: 'ECMWF WAM 0.25°',
+		grid: {
+			type: 'regular',
+			nx: 1440,
+			ny: 721,
+			latMin: -90,
+			lonMin: -180,
+			dx: 360 / 1440,
+			dy: 180 / (721 - 1),
+			zoom: 1
+		},
+		time_interval: 3,
+		model_interval: 6,
+		windUVComponents: true
+	},
+	{
+		value: 'ecmwf_wam',
+		label: 'ECMWF WAM',
+		grid: {
+			type: 'gaussian',
+			nx: 6599680,
+			ny: 1,
+			zoom: 3.2,
+			gaussianGridLatitudeLines: 1280
+		},
+		time_interval: 1,
+		model_interval: 6,
+		windUVComponents: true
+	},
+	{
 		value: 'ecmwf_seas5_monthly',
 		label: 'ECMWF SEAS5',
 		grid: {
@@ -368,23 +416,6 @@ export const domainOptions: Array<Domain> = [
 		model_interval: 12,
 		windUVComponents: false
 	},
-	// {
-	// 	value: 'cmc_gem_geps',
-	// 	label: 'GEM Global GEPS',
-	// 	grid: {
-	//    type: 'regular',
-	// 		nx: 2400,
-	// 		ny: 1201,
-	// 		latMin: -90,
-	// 		lonMin: -180,
-	// 		dx: 0.15,
-	// 		dy: 0.15,
-	// 		zoom: 1,
-	// 	},
-	// 	time_interval: 3,
-	// 	model_interval: 12,
-	// 	windUVComponents: false
-	// },
 	{
 		value: 'cmc_gem_hrdps',
 		label: 'GEM HRDPS Continental',
@@ -403,6 +434,28 @@ export const domainOptions: Array<Domain> = [
 		},
 		time_interval: 1,
 		model_interval: 6,
+		windUVComponents: false
+	},
+	{
+		value: 'cmc_gem_hrdps_west',
+		label: 'GEM HRDPS West',
+		grid: {
+			type: 'projectedFromProjectedOrigin',
+			nx: 1330,
+			ny: 1180,
+			projectedLatitudeOrigin: 5.308595 + 1180 * -0.00899,
+			projectedLongitudeOrigin: -22.18489,
+			dx: 0.00899,
+			dy: 0.00899,
+			zoom: 1,
+			projection: {
+				rotatedLat: 33.443381,
+				rotatedLon: 86.463574,
+				name: 'RotatedLatLonProjection'
+			}
+		},
+		time_interval: 1,
+		model_interval: 12,
 		windUVComponents: false
 	},
 	{
