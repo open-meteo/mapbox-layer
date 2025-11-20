@@ -105,6 +105,8 @@ export const clearOmUrlData = (url: string) => {
 	state.dataPromise = null;
 };
 
+const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
+
 const getStateKeyFromUrl = (url: string): string => {
 	const match = url.match(URL_REGEX);
 	// FIXME: removing arrows=true avoids duplicate decoding for raster and vector layers (for windspeeds)
@@ -128,7 +130,7 @@ const getOrCreateUrlState = (
 
 	console.warn('Creating new state for URL:', url);
 
-	const parsed = settings.parseUrlCallback(url, protocol.domainOptions, protocol.variableOptions);
+	const parsed = settings.parseUrlCallback(key, protocol.domainOptions, protocol.variableOptions);
 
 	const { omUrl, variable, ranges, dark, partial, interval, domain, mapBounds } = parsed;
 
@@ -237,8 +239,6 @@ const getTile = async (
 		mapBounds: state.mapBounds
 	});
 };
-
-const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
 
 const renderTile = async (
 	url: string,
