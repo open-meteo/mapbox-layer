@@ -93,6 +93,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const interval = message.data.interval;
 		const directions = message.data.data.directions;
 		const colorScale = message.data.colorScale;
+		const vectorOptions = message.data.vectorOptions;
 
 		if (!values) {
 			throw new Error('No values provided');
@@ -100,16 +101,16 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
-		if (key.includes('grid=true')) {
+		if (vectorOptions.grid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
-		if (key.includes('arrows=true') && directions) {
+		if (vectorOptions.arrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z, colorScale);
 		}
-		if (key.includes('contours=true')) {
+		if (vectorOptions.contours) {
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}

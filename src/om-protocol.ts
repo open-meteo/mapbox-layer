@@ -12,67 +12,18 @@ import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
-import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
-
-interface OmProtocolInstance {
-	colorScales: ColorScales;
-	domainOptions: Domain[];
-	variableOptions: Variable[];
-	resolutionFactor: 0.5 | 1 | 2;
-	omFileReader: OMapsFileReader;
-
-	// per-URL state:
-	stateByKey: Map<string, OmUrlState>;
-}
-
-interface OmUrlState {
-	omUrl: string;
-	dark: boolean;
-	partial: boolean;
-	tileSize: number;
-	interval: number;
-	domain: Domain;
-	variable: Variable;
-	mapBounds: number[];
-	ranges: DimensionRange[] | null;
-
-	data: Data | null;
-	dataPromise: Promise<Data> | null;
-	lastAccess: number;
-}
-
-export interface OmParseUrlCallbackResult {
-	variable: Variable;
-	ranges: DimensionRange[] | null;
-	omUrl: string;
-	dark: boolean;
-	partial: boolean;
-	interval: number;
-	domain: Domain;
-	mapBounds: number[];
-}
-
-export interface OmProtocolSettings {
-	tileSize: number;
-	useSAB: boolean;
-	colorScales: ColorScales;
-	domainOptions: Domain[];
-	variableOptions: Variable[];
-	resolutionFactor: 0.5 | 1 | 2;
-	parseUrlCallback: (
-		url: string,
-		domainOptions: Domain[],
-		variableOptions: Variable[]
-	) => OmParseUrlCallbackResult;
-	postReadCallback:
-		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
-		| undefined;
-}
-
-export interface Data {
-	values: Float32Array | undefined;
-	directions: Float32Array | undefined;
-}
+import type {
+	Data,
+	DimensionRange,
+	Domain,
+	OmParseUrlCallbackResult,
+	OmProtocolInstance,
+	OmProtocolSettings,
+	OmUrlState,
+	TileIndex,
+	TileJSON,
+	Variable
+} from './types';
 
 setupGlobalCache();
 const workerPool = new WorkerPool();
@@ -215,7 +166,8 @@ const getTile = async (
 	state: OmUrlState,
 	data: Data,
 	omUrl: string,
-	type: 'image' | 'arrayBuffer'
+	type: 'image' | 'arrayBuffer',
+	settings: OmProtocolSettings
 ): TilePromise => {
 	const key = `${omUrl}/${state.tileSize}/${z}/${x}/${y}`;
 
@@ -236,7 +188,8 @@ const getTile = async (
 			protocol.colorScales?.custom ??
 			protocol.colorScales[state.variable.value] ??
 			getColorScale(state.variable.value),
-		mapBounds: state.mapBounds
+		mapBounds: state.mapBounds,
+		vectorOptions: settings.vectorOptions
 	});
 };
 
@@ -258,7 +211,7 @@ const renderTile = async (
 	const y = parseInt(result[4]);
 
 	const data = await ensureData(omUrl, protocol, state, settings);
-	return getTile({ z, x, y }, protocol, state, data, omUrl, type);
+	return getTile({ z, x, y }, protocol, state, data, omUrl, type, settings);
 };
 
 const getTilejson = async (fullUrl: string, state: OmUrlState): Promise<TileJSON> => {
@@ -324,7 +277,12 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	variableOptions: defaultVariableOptions,
 	resolutionFactor: 1,
 	parseUrlCallback: parseOmUrl,
-	postReadCallback: undefined
+	postReadCallback: undefined,
+	vectorOptions: {
+		grid: false,
+		arrows: true,
+		contours: false
+	}
 };
 
 export const omProtocol = async (
