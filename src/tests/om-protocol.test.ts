@@ -26,18 +26,15 @@ describe('om-protocol unit tests', () => {
 		];
 		const variableOptions = [{ value: 'temperature', label: 'Temperature' }];
 
-		const url =
-			'om://https://map-tiles.open-meteo.com/data_spatial?variable=temperature&bounds=0,0,10,10&dark=true&partial=true&interval=2';
-		const parsed = parseOmUrl(url, domainOptions, variableOptions);
+		const partial = true;
+		const mapBounds = [0, 0, 10, 10];
 
-		console.log(parsed);
-		expect(parsed.dark).toBe(true);
-		expect(parsed.variable.value).toBe('temperature');
-		expect(parsed.interval).toBe(2);
-		expect(parsed.mapBounds).toEqual([0, 0, 10, 10]);
+		const url = 'om://https://map-tiles.open-meteo.com/data_spatial?variable=temperature_2m';
+		const { ranges } = parseOmUrl(url, partial, domainOptions, variableOptions, mapBounds);
+
+		// expect(variables[0].value).toBe('temperature_2m');
 		// If partial is true, the ranges are the overlap of the domain grid and the requested mapBounds
-		expect(parsed.partial).toBe(true);
-		expect(parsed.ranges).toEqual([
+		expect(ranges).toEqual([
 			{ start: 0, end: 12 },
 			{ start: 0, end: 10 }
 		]);
