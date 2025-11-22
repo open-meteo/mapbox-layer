@@ -100,6 +100,7 @@ const getOrCreateUrlState = (
 		partial: settings.partial,
 		tileSize: settings.tileSize,
 		mapBounds: settings.mapBounds,
+		contourInterval: settings.vectorOptions.contourInterval,
 
 		data: null,
 		dataPromise: null,

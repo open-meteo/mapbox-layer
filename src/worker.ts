@@ -94,6 +94,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const colorScale = message.data.colorScale;
 		const vectorOptions = message.data.vectorOptions;
 
+		console.log(vectorOptions);
+
 		if (!values) {
 			throw new Error('No values provided');
 		}
@@ -111,15 +113,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		}
 		if (vectorOptions.contours) {
 			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(
-				pbf,
-				values,
-				grid,
-				x,
-				y,
-				z,
-				vectorOptions.contourInterval ? vectorOptions.contourInterval : 2
-			);
+			generateContours(pbf, values, grid, x, y, z, vectorOptions.contourInterval ?? 2);
 		}
 
 		const arrayBuffer = pbf.finish();

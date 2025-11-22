@@ -23,6 +23,7 @@ export interface OmUrlState {
 	lastAccess: number;
 	mapBounds: number[] | undefined;
 	dataPromise: Promise<Data> | null;
+	contourInterval: number;
 }
 
 export interface OmParseUrlCallbackResult {
