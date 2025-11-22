@@ -11,6 +11,8 @@ import { hideZero } from './utils/variables';
 import { GridFactory } from './grids/index';
 import { TileRequest } from './worker-pool';
 
+import { Variable } from './types';
+
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const key = message.data.key;
@@ -24,7 +26,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const ranges = message.data.ranges;
 		const tileSize = message.data.tileSize;
 		const domain = message.data.domain;
-		const variable = message.data.variables;
+		const variable = message.data.variables as Variable;
 		const colorScale = message.data.colorScale;
 
 		const pixels = tileSize * tileSize;
