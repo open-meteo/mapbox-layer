@@ -11,6 +11,8 @@ import { hideZero } from './utils/variables';
 import { GridFactory } from './grids/index';
 import { TileRequest } from './worker-pool';
 
+import { Variable } from './types';
+
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const key = message.data.key;
@@ -24,7 +26,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const ranges = message.data.ranges;
 		const tileSize = message.data.tileSize;
 		const domain = message.data.domain;
-		const variable = message.data.variable;
+		const variable = message.data.variables as Variable;
 		const colorScale = message.data.colorScale;
 
 		const pixels = tileSize * tileSize;
@@ -90,9 +92,11 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const values = message.data.data.values;
 		const ranges = message.data.ranges;
 		const domain = message.data.domain;
-		const interval = message.data.interval;
 		const directions = message.data.data.directions;
 		const colorScale = message.data.colorScale;
+		const vectorOptions = message.data.vectorOptions;
+
+		console.log(vectorOptions);
 
 		if (!values) {
 			throw new Error('No values provided');
@@ -100,18 +104,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
-		if (key.includes('grid=true')) {
+		if (vectorOptions.grid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
-		if (key.includes('arrows=true') && directions) {
+		if (vectorOptions.arrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z, colorScale);
 		}
-		if (key.includes('contours=true')) {
+		if (vectorOptions.contours) {
 			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
+			generateContours(pbf, values, grid, x, y, z, vectorOptions.contourInterval ?? 2);
 		}
 
 		const arrayBuffer = pbf.finish();
