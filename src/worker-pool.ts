@@ -2,7 +2,7 @@ import type { Data } from './om-protocol';
 // @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
-import type { ColorScale, DimensionRange, Domain, Variable, VectorOptions } from './types';
+import type { ColorScale, DimensionRange, Domain, Variable } from './types';
 
 export interface TileRequest {
 	type: 'getArrayBuffer' | 'getImage';
@@ -20,7 +20,6 @@ export interface TileRequest {
 	variable: Variable;
 	colorScale: ColorScale;
 	mapBounds: number[];
-	vectorOptions: VectorOptions;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;
