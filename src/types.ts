@@ -2,67 +2,64 @@ import { OMapsFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
 	colorScales: ColorScales;
-	omFileReader: OMapsFileReader;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
 	resolutionFactor: 0.5 | 1 | 2;
+	omFileReader: OMapsFileReader;
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;
 }
 
 export interface OmUrlState {
-	data: Data | null;
-	dark: boolean;
 	omUrl: string;
+	dark: boolean;
 	partial: boolean;
-	ranges: DimensionRange[] | null;
 	tileSize: number;
+	interval: number;
 	domain: Domain;
-	variables: Variable[] | Variable;
-	lastAccess: number;
-	mapBounds: number[] | undefined;
+	variable: Variable;
+	mapBounds: number[];
+	ranges: DimensionRange[] | null;
+
+	data: Data | null;
 	dataPromise: Promise<Data> | null;
+	lastAccess: number;
 }
 
 export interface OmParseUrlCallbackResult {
-	omUrl: string;
+	variable: Variable;
 	ranges: DimensionRange[] | null;
+	omUrl: string;
+	dark: boolean;
+	partial: boolean;
+	interval: number;
 	domain: Domain;
-	variables: Variable[] | Variable;
+	mapBounds: number[];
 }
 
 export interface VectorOptions {
 	grid: boolean;
 	arrows: boolean;
 	contours: boolean;
-	contourInterval: number;
 }
 
 export interface OmProtocolSettings {
-	// static
 	tileSize: number;
 	useSAB: boolean;
-
-	// dynamic
-	dark: boolean;
-	partial: boolean;
 	colorScales: ColorScales;
-	mapBounds: number[] | undefined;
-	vectorOptions: VectorOptions;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
 	resolutionFactor: 0.5 | 1 | 2;
 	parseUrlCallback: (
 		url: string,
-		partial: boolean,
 		domainOptions: Domain[],
-		variableOptions: Variable[],
-		mapBounds?: number[]
+		variableOptions: Variable[]
 	) => OmParseUrlCallbackResult;
 	postReadCallback:
 		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
 		| undefined;
+	vectorOptions: VectorOptions;
 }
 
 export interface Data {

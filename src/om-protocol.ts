@@ -80,27 +80,20 @@ const getOrCreateUrlState = (
 
 	console.warn('Creating new state for URL:', url);
 
-	const parsed = settings.parseUrlCallback(
-		key,
-		settings.partial,
-		protocol.domainOptions,
-		protocol.variableOptions,
-		settings.mapBounds
-	);
+	const parsed = settings.parseUrlCallback(key, protocol.domainOptions, protocol.variableOptions);
 
-	const { omUrl, ranges, domain, variables } = parsed;
+	const { omUrl, variable, ranges, dark, partial, interval, domain, mapBounds } = parsed;
 
 	const state: OmUrlState = {
 		omUrl,
-		ranges,
-		domain,
-		variables,
-
-		dark: settings.dark,
-		partial: settings.partial,
+		dark,
+		partial,
 		tileSize: settings.tileSize,
-		mapBounds: settings.mapBounds,
-
+		interval,
+		domain,
+		variable,
+		mapBounds,
+		ranges,
 		data: null,
 		dataPromise: null,
 		lastAccess: Date.now()
@@ -112,24 +105,18 @@ const getOrCreateUrlState = (
 
 const ensureData = async (
 	omUrl: string,
+	protocol: OmProtocolInstance,
 	state: OmUrlState,
-	settings: OmProtocolSettings,
-	protocol: OmProtocolInstance
+	settings: OmProtocolSettings
 ): Promise<Data> => {
 	state.lastAccess = Date.now();
 
 	if (state.data) return state.data;
 	if (state.dataPromise) return state.dataPromise;
 
-	// currently only one variable supported
-	let variable = state.variables;
-	if (Array.isArray(variable)) {
-		variable = variable[0];
-	}
-
 	const promise = (async () => {
 		await protocol.omFileReader.setToOmFile(omUrl);
-		const data = await protocol.omFileReader.readVariable(variable.value, state.ranges);
+		const data = await protocol.omFileReader.readVariable(state.variable.value, state.ranges);
 
 		state.data = data;
 		state.dataPromise = null;
@@ -174,20 +161,14 @@ export const getValueFromLatLong = (
 
 const getTile = async (
 	{ z, x, y }: TileIndex,
-	type: 'image' | 'arrayBuffer',
-	data: Data,
+	protocol: OmProtocolInstance,
 	state: OmUrlState,
+	data: Data,
 	omUrl: string,
-	settings: OmProtocolSettings,
-	protocol: OmProtocolInstance
+	type: 'image' | 'arrayBuffer',
+	settings: OmProtocolSettings
 ): TilePromise => {
 	const key = `${omUrl}/${state.tileSize}/${z}/${x}/${y}`;
-
-	// currently only one variable supported
-	let variable = state.variables;
-	if (Array.isArray(variable)) {
-		variable = variable[0];
-	}
 
 	return await workerPool.requestTile({
 		type: ('get' + capitalize(type)) as 'getImage' | 'getArrayBuffer',
@@ -199,12 +180,13 @@ const getTile = async (
 		dark: state.dark,
 		ranges: state.ranges,
 		tileSize: protocol.resolutionFactor * state.tileSize,
+		interval: state.interval,
 		domain: state.domain,
-		variables: variable,
+		variable: state.variable,
 		colorScale:
 			protocol.colorScales?.custom ??
-			protocol.colorScales[variable.value] ??
-			getColorScale(variable.value),
+			protocol.colorScales[state.variable.value] ??
+			getColorScale(state.variable.value),
 		mapBounds: state.mapBounds,
 		vectorOptions: settings.vectorOptions
 	});
@@ -213,9 +195,9 @@ const getTile = async (
 const renderTile = async (
 	url: string,
 	type: 'image' | 'arrayBuffer',
+	protocol: OmProtocolInstance,
 	state: OmUrlState,
-	settings: OmProtocolSettings,
-	protocol: OmProtocolInstance
+	settings: OmProtocolSettings
 ) => {
 	const result = url.match(URL_REGEX);
 	if (!result) {
@@ -227,8 +209,8 @@ const renderTile = async (
 	const x = parseInt(result[3]);
 	const y = parseInt(result[4]);
 
-	const data = await ensureData(omUrl, state, settings, protocol);
-	return getTile({ z, x, y }, type, data, state, omUrl, settings, protocol);
+	const data = await ensureData(omUrl, protocol, state, settings);
+	return getTile({ z, x, y }, protocol, state, data, omUrl, type, settings);
 };
 
 const getTilejson = async (fullUrl: string, state: OmUrlState): Promise<TileJSON> => {
@@ -252,26 +234,30 @@ const getTilejson = async (fullUrl: string, state: OmUrlState): Promise<TileJSON
  */
 export const parseOmUrl = (
 	url: string,
-	partial: boolean,
 	domainOptions: Domain[],
-	variableOptions: Variable[],
-	mapBounds?: number[]
+	variableOptions: Variable[]
 ): OmParseUrlCallbackResult => {
-	const [omUrl, omUrlParams] = url.replace('om://', '').split('?');
+	const [omUrl, omParams] = url.replace('om://', '').split('?');
 
-	const urlParams = new URLSearchParams(omUrlParams);
-
+	const urlParams = new URLSearchParams(omParams);
+	const dark = urlParams.get('dark') === 'true';
+	const partial = urlParams.get('partial') === 'true';
+	const interval = Number(urlParams.get('interval'));
 	const domain = domainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? domainOptions[0];
-	const variables =
+	const variable =
 		variableOptions.find((v) => urlParams.get('variable') === v.value) ?? variableOptions[0];
+	const mapBounds = urlParams
+		.get('bounds')
+		?.split(',')
+		.map((b: string): number => Number(b)) as number[];
 
 	// We initialize the grid with the ranges set to null
 	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
-	const grid = GridFactory.create(domain.grid, null);
+	const gridGetter = GridFactory.create(domain.grid, null);
 
 	let ranges: DimensionRange[] | null;
-	if (partial && mapBounds) {
-		ranges = grid.getCoveringRanges(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
+	if (partial) {
+		ranges = gridGetter.getCoveringRanges(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
 	} else {
 		ranges = [
 			{ start: 0, end: domain.grid.ny },
@@ -279,30 +265,22 @@ export const parseOmUrl = (
 		];
 	}
 
-	return { omUrl, ranges, variables, domain };
+	return { variable, ranges, omUrl, dark, partial, interval, domain, mapBounds };
 };
 
 export const defaultOmProtocolSettings: OmProtocolSettings = {
-	// solid state
 	tileSize: 256,
 	useSAB: false,
-
-	// can be altered during runtime
-	dark: false,
-	partial: false,
 	colorScales: defaultColorScales,
-	mapBounds: undefined,
 	domainOptions: defaultDomainOptions,
 	variableOptions: defaultVariableOptions,
 	resolutionFactor: 1,
 	parseUrlCallback: parseOmUrl,
 	postReadCallback: undefined,
-
 	vectorOptions: {
 		grid: false,
 		arrows: true,
-		contours: false,
-		contourInterval: 2
+		contours: false
 	}
 };
 
@@ -321,9 +299,9 @@ export const omProtocol = async (
 			data: await renderTile(
 				params.url,
 				params.type as 'image' | 'arrayBuffer',
+				protocol,
 				state,
-				omProtocolSettings,
-				protocol
+				omProtocolSettings
 			)
 		};
 	} else {

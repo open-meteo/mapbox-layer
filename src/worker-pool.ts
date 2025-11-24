@@ -14,10 +14,11 @@ export interface TileRequest {
 	dark: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: number;
+	interval: number;
 	domain: Domain;
-	variables: Variable[] | Variable;
+	variable: Variable;
 	colorScale: ColorScale;
-	mapBounds: number[] | undefined;
+	mapBounds: number[];
 	vectorOptions: VectorOptions;
 }
 

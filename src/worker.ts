@@ -24,7 +24,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const ranges = message.data.ranges;
 		const tileSize = message.data.tileSize;
 		const domain = message.data.domain;
-		const variable = message.data.variables;
+		const variable = message.data.variable;
 		const colorScale = message.data.colorScale;
 
 		const pixels = tileSize * tileSize;
@@ -90,6 +90,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const values = message.data.data.values;
 		const ranges = message.data.ranges;
 		const domain = message.data.domain;
+		const interval = message.data.interval;
 		const directions = message.data.data.directions;
 		const colorScale = message.data.colorScale;
 		const vectorOptions = message.data.vectorOptions;
@@ -111,15 +112,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		}
 		if (vectorOptions.contours) {
 			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(
-				pbf,
-				values,
-				grid,
-				x,
-				y,
-				z,
-				vectorOptions.contourInterval ? vectorOptions.contourInterval : 2
-			);
+			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}
 
 		const arrayBuffer = pbf.finish();
