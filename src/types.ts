@@ -5,7 +5,6 @@ export interface OmProtocolInstance {
 	omFileReader: OMapsFileReader;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
-	resolutionFactor: 0.5 | 1 | 2;
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;
@@ -24,6 +23,7 @@ export interface OmUrlState {
 	mapBounds: number[] | undefined;
 	dataPromise: Promise<Data> | null;
 	contourInterval: number;
+	resolutionFactor: 0.5 | 1 | 2;
 }
 
 export interface OmParseUrlCallbackResult {
@@ -42,7 +42,7 @@ export interface VectorOptions {
 
 export interface OmProtocolSettings {
 	// static
-	tileSize: number;
+	tileSize: 64 | 128 | 256 | 512 | 1024;
 	useSAB: boolean;
 
 	// dynamic

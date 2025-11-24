@@ -38,7 +38,6 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 		colorScales: settings.colorScales,
 		domainOptions: settings.domainOptions,
 		variableOptions: settings.variableOptions,
-		resolutionFactor: settings.resolutionFactor,
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
@@ -101,6 +100,7 @@ const getOrCreateUrlState = (
 		tileSize: settings.tileSize,
 		mapBounds: settings.mapBounds,
 		contourInterval: settings.vectorOptions.contourInterval,
+		resolutionFactor: settings.resolutionFactor,
 
 		data: null,
 		dataPromise: null,
@@ -148,8 +148,8 @@ const ensureData = async (
 export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
-	variable: Variable,
-	omUrl: string
+	omUrl: string,
+	variable: Variable
 ): { value: number; direction?: number } => {
 	const key = getStateKeyFromUrl(omUrl);
 	if (!omProtocolInstance) {
@@ -192,6 +192,7 @@ const getTile = async (
 
 	return await workerPool.requestTile({
 		type: ('get' + capitalize(type)) as 'getImage' | 'getArrayBuffer',
+
 		x,
 		y,
 		z,
@@ -199,7 +200,7 @@ const getTile = async (
 		data,
 		dark: state.dark,
 		ranges: state.ranges,
-		tileSize: protocol.resolutionFactor * state.tileSize,
+		tileSize: state.resolutionFactor * state.tileSize,
 		domain: state.domain,
 		variables: variable,
 		colorScale:
