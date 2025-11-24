@@ -1,13 +1,8 @@
 # Open-Meteo Mapbox Layer
 
-<<<<<<< HEAD
-[![Tests](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml/badge.svg)](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml)
-=======
 [![Linting & Tests](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml/badge.svg)](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml)
-
-> > > > > > > main
-> > > > > > > [![GitHub license](https://img.shields.io/github/license/open-meteo/mapbox-layer)](https://github.com/open-meteo/mapbox-layer/blob/main/LICENSE)
-> > > > > > > [![npm version](https://img.shields.io/npm/v/@openmeteo/mapbox-layer?label=@openmeteo/mapbox-layer)](https://www.npmjs.com/package/@openmeteo/mapbox-layer)
+[![GitHub license](https://img.shields.io/github/license/open-meteo/mapbox-layer)](https://github.com/open-meteo/mapbox-layer/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@openmeteo/mapbox-layer?label=@openmeteo/mapbox-layer)](https://www.npmjs.com/package/@openmeteo/mapbox-layer)
 
 > **⚠️ Notice**
 > This package is still under construction and is not yet fully production-ready.
