@@ -14,10 +14,9 @@ import { TilePromise, WorkerPool } from './worker-pool';
 
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
 
-let dark = false;
-let partial = false;
+const dark = false;
 let tileSize = 128;
-let interval = 2;
+const interval = 2;
 let domain: Domain;
 let variable: Variable;
 let mapBounds: number[];
@@ -170,9 +169,7 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 	const [omUrl, omParams] = url.replace('om://', '').split('?');
 
 	const urlParams = new URLSearchParams(omParams);
-	const dark = urlParams.get('dark') === 'true';
 	const partial = urlParams.get('partial') === 'true';
-	const interval = Number(urlParams.get('interval'));
 	const domain =
 		setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
 	const variable =
