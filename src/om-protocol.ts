@@ -14,10 +14,9 @@ import { TilePromise, WorkerPool } from './worker-pool';
 
 import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
 
-let dark = false;
-let partial = false;
+const dark = false;
 let tileSize = 128;
-let interval = 2;
+const interval = 2;
 let domain: Domain;
 let variable: Variable;
 let mapBounds: number[];
@@ -128,7 +127,17 @@ export const initProtocol = (
 		setDomainOptions = omProtocolSettings.domainOptions;
 		setVariableOptions = omProtocolSettings.variableOptions;
 
-		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
+		const {
+			partial: partialConst,
+			domain: domainConst,
+			variable: variableConst,
+			ranges: rangesConst,
+			omUrl
+		} = omProtocolSettings.parseUrlCallback(url);
+		partial = partialConst;
+		domain = domainConst;
+		variable = variableConst;
+		ranges = rangesConst;
 
 		if (!omFileReader) {
 			omFileReader = new OMapsFileReader({ useSAB: useSAB });
@@ -160,13 +169,12 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 	const [omUrl, omParams] = url.replace('om://', '').split('?');
 
 	const urlParams = new URLSearchParams(omParams);
-	dark = urlParams.get('dark') === 'true';
-	partial = urlParams.get('partial') === 'true';
-	interval = Number(urlParams.get('interval'));
-	domain = setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
-	variable =
+	const partial = urlParams.get('partial') === 'true';
+	const domain =
+		setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
+	const variable =
 		setVariableOptions.find((v) => urlParams.get('variable') === v.value) ?? setVariableOptions[0];
-	mapBounds = urlParams
+	const mapBounds = urlParams
 		.get('bounds')
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
