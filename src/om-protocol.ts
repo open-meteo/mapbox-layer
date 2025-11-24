@@ -28,13 +28,13 @@ import type {
 setupGlobalCache();
 const workerPool = new WorkerPool();
 
-// THIS is shared global state. The protocol can be added only once with different settings!
+// Shared global state. The protocol can be added only once with different settings
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 
 const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
 	if (omProtocolInstance) return omProtocolInstance;
 
-	const inst = {
+	const instance = {
 		colorScales: settings.colorScales,
 		domainOptions: settings.domainOptions,
 		variableOptions: settings.variableOptions,
@@ -42,8 +42,8 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
-	omProtocolInstance = inst;
-	return inst;
+	omProtocolInstance = instance;
+	return instance;
 };
 
 /// needs to be called before setUrl using the old source url
@@ -71,8 +71,8 @@ const getStateKeyFromUrl = (url: string): string => {
 
 const getOrCreateUrlState = (
 	url: string,
-	protocol: OmProtocolInstance,
-	settings: OmProtocolSettings
+	settings: OmProtocolSettings,
+	protocol: OmProtocolInstance
 ): OmUrlState => {
 	const key = getStateKeyFromUrl(url);
 	const existing = protocol.stateByKey.get(key);
@@ -312,8 +312,8 @@ export const omProtocol = async (
 	abortController?: AbortController,
 	omProtocolSettings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
-	const protocol = getProtocolInstance(omProtocolSettings);
-	const state = getOrCreateUrlState(params.url, protocol, omProtocolSettings);
+	const protocolInstance = getProtocolInstance(omProtocolSettings);
+	const state = getOrCreateUrlState(params.url, omProtocolSettings, protocolInstance);
 
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, state) };
@@ -324,7 +324,7 @@ export const omProtocol = async (
 				params.type as 'image' | 'arrayBuffer',
 				state,
 				omProtocolSettings,
-				protocol
+				protocolInstance
 			)
 		};
 	} else {
