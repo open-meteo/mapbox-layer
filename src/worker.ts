@@ -96,6 +96,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const colorScale = message.data.colorScale;
 		const vectorOptions = message.data.vectorOptions;
 
+		console.log(vectorOptions);
+
 		if (!values) {
 			throw new Error('No values provided');
 		}
