@@ -38,7 +38,6 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 		colorScales: settings.colorScales,
 		domainOptions: settings.domainOptions,
 		variableOptions: settings.variableOptions,
-		resolutionFactor: settings.resolutionFactor, // move to url
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
@@ -80,19 +79,30 @@ const getOrCreateUrlState = (
 
 	const parsed = settings.parseUrlCallback(url, instance.domainOptions, instance.variableOptions);
 
-	const { omUrl, variable, ranges, dark, partial, interval, domain, mapBounds } = parsed;
+	const {
+		dark,
+		omUrl,
+		ranges,
+		partial,
+		tileSize,
+		interval,
+		domain,
+		variable,
+		mapBounds,
+		resolutionFactor
+	} = parsed;
 
 	const state: OmUrlState = {
 		dark,
 		omUrl,
 		partial,
 		ranges,
-		tileSize: settings.tileSize,
+		tileSize,
 		interval,
 		domain,
 		variable,
 		mapBounds,
-		resolutionFactor: settings.resolutionFactor,
+		resolutionFactor,
 
 		data: null,
 		dataPromise: null,
@@ -248,6 +258,23 @@ export const parseOmUrl = (
 		?.split(',')
 		.map((b: string): number => Number(b)) as number[];
 
+	const tileSize = (urlParams.get('tile-size') ? Number(urlParams.get('tile-size')) : 256) as
+		| 64
+		| 128
+		| 256
+		| 512
+		| 1024;
+	if (![64, 128, 256, 512, 1024].includes(tileSize)) {
+		throw new Error('Invalid tile size, please use one of: 64, 128, 256, 512, 1024');
+	}
+	const resolutionFactor = (
+		urlParams.get('resolution-factor') ? Number(urlParams.get('resolution-factor')) : 1
+	) as 0.5 | 1 | 2;
+
+	if (![0.5, 1, 2].includes(resolutionFactor)) {
+		throw new Error('Invalid reslution factor, please use one of: 0.5, 1, 2');
+	}
+
 	// We initialize the grid with the ranges set to null
 	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
 	const gridGetter = GridFactory.create(domain.grid, null);
@@ -262,7 +289,18 @@ export const parseOmUrl = (
 		];
 	}
 
-	return { variable, ranges, omUrl, dark, partial, interval, domain, mapBounds };
+	return {
+		dark,
+		omUrl,
+		partial,
+		ranges,
+		tileSize,
+		interval,
+		domain,
+		variable,
+		mapBounds,
+		resolutionFactor
+	};
 };
 
 export const defaultOmProtocolSettings: OmProtocolSettings = {
@@ -270,8 +308,6 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	useSAB: false,
 
 	// dynamic
-	tileSize: 256, // move to url
-	resolutionFactor: 1, // move to url
 	colorScales: defaultColorScales,
 	domainOptions: defaultDomainOptions,
 	variableOptions: defaultVariableOptions,

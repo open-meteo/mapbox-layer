@@ -86,7 +86,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const domain = message.data.domain;
 		const interval = message.data.interval;
 		const directions = message.data.data.directions;
-		const colorScale = message.data.colorScale;
 
 		if (!values) {
 			throw new Error('No values provided');
