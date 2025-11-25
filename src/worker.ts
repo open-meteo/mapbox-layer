@@ -101,7 +101,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
 		if (key.includes('arrows=true') && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, colorScale);
+			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
 		if (key.includes('contours=true')) {
 			const grid = GridFactory.create(domain.grid, ranges);

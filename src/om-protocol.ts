@@ -58,12 +58,10 @@ export const clearOmUrlData = (url: string) => {
 
 const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
 const STATE_REGEX =
-	/(?<grid>&grid=true)|(?<arrows>&arrows=true)|(?<contours>&contours=true)|(?<tileSize>&tile-size=\d+)|(?<resolution>&resolution-factor=?([0-9]*[.])?[0-9]+)/gm;
-
+	/(?<grid>&grid=(true|false))|(?<arrows>&arrows=(true|false))|(?<contours>&contours=(true|false))|(?<partial>&partial=(true|false))|(?<tileSize>&tile-size=\d+)|(?<resolution>&resolution-factor=?([0-9]*[.])?[0-9]+)|(?<interval>&interval=?([0-9]*[.])?[0-9]+)/gm;
 const getStateKeyFromUrl = (url: string): string => {
 	const match = url.match(URL_REGEX);
 	if (match) {
-		console.log(match[1].replace(STATE_REGEX, ''));
 		return match[1].replace(STATE_REGEX, '');
 	}
 	return url.replace(/^om:\/\//, '').replace(STATE_REGEX, '');
@@ -78,9 +76,9 @@ const getOrCreateUrlState = (
 	const existing = instance.stateByKey.get(key);
 	if (existing) return existing;
 
-	console.warn('Creating new state for URL:', url);
+	console.warn('Creating new state for KEY:', key);
 
-	const parsed = settings.parseUrlCallback(key, instance.domainOptions, instance.variableOptions);
+	const parsed = settings.parseUrlCallback(url, instance.domainOptions, instance.variableOptions);
 
 	const { omUrl, variable, ranges, dark, partial, interval, domain, mapBounds } = parsed;
 
