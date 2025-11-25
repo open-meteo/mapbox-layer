@@ -1,3 +1,69 @@
+import { OMapsFileReader } from './om-file-reader';
+
+export interface OmProtocolInstance {
+	colorScales: ColorScales;
+	omFileReader: OMapsFileReader;
+	domainOptions: Domain[];
+	variableOptions: Variable[];
+	resolutionFactor: 0.5 | 1 | 2;
+
+	// per-URL state:
+	stateByKey: Map<string, OmUrlState>;
+}
+
+export interface OmUrlState {
+	dark: boolean;
+	omUrl: string;
+	partial: boolean;
+	ranges: DimensionRange[] | null;
+	tileSize: 64 | 128 | 256 | 512 | 1024;
+	interval: number;
+	domain: Domain;
+	variable: Variable;
+	mapBounds: number[];
+	resolutionFactor: 0.5 | 1 | 2;
+
+	data: Data | null;
+	dataPromise: Promise<Data> | null;
+	lastAccess: number;
+}
+
+export interface OmParseUrlCallbackResult {
+	dark: boolean;
+	omUrl: string;
+	partial: boolean;
+	ranges: DimensionRange[] | null;
+	interval: number;
+	domain: Domain;
+	variable: Variable;
+	mapBounds: number[];
+}
+
+export interface OmProtocolSettings {
+	// static
+	useSAB: boolean;
+
+	// dynamic
+	tileSize: 64 | 128 | 256 | 512 | 1024;
+	colorScales: ColorScales;
+	domainOptions: Domain[];
+	variableOptions: Variable[];
+	resolutionFactor: 0.5 | 1 | 2;
+	parseUrlCallback: (
+		url: string,
+		domainOptions: Domain[],
+		variableOptions: Variable[]
+	) => OmParseUrlCallbackResult;
+	postReadCallback:
+		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
+		| undefined;
+}
+
+export interface Data {
+	values: Float32Array | undefined;
+	directions: Float32Array | undefined;
+}
+
 export type TileJSON = {
 	tilejson: '2.2.0';
 	tiles: Array<string>;

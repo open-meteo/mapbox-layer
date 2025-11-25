@@ -12,67 +12,18 @@ import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
-import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
-
-interface OmProtocolInstance {
-	colorScales: ColorScales;
-	domainOptions: Domain[];
-	variableOptions: Variable[];
-	resolutionFactor: 0.5 | 1 | 2;
-	omFileReader: OMapsFileReader;
-
-	// per-URL state:
-	stateByKey: Map<string, OmUrlState>;
-}
-
-interface OmUrlState {
-	omUrl: string;
-	dark: boolean;
-	partial: boolean;
-	tileSize: number;
-	interval: number;
-	domain: Domain;
-	variable: Variable;
-	mapBounds: number[];
-	ranges: DimensionRange[] | null;
-
-	data: Data | null;
-	dataPromise: Promise<Data> | null;
-	lastAccess: number;
-}
-
-export interface OmParseUrlCallbackResult {
-	variable: Variable;
-	ranges: DimensionRange[] | null;
-	omUrl: string;
-	dark: boolean;
-	partial: boolean;
-	interval: number;
-	domain: Domain;
-	mapBounds: number[];
-}
-
-export interface OmProtocolSettings {
-	tileSize: number;
-	useSAB: boolean;
-	colorScales: ColorScales;
-	domainOptions: Domain[];
-	variableOptions: Variable[];
-	resolutionFactor: 0.5 | 1 | 2;
-	parseUrlCallback: (
-		url: string,
-		domainOptions: Domain[],
-		variableOptions: Variable[]
-	) => OmParseUrlCallbackResult;
-	postReadCallback:
-		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
-		| undefined;
-}
-
-export interface Data {
-	values: Float32Array | undefined;
-	directions: Float32Array | undefined;
-}
+import type {
+	Data,
+	DimensionRange,
+	Domain,
+	OmParseUrlCallbackResult,
+	OmProtocolInstance,
+	OmProtocolSettings,
+	OmUrlState,
+	TileIndex,
+	TileJSON,
+	Variable
+} from './types';
 
 setupGlobalCache();
 const workerPool = new WorkerPool();
@@ -83,16 +34,16 @@ let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
 	if (omProtocolInstance) return omProtocolInstance;
 
-	const inst = {
+	const instance = {
 		colorScales: settings.colorScales,
 		domainOptions: settings.domainOptions,
 		variableOptions: settings.variableOptions,
-		resolutionFactor: settings.resolutionFactor,
+		resolutionFactor: settings.resolutionFactor, // move to url
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
-	omProtocolInstance = inst;
-	return inst;
+	omProtocolInstance = instance;
+	return instance;
 };
 
 /// needs to be called before setUrl using the old source url
@@ -105,51 +56,44 @@ export const clearOmUrlData = (url: string) => {
 	state.dataPromise = null;
 };
 
-const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
-
+const STATE_REGEX = /(?<grid>&grid=true)|(?<arrows>&arrows=true)|(?<contours>&contours=true)/gm;
 const getStateKeyFromUrl = (url: string): string => {
-	const match = url.match(URL_REGEX);
-	// FIXME: removing arrows=true avoids duplicate decoding for raster and vector layers (for windspeeds)
-	// This should be generic over any vector layer settings.
-	if (match) {
-		// match[1] is "<omUrl>?query" without the leading "om://"
-		return match[1].replace('arrows=true', '');
-	}
-	// JSON request or non-tile URL: just strip the om:// prefix
-	return url.replace(/^om:\/\//, '').replace('arrows=true', '');
+	return url.replace(/^om:\/\//, '').replace(STATE_REGEX, '');
 };
 
 const getOrCreateUrlState = (
 	url: string,
-	protocol: OmProtocolInstance,
-	settings: OmProtocolSettings
+	settings: OmProtocolSettings,
+	instance: OmProtocolInstance
 ): OmUrlState => {
 	const key = getStateKeyFromUrl(url);
-	const existing = protocol.stateByKey.get(key);
+	const existing = instance.stateByKey.get(key);
 	if (existing) return existing;
 
 	console.warn('Creating new state for URL:', url);
 
-	const parsed = settings.parseUrlCallback(key, protocol.domainOptions, protocol.variableOptions);
+	const parsed = settings.parseUrlCallback(key, instance.domainOptions, instance.variableOptions);
 
 	const { omUrl, variable, ranges, dark, partial, interval, domain, mapBounds } = parsed;
 
 	const state: OmUrlState = {
-		omUrl,
 		dark,
+		omUrl,
 		partial,
+		ranges,
 		tileSize: settings.tileSize,
 		interval,
 		domain,
 		variable,
 		mapBounds,
-		ranges,
+		resolutionFactor: settings.resolutionFactor,
+
 		data: null,
 		dataPromise: null,
 		lastAccess: Date.now()
 	};
 
-	protocol.stateByKey.set(key, state);
+	instance.stateByKey.set(key, state);
 	return state;
 };
 
@@ -184,8 +128,8 @@ const ensureData = async (
 export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
-	variable: Variable,
-	omUrl: string
+	omUrl: string,
+	variable: Variable
 ): { value: number; direction?: number } => {
 	const key = getStateKeyFromUrl(omUrl);
 	if (!omProtocolInstance) {
@@ -210,25 +154,24 @@ export const getValueFromLatLong = (
 };
 
 const getTile = async (
-	{ z, x, y }: TileIndex,
-	protocol: OmProtocolInstance,
-	state: OmUrlState,
+	tileIndex: TileIndex,
+	type: 'image' | 'arrayBuffer',
 	data: Data,
+	state: OmUrlState,
 	omUrl: string,
-	type: 'image' | 'arrayBuffer'
+	protocol: OmProtocolInstance
 ): TilePromise => {
+	const { z, x, y } = tileIndex;
 	const key = `${omUrl}/${state.tileSize}/${z}/${x}/${y}`;
 
 	return await workerPool.requestTile({
 		type: ('get' + capitalize(type)) as 'getImage' | 'getArrayBuffer',
-		x,
-		y,
-		z,
+		tileIndex,
 		key,
 		data,
 		dark: state.dark,
 		ranges: state.ranges,
-		tileSize: protocol.resolutionFactor * state.tileSize,
+		tileSize: state.resolutionFactor * state.tileSize,
 		interval: state.interval,
 		domain: state.domain,
 		variable: state.variable,
@@ -240,12 +183,13 @@ const getTile = async (
 	});
 };
 
+const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
 const renderTile = async (
 	url: string,
 	type: 'image' | 'arrayBuffer',
-	protocol: OmProtocolInstance,
 	state: OmUrlState,
-	settings: OmProtocolSettings
+	settings: OmProtocolSettings,
+	protocol: OmProtocolInstance
 ) => {
 	const result = url.match(URL_REGEX);
 	if (!result) {
@@ -258,7 +202,7 @@ const renderTile = async (
 	const y = parseInt(result[4]);
 
 	const data = await ensureData(omUrl, protocol, state, settings);
-	return getTile({ z, x, y }, protocol, state, data, omUrl, type);
+	return getTile({ z, x, y }, type, data, state, omUrl, protocol);
 };
 
 const getTilejson = async (fullUrl: string, state: OmUrlState): Promise<TileJSON> => {
@@ -286,8 +230,8 @@ export const parseOmUrl = (
 	variableOptions: Variable[]
 ): OmParseUrlCallbackResult => {
 	const [omUrl, omParams] = url.replace('om://', '').split('?');
-
 	const urlParams = new URLSearchParams(omParams);
+
 	const dark = urlParams.get('dark') === 'true';
 	const partial = urlParams.get('partial') === 'true';
 	const interval = Number(urlParams.get('interval'));
@@ -317,12 +261,16 @@ export const parseOmUrl = (
 };
 
 export const defaultOmProtocolSettings: OmProtocolSettings = {
-	tileSize: 256,
+	// static
 	useSAB: false,
+
+	// dynamic
+	tileSize: 256, // move to url
+	resolutionFactor: 1, // move to url
 	colorScales: defaultColorScales,
 	domainOptions: defaultDomainOptions,
 	variableOptions: defaultVariableOptions,
-	resolutionFactor: 1,
+
 	parseUrlCallback: parseOmUrl,
 	postReadCallback: undefined
 };
@@ -333,7 +281,7 @@ export const omProtocol = async (
 	omProtocolSettings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	const protocol = getProtocolInstance(omProtocolSettings);
-	const state = getOrCreateUrlState(params.url, protocol, omProtocolSettings);
+	const state = getOrCreateUrlState(params.url, omProtocolSettings, protocol);
 
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, state) };
@@ -342,9 +290,9 @@ export const omProtocol = async (
 			data: await renderTile(
 				params.url,
 				params.type as 'image' | 'arrayBuffer',
-				protocol,
 				state,
-				omProtocolSettings
+				omProtocolSettings,
+				protocol
 			)
 		};
 	} else {
