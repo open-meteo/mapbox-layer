@@ -57,11 +57,13 @@ export const clearOmUrlData = (url: string) => {
 };
 
 const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
-const STATE_REGEX = /(?<grid>&grid=true)|(?<arrows>&arrows=true)|(?<contours>&contours=true)/gm;
+const STATE_REGEX =
+	/(?<grid>&grid=true)|(?<arrows>&arrows=true)|(?<contours>&contours=true)|(?<tileSize>&tile-size=\d+)|(?<resolution>&resolution-factor=?([0-9]*[.])?[0-9]+)/gm;
 
 const getStateKeyFromUrl = (url: string): string => {
 	const match = url.match(URL_REGEX);
 	if (match) {
+		console.log(match[1].replace(STATE_REGEX, ''));
 		return match[1].replace(STATE_REGEX, '');
 	}
 	return url.replace(/^om:\/\//, '').replace(STATE_REGEX, '');
