@@ -97,7 +97,7 @@ describe('om-protocol unit tests', () => {
 		expect(res.data).toEqual(new ArrayBuffer(16));
 
 		// test getValueFromLatLong uses the same stored state and returns the interpolated value
-		const valueResult = getValueFromLatLong(0, 0, { value: 'temperature_2m' }, params.url);
+		const valueResult = getValueFromLatLong(0, 0, params.url, { value: 'temperature_2m' });
 		expect(valueResult.value).toEqual(0);
 	});
 });
