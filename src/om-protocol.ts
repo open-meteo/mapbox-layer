@@ -128,20 +128,12 @@ export const initProtocol = async (
 	setDomainOptions = omProtocolSettings.domainOptions;
 	setVariableOptions = omProtocolSettings.variableOptions;
 
-	const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
-
-	let parsedOmUrl = omUrl;
-	if (parsedOmUrl.includes('%latest%') || parsedOmUrl.includes('%in-progress%')) {
-		parsedOmUrl = await parseLatest(parsedOmUrl, domain, parsedOmUrl.includes('%in-progress%'));
+	let parsedOmUrl = url;
+	if (parsedOmUrl.includes('latest.json') || parsedOmUrl.includes('in-progress.json')) {
+		parsedOmUrl = await parseLatest(parsedOmUrl, parsedOmUrl.includes('in-progress.json'));
 	}
 
-	if (parsedOmUrl.includes('%current-time')) {
-		parsedOmUrl = parseTimeStep(parsedOmUrl);
-	}
-
-	if (parsedOmUrl.includes('%model-run')) {
-		parsedOmUrl = parseTimeStep(parsedOmUrl, 'model-run');
-	}
+	const { variable, ranges } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
 
 	if (!validUrl(parsedOmUrl)) {
 		throw new Error('OM File invalid');

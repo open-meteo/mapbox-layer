@@ -1,87 +1,54 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
 
-import { Domain } from '../types';
-
 const now = new Date();
 
-export const parseTimeStep = (parsedOmUrl: string, capture = 'current-time') => {
-	const date = new Date(now);
-	const regex = new RegExp(`%${capture}([sS]*?)%`);
-	const matches = parsedOmUrl.match(regex);
-	const modifier = matches ? matches[1] : null;
+const omUrlRegex =
+	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<runYear>[\s\S]+)?\/(?<runMonth>[\s\S]+)?\/(?<runDate>[\s\S]+)?\/(?<runTime>[\s\S]+)?\/(?<file>[\s\S]+)?\.(om|json)(?<params>[\s\S]+)?/;
+const domainRegex = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\//;
+const timeStepRegex = /(?<capture>(current-time|valid-time))(-)?(?<modifier>.*)?/;
 
-	console.log(matches);
-
-	if (modifier) {
-		const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
-		const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
-		if (splitModifier && splitModifier[1] == 'D') {
-			date.setDate(date.getDate() + modifierAmount);
-		} else if (splitModifier && splitModifier[1] == 'H') {
-			date.setHours(date.getHours() + modifierAmount);
-		}
-	}
-
-	return parsedOmUrl.replace(
-		regex,
-		`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00`
-	);
-};
-
-export const parseModelRun = (parsedOmUrl: string) => {
-	const date = new Date(now);
-	const regex = /%current-time([\s\S]*?)%/;
-	const matches = parsedOmUrl.match(regex);
-	const modifier = matches ? matches[1] : null;
-
-	if (modifier) {
-		const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
-		const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
-		if (splitModifier && splitModifier[1] == 'D') {
-			date.setDate(date.getDate() + modifierAmount);
-		} else if (splitModifier && splitModifier[1] == 'H') {
-			date.setHours(date.getHours() + modifierAmount);
-		}
-	}
-
-	return parsedOmUrl.replace(
-		regex,
-		`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00`
-	);
-};
-
-export const parseLatest = async (parsedOmUrl: string, domain: Domain, inProgress = false) => {
+export const parseLatest = async (omUrl: string, inProgress = false) => {
+	let date = new Date(now);
+	const url = omUrl.replace('om://', '');
+	const groups = url.match(domainRegex)?.groups;
+	const domain = domainOptions.find((dO) => dO.value === groups?.domain) ?? { value: 'dwd-icon' };
+	console.log(groups);
 	const latest = await fetch(
-		`https://map-tiles.open-meteo.com/data_spatial/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
+		`https://${groups?.uri}/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
 	).then((response) => response.json());
+	const latestRun = new Date(latest.reference_time);
 
-	const latestDate = new Date(latest.reference_time);
+	const parsedOmUrl = new URL(url);
 
-	if (parsedOmUrl.includes('%valid-times-')) {
-		const validTimeRegex = /%valid-times-(?<index>-?[0-9])%/;
-		const validTimeMatch = parsedOmUrl.match(validTimeRegex);
-		let validTimeIndex = Number(validTimeMatch?.groups?.index);
-		if (validTimeIndex === -1) {
-			validTimeIndex = Number(Object.keys(latest.valid_times).reverse()[0]);
+	const timeStep = parsedOmUrl.searchParams.get('time-step');
+	const timeStepMatch = timeStep?.match(timeStepRegex);
+	if (timeStepMatch) {
+		const { capture, modifier } = timeStepMatch.groups as { capture: string; modifier: string };
+		console.log(capture, modifier);
+		if (capture === 'current-time') {
+			const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
+			const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
+			if (splitModifier && splitModifier[1] == 'D') {
+				date.setDate(date.getDate() + modifierAmount);
+			} else if (splitModifier && splitModifier[1] == 'H') {
+				date.setHours(date.getHours() + modifierAmount);
+			}
+		} else if (capture === 'valid-time') {
+			const index = modifier;
+			date = new Date(latest.valid_times[index]);
 		}
-		const validTimeDate = new Date(latest.valid_times[validTimeIndex]);
-		parsedOmUrl = parsedOmUrl.replace(
-			validTimeRegex,
-			`${validTimeDate.getUTCFullYear()}-${pad(validTimeDate.getUTCMonth() + 1)}-${pad(validTimeDate.getUTCDate())}T${pad(validTimeDate.getUTCHours())}00`
-		);
 	}
+	parsedOmUrl.searchParams.delete('time-step');
 
-	return parsedOmUrl.replace(
-		inProgress ? '%in-progress%' : '%latest%',
-		`${latestDate.getUTCFullYear()}/${pad(latestDate.getUTCMonth() + 1)}/${pad(latestDate.getUTCDate())}/${pad(latestDate.getUTCHours())}00Z`
+	return parsedOmUrl.href.replace(
+		inProgress ? 'in-progress.json' : 'latest.json',
+		`${latestRun.getUTCFullYear()}/${pad(latestRun.getUTCMonth() + 1)}/${pad(latestRun.getUTCDate())}/${pad(latestRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
 	);
 };
 
 export const validUrl = (url: string) => {
-	const regex =
-		/(http|https):\/\/(?<uri>[\s\S]+)\/data_spatial\/(?<domain>[\s\S]+)\/(?<run_year>[\s\S]+)\/(?<run_month>[\s\S]+)\/(?<run_date>[\s\S]+)\/(?<run_time>[\s\S]+)\/(?<file>[\s\S]+)\.om(?<params>[\s\S]+)?/;
-	const groups = url.match(regex)?.groups;
+	const groups = url.match(omUrlRegex)?.groups;
 	if (!groups) return false;
 
 	// const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;

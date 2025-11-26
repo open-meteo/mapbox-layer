@@ -136,3 +136,7 @@ For the vector source examples there is the `examples/vector` sub-directory with
 - `examples/vector/temperature-anomaly.html` – shows a seasonal forecast map with temperature anomalies.
 - `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.
 - `examples/vector/wind-arrows.html` – displays wind map with directional arrows.
+
+## Latest in URL
+
+Add Docs to use the catcher api in url
