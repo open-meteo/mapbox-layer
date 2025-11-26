@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Domain } from '../types';
 
-const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current+1H%.om?variable=temperature_2m`;
+const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current-time+1H%.om?variable=temperature_2m`;
 const dwdDomain = domainOptions.find((d) => d.value === 'dwd_icon') as Domain;
 
 describe('parse OM URL with a model-run', () => {
@@ -21,7 +21,7 @@ describe('parse OM URL with a model-run', () => {
 		);
 	});
 	test('get in-progress and replace url', async () => {
-		let parsedOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%in-progress%/%current+1H%.om?variable=temperature_2m`;
+		let parsedOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%in-progress%/%current-time+1H%.om?variable=temperature_2m`;
 		if (parsedOmUrl.includes('%latest%') || parsedOmUrl.includes('%in-progress%')) {
 			parsedOmUrl = await parseLatest(
 				parsedOmUrl,
@@ -41,7 +41,7 @@ describe('parse OM URL forecast modifier', () => {
 		if (parsedOmUrl.includes('%current')) {
 			parsedOmUrl = parseCurrent(parsedOmUrl);
 		}
-		expect(parsedOmUrl).not.toContain('%current+1H%');
+		expect(parsedOmUrl).not.toContain('%current-time+1H%');
 		expect(parsedOmUrl).toContain(
 			`${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours() + 1)}00.om`
 		);

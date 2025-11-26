@@ -5,9 +5,33 @@ import { Domain } from '../types';
 
 const now = new Date();
 
-export const parseCurrent = (parsedOmUrl: string) => {
+export const parseTimeStep = (parsedOmUrl: string, capture = 'current-time') => {
 	const date = new Date(now);
-	const regex = /%current([\s\S]*?)%/;
+	const regex = new RegExp(`%${capture}([sS]*?)%`);
+	const matches = parsedOmUrl.match(regex);
+	const modifier = matches ? matches[1] : null;
+
+	console.log(matches);
+
+	if (modifier) {
+		const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
+		const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
+		if (splitModifier && splitModifier[1] == 'D') {
+			date.setDate(date.getDate() + modifierAmount);
+		} else if (splitModifier && splitModifier[1] == 'H') {
+			date.setHours(date.getHours() + modifierAmount);
+		}
+	}
+
+	return parsedOmUrl.replace(
+		regex,
+		`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00`
+	);
+};
+
+export const parseModelRun = (parsedOmUrl: string) => {
+	const date = new Date(now);
+	const regex = /%current-time([\s\S]*?)%/;
 	const matches = parsedOmUrl.match(regex);
 	const modifier = matches ? matches[1] : null;
 
@@ -34,8 +58,8 @@ export const parseLatest = async (parsedOmUrl: string, domain: Domain, inProgres
 
 	const latestDate = new Date(latest.reference_time);
 
-	if (parsedOmUrl.includes('%valid_times_')) {
-		const validTimeRegex = /%valid_times_(?<index>-?[0-9])%/;
+	if (parsedOmUrl.includes('%valid-times-')) {
+		const validTimeRegex = /%valid-times-(?<index>-?[0-9])%/;
 		const validTimeMatch = parsedOmUrl.match(validTimeRegex);
 		let validTimeIndex = Number(validTimeMatch?.groups?.index);
 		if (validTimeIndex === -1) {

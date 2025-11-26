@@ -49,7 +49,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current+1H%.om?variable=precipitation`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/%latest%/%current-time+1H%.om?variable=precipitation`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {

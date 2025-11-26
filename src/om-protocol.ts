@@ -3,7 +3,7 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
-import { parseCurrent, parseLatest, validUrl } from './utils/parse-url';
+import { parseLatest, parseTimeStep, validUrl } from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -135,8 +135,12 @@ export const initProtocol = async (
 		parsedOmUrl = await parseLatest(parsedOmUrl, domain, parsedOmUrl.includes('%in-progress%'));
 	}
 
-	if (parsedOmUrl.includes('%current')) {
-		parsedOmUrl = parseCurrent(parsedOmUrl);
+	if (parsedOmUrl.includes('%current-time')) {
+		parsedOmUrl = parseTimeStep(parsedOmUrl);
+	}
+
+	if (parsedOmUrl.includes('%model-run')) {
+		parsedOmUrl = parseTimeStep(parsedOmUrl, 'model-run');
 	}
 
 	if (!validUrl(parsedOmUrl)) {
