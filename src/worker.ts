@@ -14,10 +14,7 @@ import { TileRequest } from './worker-pool';
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const key = message.data.key;
-
-		const x = message.data.x;
-		const y = message.data.y;
-		const z = message.data.z;
+		const { z, x, y } = message.data.tileIndex;
 
 		const dark = message.data.dark;
 		const values = message.data.data.values;
@@ -82,17 +79,13 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const key = message.data.key;
-
-		const x = message.data.x;
-		const y = message.data.y;
-		const z = message.data.z;
+		const { z, x, y } = message.data.tileIndex;
 
 		const values = message.data.data.values;
 		const ranges = message.data.ranges;
 		const domain = message.data.domain;
 		const interval = message.data.interval;
 		const directions = message.data.data.directions;
-		const colorScale = message.data.colorScale;
 
 		if (!values) {
 			throw new Error('No values provided');
@@ -107,7 +100,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
 		if (key.includes('arrows=true') && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, colorScale);
+			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
 		if (key.includes('contours=true')) {
 			const grid = GridFactory.create(domain.grid, ranges);
