@@ -50,7 +50,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/ecmwf_ec46_weekly/%latest%/%valid-times-0%.om?variable=temperature_2m_anomaly&interval=0.5&contours=true`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/ecmwf_ec46_weekly/latest.json?time-step=valid-times-0&variable=temperature_2m_anomaly&interval=0.5&contours=true`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {

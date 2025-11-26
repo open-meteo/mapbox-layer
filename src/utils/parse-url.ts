@@ -5,44 +5,55 @@ const now = new Date();
 
 const omUrlRegex =
 	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<runYear>[\s\S]+)?\/(?<runMonth>[\s\S]+)?\/(?<runDate>[\s\S]+)?\/(?<runTime>[\s\S]+)?\/(?<file>[\s\S]+)?\.(om|json)(?<params>[\s\S]+)?/;
-const domainRegex = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\//;
-const timeStepRegex = /(?<capture>(current-time|valid-time))(-)?(?<modifier>.*)?/;
+const domainRegex =
+	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<meta>(latest|in-progress)).json/;
+const timeStepRegex = /(?<capture>(current-time|valid-times))(-)?(?<modifier>.*)?/;
 
-export const parseLatest = async (omUrl: string, inProgress = false) => {
+export const parseLatest = async (omUrl: string) => {
 	let date = new Date(now);
 	const url = omUrl.replace('om://', '');
-	const groups = url.match(domainRegex)?.groups;
-	const domain = domainOptions.find((dO) => dO.value === groups?.domain) ?? { value: 'dwd-icon' };
-	console.log(groups);
-	const latest = await fetch(
-		`https://${groups?.uri}/${domain.value}/${inProgress ? 'in-progress' : 'latest'}.json`
-	).then((response) => response.json());
+	const { uri, domain, meta } = url.match(domainRegex)?.groups as {
+		uri: string;
+		domain: string;
+		meta: 'latest' | 'in-progress';
+	};
+	const latest = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
+		response.json()
+	);
 	const latestRun = new Date(latest.reference_time);
 
 	const parsedOmUrl = new URL(url);
-
 	const timeStep = parsedOmUrl.searchParams.get('time-step');
 	const timeStepMatch = timeStep?.match(timeStepRegex);
-	if (timeStepMatch) {
+	if (timeStep && timeStepMatch) {
 		const { capture, modifier } = timeStepMatch.groups as { capture: string; modifier: string };
-		console.log(capture, modifier);
 		if (capture === 'current-time') {
-			const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
-			const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
-			if (splitModifier && splitModifier[1] == 'D') {
-				date.setDate(date.getDate() + modifierAmount);
-			} else if (splitModifier && splitModifier[1] == 'H') {
-				date.setHours(date.getHours() + modifierAmount);
+			if (modifier) {
+				const splitModifier = modifier.match(/[a-zA-Z]+|[0-9]+/g);
+				const modifierAmount = splitModifier ? Number(splitModifier[0]) : 0;
+				if (splitModifier && splitModifier[1] == 'D') {
+					date.setDate(date.getDate() + modifierAmount);
+				} else if (splitModifier && splitModifier[1] == 'H') {
+					date.setHours(date.getHours() + modifierAmount);
+				}
+			} else {
+				// it will take the current hour selected with date object at the beginning of this function
 			}
-		} else if (capture === 'valid-time') {
-			const index = modifier;
-			date = new Date(latest.valid_times[index]);
+		} else if (capture === 'valid-times') {
+			if (modifier) {
+				const index = modifier;
+				date = new Date(latest.valid_times[index]);
+			} else {
+				throw new Error('Missing valid times index');
+			}
 		}
+	} else {
+		throw new Error('Invalid time step');
 	}
-	parsedOmUrl.searchParams.delete('time-step');
+	parsedOmUrl.searchParams.delete('time-step'); // delete time-step from url
 
 	return parsedOmUrl.href.replace(
-		inProgress ? 'in-progress.json' : 'latest.json',
+		`${meta}.json`, // either 'in-progress' or 'latest'
 		`${latestRun.getUTCFullYear()}/${pad(latestRun.getUTCMonth() + 1)}/${pad(latestRun.getUTCDate())}/${pad(latestRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
 	);
 };

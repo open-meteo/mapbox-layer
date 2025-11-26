@@ -130,14 +130,15 @@ export const initProtocol = async (
 
 	let parsedOmUrl = url;
 	if (parsedOmUrl.includes('latest.json') || parsedOmUrl.includes('in-progress.json')) {
-		parsedOmUrl = await parseLatest(parsedOmUrl, parsedOmUrl.includes('in-progress.json'));
+		parsedOmUrl = await parseLatest(parsedOmUrl);
 	}
-
-	const { variable, ranges } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
 
 	if (!validUrl(parsedOmUrl)) {
 		throw new Error('OM File invalid');
 	}
+
+	const { variable, ranges } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
+
 	if (!omFileReader) {
 		omFileReader = new OMapsFileReader({ useSAB: useSAB });
 	}
