@@ -3,6 +3,7 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
+import { parseMetaData, validUrl } from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -116,25 +117,35 @@ const getTilejson = async (fullUrl: string): Promise<TileJSON> => {
 let setColorScales: ColorScales;
 let setDomainOptions: Domain[];
 let setVariableOptions: Variable[];
-export const initProtocol = (
+export const initProtocol = async (
 	url: string,
 	omProtocolSettings: OmProtocolSettings
 ): Promise<void> => {
+	const { useSAB } = omProtocolSettings;
+	tileSize = omProtocolSettings.tileSize;
+	setColorScales = omProtocolSettings.colorScales;
+	resolutionFactor = omProtocolSettings.resolutionFactor;
+	setDomainOptions = omProtocolSettings.domainOptions;
+	setVariableOptions = omProtocolSettings.variableOptions;
+
+	let parsedOmUrl = url;
+	if (parsedOmUrl.includes('.json')) {
+		parsedOmUrl = await parseMetaData(parsedOmUrl);
+	}
+
+	if (!validUrl(parsedOmUrl)) {
+		throw new Error('OM File invalid');
+	}
+
+	const { variable, ranges } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
+
+	if (!omFileReader) {
+		omFileReader = new OMapsFileReader({ useSAB: useSAB });
+	}
+
 	return new Promise((resolve, reject) => {
-		const { useSAB } = omProtocolSettings;
-		tileSize = omProtocolSettings.tileSize;
-		setColorScales = omProtocolSettings.colorScales;
-		resolutionFactor = omProtocolSettings.resolutionFactor;
-		setDomainOptions = omProtocolSettings.domainOptions;
-		setVariableOptions = omProtocolSettings.variableOptions;
-
-		const { variable, ranges, omUrl } = omProtocolSettings.parseUrlCallback(url);
-
-		if (!omFileReader) {
-			omFileReader = new OMapsFileReader({ useSAB: useSAB });
-		}
 		omFileReader
-			.setToOmFile(omUrl)
+			.setToOmFile(parsedOmUrl)
 			.then(() => {
 				omFileReader.readVariable(variable.value, ranges).then((values) => {
 					data = values;
@@ -142,7 +153,7 @@ export const initProtocol = (
 					resolve();
 
 					if (omProtocolSettings.postReadCallback) {
-						omProtocolSettings.postReadCallback(omFileReader, omUrl, data);
+						omProtocolSettings.postReadCallback(omFileReader, parsedOmUrl, data);
 					}
 				});
 			})

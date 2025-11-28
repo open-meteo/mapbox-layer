@@ -105,7 +105,7 @@ Run the examples by opening the corresponding `.html` file in a browser.
 
 ## Arrows / Contouring / Gridpoints
 
-For directional arrows / contouring / gridpoints, a new source must be added, since these features use vector tiles instead of raster tiles.
+For directional arrows / contouring / gridpoints, an additional source must be added, since these features use vector tiles instead of raster tiles.
 
 ```ts
 ...
@@ -131,6 +131,58 @@ map.on('load', () => {
 
 For the vector source examples there is the `examples/vector` sub-directory with ready-to-run demos:
 
-- `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map
+- `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map.
 - `examples/vector/grid-points.html` – displays all grid points for a model, with value data on each point.
+- `examples/vector/temperature-anomaly.html` – shows a seasonal forecast map with temperature anomalies.
 - `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.
+- `examples/vector/wind-arrows.html` – displays wind map with directional arrows.
+
+## Capture API
+
+Because the use of OM files on the S3 storage is often quite ambiguous, a Capture API is added, that will automatically produce the correct file paths for you.
+
+For each Domain or Weather Model, there will be a `latest.json` and `in-progress.json`metadata file, containing data like valid time steps, valid variables and reference times.
+
+An example can be found [here](https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json), for `DWD Icon Global`:
+
+```
+https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
+```
+
+```json
+{
+	"completed":true,
+	"last_modified_time":"2025-11-11T09:42:17Z",
+	"reference_time":"2025-11-11T06:00:00Z",
+	"valid_times":["2025-11-11T06:00Z","2025-11-11T07:00Z", ...],
+	"variables":["cape","cloud_cover", ...]
+}
+```
+
+### Using the Capture API
+
+If you don't want to select a particular model run, but instead always want to use the latest available run. Instead of using the model run in the URL you replace that part with `latest.json`
+
+For example, instead of:
+
+```
+https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m
+```
+
+Use the following link:
+
+```
+https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m
+```
+
+If you want to show the closest current time, or a pick a different valid time than the first one, you could use:
+
+```
+https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1h&variable=temperature_2m
+```
+
+or the 5th index of the `valid_times` array
+
+```
+https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=valid_times_5&variable=temperature_2m
+```
