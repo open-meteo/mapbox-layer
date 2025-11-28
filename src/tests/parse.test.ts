@@ -1,5 +1,5 @@
 import { pad } from '../utils';
-import { parseLatest, validUrl } from '../utils/parse-url';
+import { parseMetaData, validUrl } from '../utils/parse-url';
 import { describe, expect, test } from 'vitest';
 
 const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
@@ -9,21 +9,21 @@ describe('parse OM URL with a model-run', () => {
 		const now = new Date();
 		let parsedOmUrl = omUrl;
 		if (parsedOmUrl.includes('latest.json')) {
-			parsedOmUrl = await parseLatest(parsedOmUrl);
+			parsedOmUrl = await parseMetaData(parsedOmUrl);
 		}
 		expect(parsedOmUrl).not.toContain('latest');
 		expect(parsedOmUrl).toContain(
 			`/${now.getUTCFullYear()}/${pad(now.getUTCMonth() + 1)}/${pad(now.getUTCDate())}/`
 		);
-		expect(parsedOmUrl).not.toContain('current-time-1H');
+		expect(parsedOmUrl).not.toContain('current_time_1H');
 		expect(parsedOmUrl).toContain(
 			`${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours() + 1)}00.om`
 		);
 	});
 	test('get in-progress and replace url', async () => {
 		let parsedOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/in-progress.json?time_step=current_time_1H%&variable=temperature_2m`;
-		if (parsedOmUrl.includes('latest.json') || parsedOmUrl.includes('in-progress.json')) {
-			parsedOmUrl = await parseLatest(parsedOmUrl);
+		if (parsedOmUrl.includes('.json')) {
+			parsedOmUrl = await parseMetaData(parsedOmUrl);
 		}
 		console.log(parsedOmUrl);
 		expect(parsedOmUrl).not.toContain('in-progress');
