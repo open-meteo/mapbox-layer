@@ -49,7 +49,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time-step=current-time-1H&variable=wind_u_component_10m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=wind_u_component_10m`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {

@@ -50,7 +50,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time-step=current-time-1H&variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileRasterSource', {

@@ -2,7 +2,7 @@ import { pad } from '../utils';
 import { parseLatest, validUrl } from '../utils/parse-url';
 import { describe, expect, test } from 'vitest';
 
-const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time-step=current-time-1H&variable=temperature_2m`;
+const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 describe('parse OM URL with a model-run', () => {
 	test('get latest and replace url', async () => {
@@ -21,7 +21,7 @@ describe('parse OM URL with a model-run', () => {
 		);
 	});
 	test('get in-progress and replace url', async () => {
-		let parsedOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/in-progress.json?time-step=current-time-1H%&variable=temperature_2m`;
+		let parsedOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/in-progress.json?time_step=current_time_1H%&variable=temperature_2m`;
 		if (parsedOmUrl.includes('latest.json') || parsedOmUrl.includes('in-progress.json')) {
 			parsedOmUrl = await parseLatest(parsedOmUrl);
 		}

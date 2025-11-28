@@ -3,7 +3,7 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
-import { parseLatest, validUrl } from './utils/parse-url';
+import { parseMetaData, validUrl } from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -129,8 +129,8 @@ export const initProtocol = async (
 	setVariableOptions = omProtocolSettings.variableOptions;
 
 	let parsedOmUrl = url;
-	if (parsedOmUrl.includes('latest.json') || parsedOmUrl.includes('in-progress.json')) {
-		parsedOmUrl = await parseLatest(parsedOmUrl);
+	if (parsedOmUrl.includes('.json')) {
+		parsedOmUrl = await parseMetaData(parsedOmUrl);
 	}
 
 	if (!validUrl(parsedOmUrl)) {
