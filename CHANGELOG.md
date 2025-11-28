@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.0.8](https://github.com/open-meteo/mapbox-layer/compare/v0.0.7...v0.0.8) (2025-11-28)
+
+
+### Features
+
+* Add GEM HRDPS West & ECMWF WAM + 0.25 ([e1035b7](https://github.com/open-meteo/mapbox-layer/commit/e1035b75ee6bfe4b941c1d16e99952a4f4af0ccb))
+* Add GFS Wave 025 ([5169f48](https://github.com/open-meteo/mapbox-layer/commit/5169f482b171addefdfb3f9c16f9430461d50133))
+* run lint during ci ([#83](https://github.com/open-meteo/mapbox-layer/issues/83)) ([29fd82e](https://github.com/open-meteo/mapbox-layer/commit/29fd82e37e9690138f88987c74e0fdf93dda34da))
+
+
+### Bug Fixes
+
+* add cooldown for dependabot ([72e9be3](https://github.com/open-meteo/mapbox-layer/commit/72e9be390822cec75f82d43252f6c820e21be656))
+* allow 3 point interpolation ([506972a](https://github.com/open-meteo/mapbox-layer/commit/506972af553aeaa3d8e96e73afa8ef61d3ce7568))
+* allow 3 point interpolation ([01f4f8b](https://github.com/open-meteo/mapbox-layer/commit/01f4f8b97d43834ae4eb504e03082f49dfe1a2ee))
+* broken link in Readme ([48dc374](https://github.com/open-meteo/mapbox-layer/commit/48dc37413bd8593fa0b69255e34ee2917ff36765))
+* bump the openmeteo group with 2 updates ([d5d4d6e](https://github.com/open-meteo/mapbox-layer/commit/d5d4d6ee9030eaff3ba4daaaf8a7e55cd7253ca1))
+* bump the openmeteo group with 2 updates ([9c94901](https://github.com/open-meteo/mapbox-layer/commit/9c9490133b5f697ec1f250473539d50975da5585))
+* rename workflow ([d28db6a](https://github.com/open-meteo/mapbox-layer/commit/d28db6a77065fbabfa30e0bb9d48083a79a4bcb1))
+* small ellaboration vector sources readme ([0d47c73](https://github.com/open-meteo/mapbox-layer/commit/0d47c737471d1b859b54f5023bfaa8eaf23f7aa5))
+
 ## [0.0.7](https://github.com/open-meteo/mapbox-layer/compare/v0.0.6...v0.0.7) (2025-11-12)
 
 
