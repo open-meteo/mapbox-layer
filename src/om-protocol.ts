@@ -13,7 +13,15 @@ import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
 import { TilePromise, WorkerPool } from './worker-pool';
 
-import type { ColorScales, DimensionRange, Domain, TileIndex, TileJSON, Variable } from './types';
+import type {
+	ClippingOptions,
+	ColorScales,
+	DimensionRange,
+	Domain,
+	TileIndex,
+	TileJSON,
+	Variable
+} from './types';
 
 let dark = false;
 let partial = false;
@@ -21,6 +29,7 @@ let tileSize = 128;
 let interval = 2;
 let domain: Domain;
 let variable: Variable;
+let clipping: ClippingOptions | undefined;
 let mapBounds: number[];
 let omFileReader: OMapsFileReader;
 let resolutionFactor = 1;
@@ -75,6 +84,7 @@ const getTile = async (
 		interval,
 		domain,
 		variable,
+		clipping,
 		colorScale:
 			setColorScales?.custom ?? setColorScales[variable.value] ?? getColorScale(variable.value),
 		mapBounds: mapBounds
@@ -123,6 +133,7 @@ export const initProtocol = async (
 ): Promise<void> => {
 	const { useSAB } = omProtocolSettings;
 	tileSize = omProtocolSettings.tileSize;
+	clipping = omProtocolSettings.clipping;
 	setColorScales = omProtocolSettings.colorScales;
 	resolutionFactor = omProtocolSettings.resolutionFactor;
 	setDomainOptions = omProtocolSettings.domainOptions;
@@ -204,6 +215,7 @@ export interface OmParseUrlCallbackResult {
 export interface OmProtocolSettings {
 	tileSize: number;
 	useSAB: boolean;
+	clipping: ClippingOptions | undefined;
 	colorScales: ColorScales;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
@@ -217,6 +229,7 @@ export interface OmProtocolSettings {
 export const defaultOmProtocolSettings: OmProtocolSettings = {
 	tileSize: 256,
 	useSAB: false,
+	clipping: undefined,
 	colorScales: defaultColorScales,
 	domainOptions: defaultDomainOptions,
 	variableOptions: defaultVariableOptions,

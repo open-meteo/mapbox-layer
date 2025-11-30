@@ -2,7 +2,7 @@ import type { Data } from './om-protocol';
 // @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
-import type { ColorScale, DimensionRange, Domain, Variable } from './types';
+import type { ClippingOptions, ColorScale, DimensionRange, Domain, Variable } from './types';
 
 export interface TileRequest {
 	type: 'getArrayBuffer' | 'getImage';
@@ -18,6 +18,7 @@ export interface TileRequest {
 	interval: number;
 	domain: Domain;
 	variable: Variable;
+	clipping: ClippingOptions | undefined;
 	colorScale: ColorScale;
 	mapBounds: number[];
 }

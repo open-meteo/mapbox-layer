@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf';
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
@@ -34,6 +35,20 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			throw new Error('No values provided');
 		}
 
+		const clipping = message.data.clipping;
+
+		let collection, boundaries;
+		console.log(clipping);
+		if (clipping) {
+			boundaries = [];
+			for (const feature of clipping.features) {
+				const boundary = turf.multiPolygon(feature.geometry.coordinates);
+				boundaries.push(boundary);
+			}
+
+			collection = turf.featureCollection(boundaries);
+		}
+
 		// const interpolationMethod = getInterpolationMethod(colorScale);
 		const grid = GridFactory.create(domain.grid, ranges);
 
@@ -47,6 +62,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
 				let px = grid.getLinearInterpolatedValue(values, lat, lon);
+
+				if (clipping && boundaries) {
+					const pt = turf.point([lat, lon]);
+					const pointInBoundary = turf.booleanPointInPolygon(pt, boundaries[1]);
+					if (!pointInBoundary) {
+						rgba[4 * ind] = 0;
+						rgba[4 * ind + 1] = 0;
+						rgba[4 * ind + 2] = 0;
+						rgba[4 * ind + 3] = 0;
+						continue;
+					}
+				}
 
 				if (isHideZero) {
 					if (px < 0.25) {

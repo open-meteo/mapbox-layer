@@ -1,3 +1,5 @@
+import { FeatureCollection } from 'geojson';
+
 export type TileJSON = {
 	tilejson: '2.2.0';
 	tiles: Array<string>;
@@ -203,3 +205,5 @@ export interface DomainMetaData {
 	valid_times: string[];
 	variables: string[];
 }
+
+export type ClippingOptions = FeatureCollection;
