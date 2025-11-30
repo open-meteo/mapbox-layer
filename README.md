@@ -153,11 +153,11 @@ https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
 
 ```json
 {
-	"completed":true,
-	"last_modified_time":"2025-11-11T09:42:17Z",
-	"reference_time":"2025-11-11T06:00:00Z",
-	"valid_times":["2025-11-11T06:00Z","2025-11-11T07:00Z", ...+91],
-	"variables":["cape","cloud_cover", "cloud_cover_high", ...+120]
+	"completed": true,
+	"last_modified_time": "2025-11-11T09:42:17Z",
+	"reference_time": "2025-11-11T06:00:00Z",
+	"valid_times": ["2025-11-11T06:00Z", "2025-11-11T07:00Z", "...+91"],
+	"variables": ["cape", "cloud_cover", "cloud_cover_high", "...+120"]
 }
 ```
 
