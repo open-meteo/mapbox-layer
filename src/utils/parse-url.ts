@@ -48,9 +48,9 @@ export const parseMetaData = async (omUrl: string) => {
 						: 0;
 
 					const unit = splitAmountAndUnit[1] ?? undefined;
-					if (amount && ['d', 'D'].includes(unit)) {
+					if (amount && unit === 'D') {
 						date.setDate(date.getDate() + amount);
-					} else if (amount && ['h', 'H'].includes(unit)) {
+					} else if (amount && unit === 'H') {
 						date.setHours(date.getHours() + amount);
 					} else {
 						throw new Error('Modifier or amount not supported ');
