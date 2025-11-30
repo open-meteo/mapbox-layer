@@ -76,17 +76,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			}
 		}
 
+		const imageData = new ImageData(rgba, tileSize, tileSize);
+
 		const offscreenCanvas = true;
 		if (offscreenCanvas) {
+			console.time('offscreencanvas');
+
 			const canvas = new OffscreenCanvas(tileSize, tileSize);
 			const context = canvas.getContext('2d');
-			if (context == null) {
-				throw new Error('Failed to acquire canvas context');
+			if (!context) {
+				throw new Error('Could not initialise canvas context');
 			}
-
-			const image = new ImageData(rgba, tileSize, tileSize);
-			context.putImageData(image, 0, 0);
-			context.drawImage(context.canvas, 0, 0);
+			context.putImageData(imageData, 0, 0);
 
 			const blob = await canvas.convertToBlob({ type: 'image/png' });
 
@@ -94,14 +95,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				{ type: 'returnImage', tile: await blob.arrayBuffer(), key: key }
 				// { transfer: [blob] }
 			);
+			console.timeEnd('offscreencanvas');
 		} else {
-			const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
+			console.time('imagebitmap');
+
+			const imageBitmap = await createImageBitmap(imageData, {
 				premultiplyAlpha: 'premultiply'
 			});
 			postMessage(
 				{ type: 'returnImage', tile: imageBitmap, key: key },
 				{ transfer: [imageBitmap] }
 			);
+			console.timeEnd('imagebitmap');
 		}
 	} else if (message.data.type == 'getArrayBuffer') {
 		const key = message.data.key;
