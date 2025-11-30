@@ -48,9 +48,9 @@ export const parseMetaData = async (omUrl: string) => {
 						: 0;
 
 					const unit = splitAmountAndUnit[1] ?? undefined;
-					if (amount && unit == 'D') {
+					if (amount && ['d', 'D'].includes(unit)) {
 						date.setDate(date.getDate() + amount);
-					} else if (amount && unit == 'H') {
+					} else if (amount && ['h', 'H'].includes(unit)) {
 						date.setHours(date.getHours() + amount);
 					}
 				} else {

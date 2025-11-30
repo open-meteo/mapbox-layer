@@ -165,12 +165,12 @@ https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
 
 If you don't want to select a particular model run, but instead always want to use the latest available run. Instead of using the model run in the URL you replace that part with `latest.json`
 
-For example, with the link below replace the red part:
+For example, with the link below replace the highlighted part:
 
-<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/<b style="color:#af1111;">2025/06/06/1200Z/2025-06-06T1200.om</b>?variable=temperature_2m
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/<b style="color:#af1111">2025/06/06/1200Z/2025-06-06T1200.om</b>?variable=temperature_2m
 </code></pre>
 
-With the following part:
+With `latest.json`:
 
 <pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/<b style="color:#14a62d">latest.json</b>?variable=temperature_2m
 </code></pre>
