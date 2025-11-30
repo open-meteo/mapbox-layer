@@ -80,9 +80,12 @@ export const parseMetaJson = async (omUrl: string) => {
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
-	return parsedOmUrl.href.replace(
-		`${meta}.json`,
-		`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
+	return (
+		'om://' +
+		parsedOmUrl.href.replace(
+			`${meta}.json`,
+			`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
+		)
 	);
 };
 

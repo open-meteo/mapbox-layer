@@ -106,9 +106,6 @@ const touchState = (map: Map<string, OmUrlState>, key: string, state: OmUrlState
 	map.set(key, state);
 };
 
-// Single regex to extract base URL, params, and optional tile coordinates
-const URL_REGEX = /^om:\/\/(.+?)(?:\?([^/]*))?(?:\/(\d+)\/(\d+)\/(\d+))?$/;
-
 // Parameters that don't affect the data identity (only affect rendering)
 const RENDERING_ONLY_PARAMS = new Set([
 	'grid',
@@ -120,17 +117,43 @@ const RENDERING_ONLY_PARAMS = new Set([
 	'interval'
 ]);
 
+const URL_REGEX = /^om:\/\/([^?]+)(?:\?(.*))?$/;
+// Match both regular and percent-encoded slashes
+const TILE_SUFFIX_REGEX = /(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)$/i;
+
 /**
  * Parses URL structure - this is always done internally.
  * Handles om:// prefix, query params, and tile coordinates.
+ *
+ * The URL structure is:
+ * om://<baseUrl>?<params>/<z>/<x>/<y>  (tile request)
+ * om://<baseUrl>?<params>              (tilejson request)
+ * om://<baseUrl>/<z>/<x>/<y>           (tile request, no params)
+ * om://<baseUrl>                       (tilejson request, no params)
  */
 export const parseUrlComponents = (url: string): ParsedUrlComponents => {
-	const match = url.match(URL_REGEX);
+	let urlToParse = url;
+	let tileIndex: TileIndex | null = null;
+
+	const tileMatch = url.match(TILE_SUFFIX_REGEX);
+	if (tileMatch) {
+		tileIndex = {
+			z: parseInt(tileMatch[1]),
+			x: parseInt(tileMatch[2]),
+			y: parseInt(tileMatch[3])
+		};
+		urlToParse = url.slice(0, tileMatch.index);
+	} else {
+		console.log(`No tile match in '${url}`);
+	}
+
+	// Now validate and parse the rest
+	const match = urlToParse.match(URL_REGEX);
 	if (!match) {
 		throw new Error(`Invalid OM protocol URL: ${url}`);
 	}
 
-	const [, baseUrl, queryString, z, x, y] = match;
+	const [, baseUrl, queryString] = match;
 	const params = new URLSearchParams(queryString ?? '');
 
 	// Build state key from baseUrl + only data-affecting params
@@ -143,8 +166,6 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	dataParams.sort();
 	const paramString = dataParams.toString();
 	const stateKey = paramString ? `${baseUrl}?${paramString}` : baseUrl;
-
-	const tileIndex = z !== undefined ? { z: parseInt(z), x: parseInt(x), y: parseInt(y) } : null;
 
 	return { baseUrl, params, stateKey, tileIndex };
 };
@@ -346,7 +367,7 @@ export const defaultResolveUrlSettings = (
 	) as 0.5 | 1 | 2;
 
 	if (![0.5, 1, 2].includes(resolutionFactor)) {
-		throw new Error('Invalid reslution factor, please use one of: 0.5, 1, 2');
+		throw new Error('Invalid resolution factor, please use one of: 0.5, 1, 2');
 	}
 
 	// We initialize the grid with the ranges set to null
@@ -400,7 +421,7 @@ export const omProtocol = async (
 		parsedOmUrl = await parseMetaJson(parsedOmUrl);
 	}
 	assertOmUrlValid(parsedOmUrl);
-	const { state, stateKey, tileIndex, baseUrl } = getOrCreateUrlState(
+	const { state, stateKey, tileIndex } = getOrCreateUrlState(
 		parsedOmUrl,
 		omProtocolSettings,
 		protocol
@@ -415,7 +436,7 @@ export const omProtocol = async (
 		return {
 			data: await renderTile(
 				tileIndex,
-				baseUrl,
+				parsedOmUrl.replace('om://', ''),
 				stateKey,
 				params.type as 'image' | 'arrayBuffer',
 				state,
