@@ -137,7 +137,7 @@ export const initProtocol = async (
 		throw new Error('OM File invalid');
 	}
 
-	const { variable, ranges } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
+	const { variable, ranges, omFileUrl } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
 
 	if (!omFileReader) {
 		omFileReader = new OMapsFileReader({ useSAB: useSAB });
@@ -145,7 +145,7 @@ export const initProtocol = async (
 
 	return new Promise((resolve, reject) => {
 		omFileReader
-			.setToOmFile(parsedOmUrl)
+			.setToOmFile(omFileUrl)
 			.then(() => {
 				omFileReader.readVariable(variable.value, ranges).then((values) => {
 					data = values;
@@ -153,7 +153,7 @@ export const initProtocol = async (
 					resolve();
 
 					if (omProtocolSettings.postReadCallback) {
-						omProtocolSettings.postReadCallback(omFileReader, parsedOmUrl, data);
+						omProtocolSettings.postReadCallback(omFileReader, omFileUrl, data);
 					}
 				});
 			})
@@ -168,13 +168,14 @@ export const initProtocol = async (
  * Returns an object with dark mode, partial mode, domain, variable, ranges, and omUrl.
  */
 export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
-	const [omUrl, omParams] = url.replace('om://', '').split('?');
+	const [omFileUrl, omParams] = url.replace('om://', '').split('?');
 
 	const urlParams = new URLSearchParams(omParams);
 	dark = urlParams.get('dark') === 'true';
 	partial = urlParams.get('partial') === 'true';
 	interval = Number(urlParams.get('interval'));
-	domain = setDomainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? setDomainOptions[0];
+	domain =
+		setDomainOptions.find((dm) => dm.value === omFileUrl.split('/')[4]) ?? setDomainOptions[0];
 	variable =
 		setVariableOptions.find((v) => urlParams.get('variable') === v.value) ?? setVariableOptions[0];
 	mapBounds = urlParams
@@ -193,13 +194,13 @@ export const parseOmUrl = (url: string): OmParseUrlCallbackResult => {
 			{ start: 0, end: domain.grid.nx }
 		];
 	}
-	return { variable, ranges, omUrl };
+	return { variable, ranges, omFileUrl };
 };
 
 export interface OmParseUrlCallbackResult {
 	variable: Variable;
 	ranges: DimensionRange[] | null;
-	omUrl: string;
+	omFileUrl: string;
 }
 
 export interface OmProtocolSettings {
