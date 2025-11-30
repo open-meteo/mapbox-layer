@@ -17,7 +17,7 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
-export const parseMetaData = async (omUrl: string) => {
+export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date(now);
 	const url = omUrl.replace('om://', '');
 	const { uri, domain, meta } = url.match(domainRegex)?.groups as {

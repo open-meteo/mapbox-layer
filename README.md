@@ -177,10 +177,18 @@ With `latest.json`:
 
 If you want to show the closest current time, or a pick a different valid time than the first one, you could use:
 
-<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?<b>time_step=current_time_1h</b>&variable=temperature_2m
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?<b>time_step=current_time_1H</b>&variable=temperature_2m
 </code></pre>
 
 or the 5th index of the `valid_times` array
 
 <pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?<b>time_step=valid_times_5</b>&variable=temperature_2m
 </code></pre>
+
+### Time Step Modifiers
+
+M -> Minutes
+H -> Hours
+d/D -> Days
+W -> Weeks ??? don't know how yet
+m -> Months
