@@ -64,9 +64,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				let px = grid.getLinearInterpolatedValue(values, lat, lon);
 
 				if (clipping && boundaries) {
-					const pt = turf.point([lat, lon]);
-					const pointInBoundary = turf.booleanPointInPolygon(pt, boundaries[1]);
-					if (!pointInBoundary) {
+					const pt = turf.point([lon, lat]);
+					if (!turf.booleanPointInPolygon(pt, boundaries[1])) {
 						rgba[4 * ind] = 0;
 						rgba[4 * ind + 1] = 0;
 						rgba[4 * ind + 2] = 0;
