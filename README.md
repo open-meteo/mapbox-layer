@@ -139,9 +139,11 @@ For the vector source examples there is the `examples/vector` sub-directory with
 
 ## Capture API
 
+> **⚠️** Using the Capture API will add 0.5-1s delay for each request
+
 Because the use of OM files on the S3 storage is often quite ambiguous, a Capture API is added, that will automatically produce the correct file paths for you.
 
-For each Domain or Weather Model, there will be a `latest.json` and `in-progress.json`metadata file, containing data like valid time steps, valid variables and reference times.
+For each Weather Model, there will be a `latest.json` and `in-progress.json` metadata file, containing data like valid time steps, valid variables and reference times.
 
 An example can be found [here](https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json), for `DWD Icon Global`:
 
@@ -154,35 +156,32 @@ https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
 	"completed":true,
 	"last_modified_time":"2025-11-11T09:42:17Z",
 	"reference_time":"2025-11-11T06:00:00Z",
-	"valid_times":["2025-11-11T06:00Z","2025-11-11T07:00Z", ...],
-	"variables":["cape","cloud_cover", ...]
+	"valid_times":["2025-11-11T06:00Z","2025-11-11T07:00Z", ...+91],
+	"variables":["cape","cloud_cover", "cloud_cover_high", ...+120]
 }
 ```
 
 ### Using the Capture API
 
+
 If you don't want to select a particular model run, but instead always want to use the latest available run. Instead of using the model run in the URL you replace that part with `latest.json`
 
-For example, instead of:
+For example, with the link below replace the red part:
 
-```
-https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m
-```
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/<b style="color:#af1111;">2025/06/06/1200Z/2025-06-06T1200.om</b>?variable=temperature_2m
+</code></pre>
 
-Use the following link:
+With the following part:
 
-```
-https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m
-```
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/<b style="color:#14a62d">latest.json</b>?variable=temperature_2m
+</code></pre>
 
 If you want to show the closest current time, or a pick a different valid time than the first one, you could use:
 
-```
-https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1h&variable=temperature_2m
-```
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?<b>time_step=current_time_1h</b>&variable=temperature_2m
+</code></pre>
 
 or the 5th index of the `valid_times` array
 
-```
-https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=valid_times_5&variable=temperature_2m
-```
+<pre><code>https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?<b>time_step=valid_times_5</b>&variable=temperature_2m
+</code></pre>
