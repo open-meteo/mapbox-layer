@@ -26,14 +26,30 @@ import type {
 	Variable
 } from './types';
 
-setupGlobalCache();
+// Configuration constants - could be made configurable via OmProtocolSettings
+/** Max states that keep data loaded.
+ *
+ * This should be as low as possible, but needs to be at least the number of
+ * variables that you want to display simultaneously. */
+const MAX_STATES_WITH_DATA = 2;
+/** 1 minute for hard eviction on new data fetches */
+const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 const workerPool = new WorkerPool();
-
+setupGlobalCache();
 // THIS is shared global state. The protocol can be added only once with different settings!
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 
 const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
-	if (omProtocolInstance) return omProtocolInstance;
+	if (omProtocolInstance) {
+		// Warn if critical settings differ from initial configuration
+		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
+			console.warn(
+				'omProtocol: useSAB setting differs from initial configuration. ' +
+					'The protocol instance is shared and uses the first settings provided.'
+			);
+		}
+		return omProtocolInstance;
+	}
 
 	const instance = {
 		colorScales: settings.colorScales,
@@ -46,14 +62,47 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 	return instance;
 };
 
-/// needs to be called before setUrl using the old source url
-export const clearOmUrlData = (url: string) => {
-	if (!omProtocolInstance) return;
-	const key = getStateKeyFromUrl(url);
-	const state = omProtocolInstance.stateByKey.get(key);
-	if (!state) return;
-	state.data = null;
-	state.dataPromise = null;
+/**
+ * Evicts old state entries.
+ * Since Map maintains insertion order and we re-insert on access,
+ * the oldest entries are always at the front - no sorting needed.
+ */
+const evictStaleStates = (instance: OmProtocolInstance, currentKey?: string): void => {
+	const now = Date.now();
+	const map = instance.stateByKey;
+
+	// Iterate from oldest to newest (Map iteration order)
+	for (const [key, state] of map) {
+		// Stop if we're under the limit and remaining entries aren't stale
+		if (map.size <= MAX_STATES_WITH_DATA) {
+			const age = now - state.lastAccess;
+			if (age <= STALE_THRESHOLD_MS) break; // Remaining entries are newer
+		}
+
+		if (key === currentKey) continue;
+
+		const age = now - state.lastAccess;
+		const isStale = age > STALE_THRESHOLD_MS;
+		const exceedsMax = map.size > MAX_STATES_WITH_DATA;
+
+		if (isStale || exceedsMax) {
+			console.log(`Evicting stale state for key: ${key}`);
+			map.delete(key);
+		} else {
+			break; // All remaining entries are newer, stop iterating
+		}
+	}
+};
+
+/**
+ * Moves an entry to the end of the map (most recently used position).
+ * This maintains LRU order without sorting.
+ */
+const touchState = (map: Map<string, OmUrlState>, key: string, state: OmUrlState): void => {
+	state.lastAccess = Date.now();
+	// Delete and re-insert to move to end (most recent)
+	map.delete(key);
+	map.set(key, state);
 };
 
 const URL_REGEX = /^om:\/\/(.+)\/(\d+)\/(\d+)\/(\d+)$/;
@@ -74,7 +123,10 @@ const getOrCreateUrlState = (
 ): OmUrlState => {
 	const key = getStateKeyFromUrl(url);
 	const existing = instance.stateByKey.get(key);
-	if (existing) return existing;
+	if (existing) {
+		touchState(instance.stateByKey, key, existing); // Move to end
+		return existing;
+	}
 
 	console.warn('Creating new state for KEY:', key);
 
@@ -120,10 +172,14 @@ const ensureData = async (
 	state: OmUrlState,
 	settings: OmProtocolSettings
 ): Promise<Data> => {
+	const key = getStateKeyFromUrl(omUrl);
 	state.lastAccess = Date.now();
 
 	if (state.data) return state.data;
 	if (state.dataPromise) return state.dataPromise;
+
+	// Evict stale entries before loading new data
+	evictStaleStates(protocol, key);
 
 	const promise = (async () => {
 		await protocol.omFileReader.setToOmFile(omUrl);
@@ -251,10 +307,15 @@ export const parseOmUrl = (
 	const dark = urlParams.get('dark') === 'true';
 	const partial = urlParams.get('partial') === 'true';
 	const interval = Number(urlParams.get('interval'));
-	const domain =
-		domainOptions.find((dm) => dm.value === omFileUrl.split('/')[4]) ?? domainOptions[0];
-	const variable =
-		variableOptions.find((v) => urlParams.get('variable') === v.value) ?? variableOptions[0];
+	const domain = domainOptions.find((dm) => dm.value === omFileUrl.split('/')[4]);
+	if (!domain) {
+		throw new Error(`Invalid domain: ${omFileUrl.split('/')[4]}`);
+	}
+	// FIXME: Variable would need to be validated per domain, possible not something we can do here
+	const variable = variableOptions.find((v) => urlParams.get('variable') === v.value);
+	if (!variable) {
+		throw new Error(`Invalid variable: ${urlParams.get('variable')}`);
+	}
 	const mapBounds = urlParams
 		.get('bounds')
 		?.split(',')

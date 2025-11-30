@@ -29,7 +29,7 @@ export class OMapsFileReader {
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
-	private readonly config: Required<FileReaderConfig>;
+	readonly config: Required<FileReaderConfig>;
 
 	constructor(config: FileReaderConfig = {}) {
 		this.config = {
