@@ -12,7 +12,7 @@ beforeEach(() => {
 
 describe('om-protocol unit tests', () => {
 	it('parseOmUrl returns expected fields and computes ranges for partial=true', async () => {
-		const { parseOmUrl } = await import('../om-protocol');
+		const { defaultResolveUrlSettings, parseUrlComponents } = await import('../om-protocol');
 
 		const domainOptions: Domain[] = [
 			{
@@ -27,10 +27,10 @@ describe('om-protocol unit tests', () => {
 		const variableOptions = [{ value: 'temperature', label: 'Temperature' }];
 
 		const url =
-			'om://https://map-tiles.open-meteo.com/data_spatial?variable=temperature&bounds=0,0,10,10&dark=true&partial=true&interval=2';
-		const parsed = parseOmUrl(url, domainOptions, variableOptions);
+			'om://https://map-tiles.open-meteo.com/data_spatial/domain1/myfunkyomfile.om?variable=temperature&bounds=0,0,10,10&dark=true&partial=true&interval=2';
+		const components = parseUrlComponents(url);
+		const parsed = defaultResolveUrlSettings(components, domainOptions, variableOptions);
 
-		console.log(parsed);
 		expect(parsed.dark).toBe(true);
 		expect(parsed.variable.value).toBe('temperature');
 		expect(parsed.interval).toBe(2);

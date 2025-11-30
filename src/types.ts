@@ -10,9 +10,17 @@ export interface OmProtocolInstance {
 	stateByKey: Map<string, OmUrlState>;
 }
 
-export interface OmUrlState {
+/** Raw parsed URL components - always parsed internally */
+export interface ParsedUrlComponents {
+	baseUrl: string;
+	params: URLSearchParams;
+	stateKey: string;
+	tileIndex: TileIndex | null;
+}
+
+/** User-customizable resolution of domain, variable, and other settings */
+export interface ResolvedUrlSettings {
 	dark: boolean;
-	omFileUrl: string;
 	partial: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
@@ -21,23 +29,13 @@ export interface OmUrlState {
 	variable: Variable;
 	mapBounds: number[];
 	resolutionFactor: 0.5 | 1 | 2;
+}
 
+export interface OmUrlState extends ResolvedUrlSettings {
+	omFileUrl: string;
 	data: Data | null;
 	dataPromise: Promise<Data> | null;
 	lastAccess: number;
-}
-
-export interface OmParseUrlCallbackResult {
-	dark: boolean;
-	omFileUrl: string;
-	partial: boolean;
-	ranges: DimensionRange[] | null;
-	tileSize: 64 | 128 | 256 | 512 | 1024;
-	interval: number;
-	domain: Domain;
-	variable: Variable;
-	mapBounds: number[];
-	resolutionFactor: 0.5 | 1 | 2;
 }
 
 export interface OmProtocolSettings {
@@ -49,11 +47,17 @@ export interface OmProtocolSettings {
 	domainOptions: Domain[];
 	variableOptions: Variable[];
 
-	parseUrlCallback: (
-		url: string,
+	/**
+	 * Optional custom resolver for URL settings.
+	 * Receives parsed URL components and returns resolved settings.
+	 * Default implementation uses standard query param parsing.
+	 */
+	resolveUrlSettings: (
+		components: ParsedUrlComponents,
 		domainOptions: Domain[],
 		variableOptions: Variable[]
-	) => OmParseUrlCallbackResult;
+	) => ResolvedUrlSettings;
+
 	postReadCallback:
 		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
 		| undefined;
