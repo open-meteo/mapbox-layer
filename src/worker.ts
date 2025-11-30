@@ -37,7 +37,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			tileLiesInBoundaries = false;
 			tileLiesWithinBoundaries = false;
 			const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
-			const polygonPoints = clipping.features[1].geometry.coordinates[0][0].length;
+			// use for calculating tolerance icw tilebelt
+			// const polygonPoints = clipping.features[1].geometry.coordinates[0][0].length;
 
 			boundaries = [];
 			for (const feature of clipping.features) {
