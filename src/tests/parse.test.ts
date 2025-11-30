@@ -1,5 +1,5 @@
 import { pad } from '../utils';
-import { parseMetaJson, validUrl } from '../utils/parse-url';
+import { assertOmUrlValid, parseMetaJson, validUrl } from '../utils/parse-url';
 import { describe, expect, test } from 'vitest';
 
 const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
@@ -33,16 +33,22 @@ describe('parse OM URL with a model-run', () => {
 describe('check valid OM Urls', () => {
 	test('check if some Urls are valid', () => {
 		expect(
-			validUrl(
+			assertOmUrlValid(
 				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/11/17/0600Z/2025-11-17T1300.om'
 			)
 		).toBe(true);
 
 		// undefined domain
-		expect(
-			validUrl(
+		expect(() =>
+			assertOmUrlValid(
 				'https://map-tiles.open-meteo.com/data_spatial/not_a_valid_domain/2025/11/17/0600Z/2025-11-17T1300.om'
 			)
-		).toBe(false);
+		).toThrowError('Invalid Domain');
+
+		expect(() =>
+			assertOmUrlValid(
+				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2024/11/17/0600Z/2025-11-17T1300.om'
+			)
+		).toThrowError('Model run too far in the past');
 	});
 });
