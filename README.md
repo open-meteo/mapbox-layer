@@ -163,7 +163,6 @@ https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
 
 ### Using the Capture API
 
-
 If you don't want to select a particular model run, but instead always want to use the latest available run. Instead of using the model run in the URL you replace that part with `latest.json`
 
 For example, with the link below replace the red part:
