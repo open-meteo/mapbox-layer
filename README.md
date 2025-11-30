@@ -145,7 +145,7 @@ Because the use of OM files on the S3 storage is often quite ambiguous, a Captur
 
 For each Weather Model, there will be a `latest.json` and `in-progress.json` metadata file, containing data like valid time steps, valid variables and reference times.
 
-An example can be found [here](https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json), for `DWD Icon Global`:
+An example can be found [here](https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json), for `DWD Icon Global`:
 
 ```
 https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json
