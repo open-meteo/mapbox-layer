@@ -31,21 +31,28 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const clipping = message.data.clipping;
 		let tileLiesInBoundaries = true;
+		let tileLiesWithinBoundaries = true;
 		let boundaries;
 		if (clipping) {
 			tileLiesInBoundaries = false;
+			tileLiesWithinBoundaries = false;
 			const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
+			const polygonPoints = clipping.features[1].geometry.coordinates[0][0].length;
 
 			boundaries = [];
 			for (const feature of clipping.features) {
-				const boundary = turf.multiPolygon(feature.geometry.coordinates);
-				if (turf.booleanOverlap(tileBbox, boundary) || turf.booleanWithin(tileBbox, boundary)) {
+				const boundary = turf.polygon(feature.geometry.coordinates[0]);
+				// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
+				const simplifiedBoundary = turf.simplify(boundary, { tolerance: 0.005, highQuality: true });
+				if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
 					tileLiesInBoundaries = true;
 				}
-				boundaries.push(boundary);
-			}
+				if (!tileLiesWithinBoundaries && turf.booleanWithin(tileBbox, simplifiedBoundary)) {
+					tileLiesWithinBoundaries = true;
+				}
 
-			// collection = turf.featureCollection(boundaries);
+				boundaries.push(simplifiedBoundary);
+			}
 		}
 
 		const pixels = tileSize * tileSize;
@@ -69,6 +76,13 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					const ind = j + i * tileSize;
 					const lon = tile2lon(x + j / tileSize, z);
 					let px = grid.getLinearInterpolatedValue(values, lat, lon);
+
+					if (clipping && boundaries && !tileLiesWithinBoundaries) {
+						const point = turf.point([lon, lat]);
+						if (!turf.booleanPointInPolygon(point, boundaries[1])) {
+							continue;
+						}
+					}
 
 					if (isHideZero) {
 						if (px < 0.25) {
