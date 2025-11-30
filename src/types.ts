@@ -12,7 +12,7 @@ export interface OmProtocolInstance {
 
 export interface OmUrlState {
 	dark: boolean;
-	omUrl: string;
+	omFileUrl: string;
 	partial: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
@@ -29,7 +29,7 @@ export interface OmUrlState {
 
 export interface OmParseUrlCallbackResult {
 	dark: boolean;
-	omUrl: string;
+	omFileUrl: string;
 	partial: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: 64 | 128 | 256 | 512 | 1024;

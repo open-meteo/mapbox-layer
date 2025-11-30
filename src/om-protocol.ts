@@ -3,6 +3,7 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
+import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -81,7 +82,7 @@ const getOrCreateUrlState = (
 
 	const {
 		dark,
-		omUrl,
+		omFileUrl,
 		ranges,
 		partial,
 		tileSize,
@@ -94,7 +95,7 @@ const getOrCreateUrlState = (
 
 	const state: OmUrlState = {
 		dark,
-		omUrl,
+		omFileUrl,
 		partial,
 		ranges,
 		tileSize,
@@ -244,13 +245,14 @@ export const parseOmUrl = (
 	domainOptions: Domain[],
 	variableOptions: Variable[]
 ): OmParseUrlCallbackResult => {
-	const [omUrl, omParams] = url.replace('om://', '').split('?');
-	const urlParams = new URLSearchParams(omParams);
+	const [omFileUrl, omParams] = url.replace('om://', '').split('?');
 
+	const urlParams = new URLSearchParams(omParams);
 	const dark = urlParams.get('dark') === 'true';
 	const partial = urlParams.get('partial') === 'true';
 	const interval = Number(urlParams.get('interval'));
-	const domain = domainOptions.find((dm) => dm.value === omUrl.split('/')[4]) ?? domainOptions[0];
+	const domain =
+		domainOptions.find((dm) => dm.value === omFileUrl.split('/')[4]) ?? domainOptions[0];
 	const variable =
 		variableOptions.find((v) => urlParams.get('variable') === v.value) ?? variableOptions[0];
 	const mapBounds = urlParams
@@ -291,7 +293,7 @@ export const parseOmUrl = (
 
 	return {
 		dark,
-		omUrl,
+		omFileUrl,
 		partial,
 		ranges,
 		tileSize,
@@ -322,7 +324,12 @@ export const omProtocol = async (
 	omProtocolSettings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	const protocol = getProtocolInstance(omProtocolSettings);
-	const state = getOrCreateUrlState(params.url, omProtocolSettings, protocol);
+	let parsedOmUrl = params.url;
+	if (parsedOmUrl.includes('.json')) {
+		parsedOmUrl = await parseMetaJson(parsedOmUrl);
+	}
+	assertOmUrlValid(parsedOmUrl);
+	const state = getOrCreateUrlState(parsedOmUrl, omProtocolSettings, protocol);
 
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, state) };
