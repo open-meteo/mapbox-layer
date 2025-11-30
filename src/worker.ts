@@ -38,7 +38,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const clipping = message.data.clipping;
 
 		let collection, boundaries;
-		console.log(clipping);
 		if (clipping) {
 			boundaries = [];
 			for (const feature of clipping.features) {
