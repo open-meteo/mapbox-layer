@@ -1,3 +1,4 @@
+import * as tilebelt from '@mapbox/tilebelt';
 import * as turf from '@turf/turf';
 import Pbf from 'pbf';
 
@@ -28,24 +29,30 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const variable = message.data.variable;
 		const colorScale = message.data.colorScale;
 
+		const clipping = message.data.clipping;
+		let tileLiesInBoundaries = true;
+		let boundaries;
+		if (clipping) {
+			tileLiesInBoundaries = false;
+			const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
+
+			boundaries = [];
+			for (const feature of clipping.features) {
+				const boundary = turf.multiPolygon(feature.geometry.coordinates);
+				if (turf.booleanOverlap(tileBbox, boundary) || turf.booleanWithin(tileBbox, boundary)) {
+					tileLiesInBoundaries = true;
+				}
+				boundaries.push(boundary);
+			}
+
+			// collection = turf.featureCollection(boundaries);
+		}
+
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
 		if (!values) {
 			throw new Error('No values provided');
-		}
-
-		const clipping = message.data.clipping;
-
-		let collection, boundaries;
-		if (clipping) {
-			boundaries = [];
-			for (const feature of clipping.features) {
-				const boundary = turf.multiPolygon(feature.geometry.coordinates);
-				boundaries.push(boundary);
-			}
-
-			collection = turf.featureCollection(boundaries);
 		}
 
 		// const interpolationMethod = getInterpolationMethod(colorScale);
@@ -55,47 +62,38 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const isHideZero = hideZero.includes(variable.value);
 		const isWeatherCode = variable.value === 'weather_code';
 
-		for (let i = 0; i < tileSize; i++) {
-			const lat = tile2lat(y + i / tileSize, z);
-			for (let j = 0; j < tileSize; j++) {
-				const ind = j + i * tileSize;
-				const lon = tile2lon(x + j / tileSize, z);
-				let px = grid.getLinearInterpolatedValue(values, lat, lon);
+		if (tileLiesInBoundaries) {
+			for (let i = 0; i < tileSize; i++) {
+				const lat = tile2lat(y + i / tileSize, z);
+				for (let j = 0; j < tileSize; j++) {
+					const ind = j + i * tileSize;
+					const lon = tile2lon(x + j / tileSize, z);
+					let px = grid.getLinearInterpolatedValue(values, lat, lon);
 
-				if (clipping && boundaries) {
-					const pt = turf.point([lon, lat]);
-					if (!turf.booleanPointInPolygon(pt, boundaries[1])) {
+					if (isHideZero) {
+						if (px < 0.25) {
+							px = NaN;
+						}
+					}
+
+					if (isWind) {
+						px = px * MS_TO_KMH;
+					}
+
+					if (isNaN(px) || px === Infinity || isWeatherCode) {
 						rgba[4 * ind] = 0;
 						rgba[4 * ind + 1] = 0;
 						rgba[4 * ind + 2] = 0;
 						rgba[4 * ind + 3] = 0;
-						continue;
-					}
-				}
+					} else {
+						const color = getColor(colorScale, px);
 
-				if (isHideZero) {
-					if (px < 0.25) {
-						px = NaN;
-					}
-				}
-
-				if (isWind) {
-					px = px * MS_TO_KMH;
-				}
-
-				if (isNaN(px) || px === Infinity || isWeatherCode) {
-					rgba[4 * ind] = 0;
-					rgba[4 * ind + 1] = 0;
-					rgba[4 * ind + 2] = 0;
-					rgba[4 * ind + 3] = 0;
-				} else {
-					const color = getColor(colorScale, px);
-
-					if (color) {
-						rgba[4 * ind] = color[0];
-						rgba[4 * ind + 1] = color[1];
-						rgba[4 * ind + 2] = color[2];
-						rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
+						if (color) {
+							rgba[4 * ind] = color[0];
+							rgba[4 * ind + 1] = color[1];
+							rgba[4 * ind + 2] = color[2];
+							rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
+						}
 					}
 				}
 			}
@@ -103,36 +101,17 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const imageData = new ImageData(rgba, tileSize, tileSize);
 
-		const offscreenCanvas = true;
-		if (offscreenCanvas) {
-			console.time('offscreencanvas');
-
-			const canvas = new OffscreenCanvas(tileSize, tileSize);
-			const context = canvas.getContext('2d');
-			if (!context) {
-				throw new Error('Could not initialise canvas context');
-			}
-			context.putImageData(imageData, 0, 0);
-
-			const blob = await canvas.convertToBlob({ type: 'image/png' });
-
-			postMessage(
-				{ type: 'returnImage', tile: await blob.arrayBuffer(), key: key }
-				// { transfer: [blob] }
-			);
-			console.timeEnd('offscreencanvas');
-		} else {
-			console.time('imagebitmap');
-
-			const imageBitmap = await createImageBitmap(imageData, {
-				premultiplyAlpha: 'premultiply'
-			});
-			postMessage(
-				{ type: 'returnImage', tile: imageBitmap, key: key },
-				{ transfer: [imageBitmap] }
-			);
-			console.timeEnd('imagebitmap');
+		const canvas = new OffscreenCanvas(tileSize, tileSize);
+		const context = canvas.getContext('2d');
+		if (!context) {
+			throw new Error('Could not initialise canvas context');
 		}
+		context.putImageData(imageData, 0, 0);
+
+		const blob = await canvas.convertToBlob({ type: 'image/png' });
+		const arrayBuffer = await blob.arrayBuffer();
+
+		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const key = message.data.key;
 

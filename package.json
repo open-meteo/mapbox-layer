@@ -55,6 +55,7 @@
 		"vitest": "^4.0.4"
 	},
 	"dependencies": {
+		"@mapbox/tilebelt": "^2.0.2",
 		"@mapbox/vector-tile": "^2.0.4",
 		"@openmeteo/file-reader": "^0.0.13",
 		"@turf/turf": "^7.3.1",
