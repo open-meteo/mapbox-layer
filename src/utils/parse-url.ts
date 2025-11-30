@@ -68,7 +68,7 @@ export const parseMetaData = async (omUrl: string) => {
 			}
 		}
 	} else {
-		// if no time_step then take the first valid time
+		// if no time_step defined, then take the first valid time
 		date = new Date(latest.valid_times[0]);
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
