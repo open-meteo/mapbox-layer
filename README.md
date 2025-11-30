@@ -187,8 +187,9 @@ or the 5th index of the `valid_times` array
 
 ### Time Step Modifiers
 
-M -> Minutes
-H -> Hours
-d/D -> Days
-W -> Weeks ??? don't know how yet
-m -> Months
+| modifier | Alteration |
+| -------- | ---------- |
+| M        | Minutes    |
+| H        | Hours      |
+| d        | Days       |
+| m        | Months     |

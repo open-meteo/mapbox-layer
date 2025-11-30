@@ -48,10 +48,15 @@ export const parseMetaJson = async (omUrl: string) => {
 						: 0;
 
 					const unit = splitAmountAndUnit[1] ?? undefined;
-					if (amount && unit === 'D') {
-						date.setDate(date.getDate() + amount);
+
+					if (amount && unit === 'M') {
+						date.setMinutes(date.getMinutes() + amount);
 					} else if (amount && unit === 'H') {
 						date.setHours(date.getHours() + amount);
+					} else if (amount && unit === 'd') {
+						date.setDate(date.getDate() + amount);
+					} else if (amount && unit === 'm') {
+						date.setMonth(date.getMonth() + amount);
 					} else {
 						throw new Error('Modifier or amount not supported ');
 					}
