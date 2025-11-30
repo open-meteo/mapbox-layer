@@ -3,7 +3,7 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
-import { parseMetaJson, validUrl } from './utils/parse-url';
+import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -133,9 +133,7 @@ export const initProtocol = async (
 		parsedOmUrl = await parseMetaJson(parsedOmUrl);
 	}
 
-	if (!validUrl(parsedOmUrl)) {
-		throw new Error('OM File invalid');
-	}
+	assertOmUrlValid(parsedOmUrl);
 
 	const { variable, ranges, omFileUrl } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
 

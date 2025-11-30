@@ -86,15 +86,15 @@ export const parseMetaJson = async (omUrl: string) => {
 	);
 };
 
-export const validUrl = (url: string) => {
+export const assertOmUrlValid = (url: string) => {
 	const groups = url.match(omUrlRegex)?.groups;
 	if (!groups) return false;
 
-	// const { uri, domain, run_year, run_month, run_date, run_time, file, params } = groups;
-	const { domain, run_year } = groups;
+	const { domain, runYear } = groups;
 
-	if (!domainOptions.find((d) => d.value == domain)) return false;
-	if (Number(run_year) < 2025) return false;
+	if (!domainOptions.find((d) => d.value == domain))
+		throw new Error('Invalid Domain / Weather Model');
+	if (Number(runYear) < 2025) throw new Error('Model run too far in the past');
 
 	return true;
 };
