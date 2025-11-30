@@ -1,5 +1,5 @@
 import { pad } from '../utils';
-import { assertOmUrlValid, parseMetaJson, validUrl } from '../utils/parse-url';
+import { assertOmUrlValid, parseMetaJson } from '../utils/parse-url';
 import { describe, expect, test } from 'vitest';
 
 const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
