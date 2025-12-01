@@ -118,10 +118,10 @@ const getOrCreateState = (
 	dataOptions: DataIdentityOptions,
 	omFileUrl: string
 ): OmUrlState => {
-	const existing = stateByKey.get(stateKey);
-	if (existing) {
-		touchState(stateByKey, stateKey, existing);
-		return existing;
+	const existingState = stateByKey.get(stateKey);
+	if (existingState) {
+		touchState(stateByKey, stateKey, existingState);
+		return existingState;
 	}
 
 	evictStaleStates(stateByKey, stateKey);
