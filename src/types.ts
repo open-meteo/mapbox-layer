@@ -52,7 +52,7 @@ export interface OmUrlState {
  * Receives parsed URL components and settings, returns resolved identity and options.
  */
 export type RequestResolver = (
-	components: ParsedUrlComponents,
+	urlComponents: ParsedUrlComponents,
 	settings: OmProtocolSettings
 ) => { dataOptions: DataIdentityOptions; renderOptions: RenderOptions };
 

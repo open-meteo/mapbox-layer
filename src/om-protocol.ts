@@ -165,11 +165,11 @@ const ensureData = async (state: OmUrlState, omFileReader: OMapsFileReader): Pro
 };
 
 const defaultResolveDataIdentity = (
-	components: ParsedUrlComponents,
+	urlComponents: ParsedUrlComponents,
 	domainOptions: Domain[],
 	variableOptions: Variable[]
 ): DataIdentityOptions => {
-	const { baseUrl, params } = components;
+	const { baseUrl, params } = urlComponents;
 
 	const domainValue = baseUrl.split('/')[4];
 	const domain = domainOptions.find((dm) => dm.value === domainValue);
@@ -206,11 +206,11 @@ const defaultResolveDataIdentity = (
 };
 
 const defaultResolveRenderOptions = (
-	components: ParsedUrlComponents,
+	urlComponents: ParsedUrlComponents,
 	dataOptions: DataIdentityOptions,
 	colorScales: ColorScales
 ): RenderOptions => {
-	const { params } = components;
+	const { params } = urlComponents;
 
 	const dark = params.get('dark') === 'true';
 
@@ -240,29 +240,33 @@ const defaultResolveRenderOptions = (
 };
 
 export const defaultResolveRequest = (
-	components: ParsedUrlComponents,
+	urlComponents: ParsedUrlComponents,
 	settings: OmProtocolSettings
 ): { dataOptions: DataIdentityOptions; renderOptions: RenderOptions } => {
 	const dataOptions = defaultResolveDataIdentity(
-		components,
+		urlComponents,
 		settings.domainOptions,
 		settings.variableOptions
 	);
 
-	const renderOptions = defaultResolveRenderOptions(components, dataOptions, settings.colorScales);
+	const renderOptions = defaultResolveRenderOptions(
+		urlComponents,
+		dataOptions,
+		settings.colorScales
+	);
 
 	return { dataOptions, renderOptions };
 };
 
 const parseRequest = (url: string, settings: OmProtocolSettings): ParsedRequest => {
-	const components = parseUrlComponents(url);
+	const urlComponents = parseUrlComponents(url);
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
-	const { dataOptions, renderOptions } = resolver(components, settings);
+	const { dataOptions, renderOptions } = resolver(urlComponents, settings);
 
 	return {
-		baseUrl: components.baseUrl,
-		stateKey: components.stateKey,
-		tileIndex: components.tileIndex,
+		baseUrl: urlComponents.baseUrl,
+		stateKey: urlComponents.stateKey,
+		tileIndex: urlComponents.tileIndex,
 		dataOptions,
 		renderOptions
 	};
