@@ -14,26 +14,24 @@ import { TileRequest } from './types';
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const key = message.data.key;
-	if (message.data.type == 'getImage') {
-		const values = message.data.data.values;
-		const { z, x, y } = message.data.tileIndex;
+	const { z, x, y } = message.data.tileIndex;
+	const ranges = message.data.dataOptions.ranges;
+	const domain = message.data.dataOptions.domain;
+	const values = message.data.data.values;
 
+	if (!values) {
+		throw new Error('No values provided');
+	}
+
+	if (message.data.type == 'getImage') {
 		const dark = message.data.renderOptions.dark;
 		const tileSize = message.data.renderOptions.tileSize;
 		const colorScale = message.data.renderOptions.colorScale;
-
-		const ranges = message.data.dataOptions.ranges;
-		const domain = message.data.dataOptions.domain;
 		const variable = message.data.dataOptions.variable;
 
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		if (!values) {
-			throw new Error('No values provided');
-		}
-
-		// const interpolationMethod = getInterpolationMethod(colorScale);
 		const grid = GridFactory.create(domain.grid, ranges);
 
 		const isWind = variable.value.includes('wind');
@@ -80,17 +78,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		});
 		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
 	} else if (message.data.type == 'getArrayBuffer') {
-		const { z, x, y } = message.data.tileIndex;
-		const values = message.data.data.values;
 		const directions = message.data.data.directions;
-
-		const ranges = message.data.dataOptions.ranges;
-		const domain = message.data.dataOptions.domain;
-		const interval = message.data.renderOptions.interval;
-
-		if (!values) {
-			throw new Error('No values provided');
-		}
 
 		const pbf = new Pbf();
 
@@ -104,6 +92,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
 		if (message.data.renderOptions.makeContours) {
+			const interval = message.data.renderOptions.interval;
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}
