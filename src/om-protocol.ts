@@ -1,159 +1,83 @@
-import { setupGlobalCache } from '@openmeteo/file-reader';
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
-import { MS_TO_KMH } from './utils/constants';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
-import { assertOmUrlValid, parseMetaJson, parseUrlComponents } from './utils/parse-url';
+import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
 import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
-import { OMapsFileReader } from './om-file-reader';
+import { ensureData, getOrCreateState, getProtocolInstance } from './om-protocol-state';
 import { capitalize } from './utils';
 import { WorkerPool } from './worker-pool';
 
 import type {
 	Data,
 	DataIdentityOptions,
-	OmProtocolInstance,
 	OmProtocolSettings,
-	OmUrlState,
 	ParsedRequest,
 	TileJSON,
-	TilePromise,
-	Variable
+	TilePromise
 } from './types';
 
-// Configuration constants - could be made configurable via OmProtocolSettings
-/** Max states that keep data loaded.
- *
- * This should be as low as possible, but needs to be at least the number of
- * variables that you want to display simultaneously. */
-const MAX_STATES_WITH_DATA = 2;
-/** 1 minute for hard eviction on new data fetches */
-const STALE_THRESHOLD_MS = 1 * 60 * 1000;
-
 const workerPool = new WorkerPool();
-setupGlobalCache();
 
-// THIS is shared global state. The protocol can be added only once with different settings!
-let omProtocolInstance: OmProtocolInstance | undefined = undefined;
+export const defaultOmProtocolSettings: OmProtocolSettings = {
+	// static
+	useSAB: false,
 
-const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
-	if (omProtocolInstance) {
-		// Warn if critical settings differ from initial configuration
-		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
-			throw new Error(
-				'omProtocol: useSAB setting differs from initial configuration. ' +
-					'The protocol instance is shared and uses the first settings provided.'
-			);
-		}
-		return omProtocolInstance;
+	// dynamic
+	colorScales: defaultColorScales,
+	domainOptions: defaultDomainOptions,
+	variableOptions: defaultVariableOptions,
+
+	resolveRequest: defaultResolveRequest,
+	postReadCallback: undefined
+};
+
+export const omProtocol = async (
+	params: RequestParameters,
+	abortController?: AbortController,
+	settings = defaultOmProtocolSettings
+): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
+	const instance = getProtocolInstance(settings);
+
+	const url = await resolveJSONUrl(params.url);
+	const request = parseRequest(url, settings);
+
+	// Handle TileJSON request
+	if (params.type == 'json') {
+		return { data: await getTilejson(params.url, request.dataOptions) };
 	}
 
-	const instance = {
-		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
-		stateByKey: new Map()
-	};
-	omProtocolInstance = instance;
-	return instance;
-};
-
-/**
- * Evicts old state entries.
- * Since Map maintains insertion order and we re-insert on access,
- * the oldest entries are always at the front - no sorting needed.
- */
-const evictStaleStates = (stateByKey: Map<string, OmUrlState>, currentKey?: string): void => {
-	const now = Date.now();
-
-	// Iterate from oldest to newest (Map iteration order)
-	for (const [key, state] of stateByKey) {
-		// Stop if we're under the limit and remaining entries aren't stale
-		if (stateByKey.size <= MAX_STATES_WITH_DATA) {
-			const age = now - state.lastAccess;
-			if (age <= STALE_THRESHOLD_MS) break; // Remaining entries are newer
-		}
-
-		if (key === currentKey) continue;
-
-		const age = now - state.lastAccess;
-		const isStale = age > STALE_THRESHOLD_MS;
-		const exceedsMax = stateByKey.size > MAX_STATES_WITH_DATA;
-
-		if (isStale || exceedsMax) {
-			stateByKey.delete(key);
-		} else {
-			break; // All remaining entries are newer, stop iterating
-		}
-	}
-};
-
-/**
- * Moves an entry to the end of the map (most recently used position).
- * This maintains LRU order without sorting.
- */
-const touchState = (stateByKey: Map<string, OmUrlState>, key: string, state: OmUrlState): void => {
-	state.lastAccess = Date.now();
-	// Delete and re-insert to move to end (most recent)
-	stateByKey.delete(key);
-	stateByKey.set(key, state);
-};
-
-const getOrCreateState = (
-	stateByKey: Map<string, OmUrlState>,
-	stateKey: string,
-	dataOptions: DataIdentityOptions,
-	omFileUrl: string
-): OmUrlState => {
-	const existingState = stateByKey.get(stateKey);
-	if (existingState) {
-		touchState(stateByKey, stateKey, existingState);
-		return existingState;
+	// Handle tile request
+	if (params.type !== 'image' && params.type !== 'arrayBuffer') {
+		throw new Error(`Unsupported request type '${params.type}'`);
 	}
 
-	evictStaleStates(stateByKey, stateKey);
+	if (!request.tileIndex) {
+		throw new Error(`Tile coordinates required for ${params.type} request`);
+	}
 
-	const state: OmUrlState = {
-		dataOptions,
-		omFileUrl,
-		data: null,
-		dataPromise: null,
-		lastAccess: Date.now()
-	};
+	const state = getOrCreateState(
+		instance.stateByKey,
+		request.stateKey,
+		request.dataOptions,
+		request.baseUrl
+	);
 
-	stateByKey.set(stateKey, state);
-	return state;
+	const data = await ensureData(state, instance.omFileReader);
+
+	if (settings.postReadCallback) {
+		settings.postReadCallback(instance.omFileReader, request.baseUrl, data);
+	}
+
+	const tile = await requestTile(request, data, params.type);
+
+	return { data: tile };
 };
 
-const ensureData = async (state: OmUrlState, omFileReader: OMapsFileReader): Promise<Data> => {
-	if (state.data) return state.data;
-	if (state.dataPromise) return state.dataPromise;
-
-	const promise = (async () => {
-		try {
-			await omFileReader.setToOmFile(state.omFileUrl);
-			const data = await omFileReader.readVariable(
-				state.dataOptions.variable.value,
-				state.dataOptions.ranges
-			);
-
-			state.data = data;
-			state.dataPromise = null;
-
-			return data;
-		} catch (error) {
-			state.dataPromise = null; // Clear promise so retry is possible
-			throw error;
-		}
-	})();
-
-	state.dataPromise = promise;
-	return promise;
-};
-
-const normalizeUrl = async (url: string): Promise<string> => {
+const resolveJSONUrl = async (url: string): Promise<string> => {
 	let normalized = url;
 	if (normalized.includes('.json')) {
 		normalized = await parseMetaJson(normalized);
@@ -207,91 +131,4 @@ const getTilejson = async (
 		maxzoom: 12,
 		bounds: bounds
 	};
-};
-
-export const getValueFromLatLong = (
-	lat: number,
-	lon: number,
-	omUrl: string,
-	variable: Variable
-): { value: number; direction?: number } => {
-	if (!omProtocolInstance) {
-		throw new Error('OmProtocolInstance is not initialized');
-	}
-
-	const { stateKey } = parseUrlComponents(omUrl);
-	const state = omProtocolInstance.stateByKey.get(stateKey);
-	if (!state) {
-		throw new Error(`State not found for key: ${stateKey}`);
-	}
-
-	state.lastAccess = Date.now();
-
-	if (!state.data?.values) {
-		return { value: NaN };
-	}
-
-	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
-	let value = grid.getLinearInterpolatedValue(state.data.values, lat, ((lon + 180) % 360) - 180);
-
-	if (variable.value.includes('wind')) {
-		value = value * MS_TO_KMH;
-	}
-
-	return { value };
-};
-
-export const defaultOmProtocolSettings: OmProtocolSettings = {
-	// static
-	useSAB: false,
-
-	// dynamic
-	colorScales: defaultColorScales,
-	domainOptions: defaultDomainOptions,
-	variableOptions: defaultVariableOptions,
-
-	resolveRequest: defaultResolveRequest,
-	postReadCallback: undefined
-};
-
-export const omProtocol = async (
-	params: RequestParameters,
-	abortController?: AbortController,
-	settings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
-	const instance = getProtocolInstance(settings);
-
-	const url = await normalizeUrl(params.url);
-	const request = parseRequest(url, settings);
-
-	// Handle TileJSON request
-	if (params.type == 'json') {
-		return { data: await getTilejson(params.url, request.dataOptions) };
-	}
-
-	// Handle tile request
-	if (params.type !== 'image' && params.type !== 'arrayBuffer') {
-		throw new Error(`Unsupported request type '${params.type}'`);
-	}
-
-	if (!request.tileIndex) {
-		throw new Error(`Tile coordinates required for ${params.type} request`);
-	}
-
-	const state = getOrCreateState(
-		instance.stateByKey,
-		request.stateKey,
-		request.dataOptions,
-		request.baseUrl
-	);
-
-	const data = await ensureData(state, instance.omFileReader);
-
-	if (settings.postReadCallback) {
-		settings.postReadCallback(instance.omFileReader, request.baseUrl, data);
-	}
-
-	const tile = await requestTile(request, data, params.type);
-
-	return { data: tile };
 };

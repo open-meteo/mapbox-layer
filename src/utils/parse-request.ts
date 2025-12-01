@@ -1,6 +1,6 @@
 import { GridFactory } from '../grids/index';
 
-import { parseResolutionFactor, parseTileSize, parseUrlComponents } from './parse-url';
+import { parseUrlComponents } from './parse-url';
 import { getColorScale } from './styling';
 
 import type {
@@ -14,6 +14,11 @@ import type {
 	RenderOptions,
 	Variable
 } from '../types';
+
+const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
+const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
+const DEFAULT_TILE_SIZE = 256;
+const DEFAULT_RESOLUTION_FACTOR = 1;
 
 export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedRequest => {
 	const urlComponents = parseUrlComponents(url);
@@ -121,4 +126,22 @@ const defaultResolveRenderOptions = (
 		interval,
 		colorScale
 	};
+};
+
+const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
+	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
+	if (!VALID_TILE_SIZES.includes(size)) {
+		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
+	}
+	return size as 64 | 128 | 256 | 512 | 1024;
+};
+
+const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
+	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
+	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
+		throw new Error(
+			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
+		);
+	}
+	return factor as 0.5 | 1 | 2;
 };

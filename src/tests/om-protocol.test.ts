@@ -1,4 +1,5 @@
-import { defaultOmProtocolSettings, defaultResolveRequest } from '../om-protocol';
+import { defaultOmProtocolSettings } from '../om-protocol';
+import { defaultResolveRequest } from '../utils/parse-request';
 import { parseUrlComponents } from '../utils/parse-url';
 import { RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -331,7 +332,8 @@ describe('omProtocol', () => {
 
 describe('getValueFromLatLong', () => {
 	it('returns interpolated value from loaded state', async () => {
-		const { omProtocol, getValueFromLatLong } = await import('../om-protocol');
+		const { omProtocol } = await import('../om-protocol');
+		const { getValueFromLatLong } = await import('../om-protocol-state');
 
 		// First load data via tile request
 		const url =
@@ -345,7 +347,7 @@ describe('getValueFromLatLong', () => {
 	});
 
 	it('throws when protocol not initialized', async () => {
-		const { getValueFromLatLong } = await import('../om-protocol');
+		const { getValueFromLatLong } = await import('../om-protocol-state');
 
 		expect(() =>
 			getValueFromLatLong(
@@ -358,7 +360,8 @@ describe('getValueFromLatLong', () => {
 	});
 
 	it('throws when state not found', async () => {
-		const { omProtocol, getValueFromLatLong } = await import('../om-protocol');
+		const { omProtocol } = await import('../om-protocol');
+		const { getValueFromLatLong } = await import('../om-protocol-state');
 
 		// Initialize protocol with one URL
 		await omProtocol(

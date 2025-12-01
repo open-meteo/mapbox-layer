@@ -17,10 +17,6 @@ const RENDERING_ONLY_PARAMS = new Set([
 	'resolution-factor', // TODO: resolution_factor ?
 	'interval'
 ]);
-const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
-const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
-const DEFAULT_TILE_SIZE = 256;
-const DEFAULT_RESOLUTION_FACTOR = 1;
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -73,24 +69,6 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	return { baseUrl, params, stateKey, tileIndex };
 };
 
-export const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
-	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
-	if (!VALID_TILE_SIZES.includes(size)) {
-		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
-	}
-	return size as 64 | 128 | 256 | 512 | 1024;
-};
-
-export const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
-	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
-	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
-		throw new Error(
-			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
-		);
-	}
-	return factor as 0.5 | 1 | 2;
-};
-
 const VALID_OM_FILE_REGEX =
 	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<runYear>[\s\S]+)?\/(?<runMonth>[\s\S]+)?\/(?<runDate>[\s\S]+)?\/(?<runTime>[\s\S]+)?\/(?<file>[\s\S]+)?\.(om|json)(?<params>[\s\S]+)?/;
 const DOMAIN_REGEX = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<meta>[\s\S]+).json/;
@@ -98,7 +76,7 @@ const TIME_STEP_REGEX =
 	/(?<capture>(current_time|valid_times))(_)?(?<modifier>(\+|-))?(?<amountAndUnit>.*)?/;
 
 /**
- * Returns positive amount if modifer is '+' or 'undefined', returns negative amount otherwise
+ * Returns positive amount if modifier is '+' or 'undefined', returns negative amount otherwise
  */
 const getModifiedAmount = (amount: number, modifier = '+') => {
 	if (modifier === '+' || modifier === undefined) return amount;
