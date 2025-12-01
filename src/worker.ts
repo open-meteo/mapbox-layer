@@ -75,6 +75,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					}
 				}
 			} catch (e) {
+				console.log(e);
 				throw new Error('Could not load @turf/turf');
 			}
 		}
