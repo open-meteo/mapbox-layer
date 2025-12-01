@@ -3,7 +3,13 @@ import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
 import { MS_TO_KMH } from './utils/constants';
-import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
+import {
+	assertOmUrlValid,
+	parseMetaJson,
+	parseResolutionFactor,
+	parseTileSize,
+	parseUrlComponents
+} from './utils/parse-url';
 import { getColorScale } from './utils/styling';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
 
@@ -25,7 +31,6 @@ import type {
 	ParsedRequest,
 	ParsedUrlComponents,
 	RenderOptions,
-	TileIndex,
 	TileJSON,
 	TilePromise,
 	Variable
@@ -160,94 +165,6 @@ const ensureData = async (state: OmUrlState, omFileReader: OMapsFileReader): Pro
 
 	state.dataPromise = promise;
 	return promise;
-};
-
-const URL_REGEX = /^om:\/\/([^?]+)(?:\?(.*))?$/;
-// Match both regular and percent-encoded slashes
-const TILE_SUFFIX_REGEX = /(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)$/i;
-
-// Parameters that don't affect the data identity (only affect rendering)
-const RENDERING_ONLY_PARAMS = new Set([
-	'grid',
-	'arrows',
-	'contours',
-	'partial',
-	'tile-size', // TODO: tile_size ?
-	'resolution-factor', // TODO: resolution_factor ?
-	'interval'
-]);
-const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
-const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
-const DEFAULT_TILE_SIZE = 256;
-const DEFAULT_RESOLUTION_FACTOR = 1;
-
-const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
-	const match = url.match(TILE_SUFFIX_REGEX);
-	if (!match) {
-		return { tileIndex: null, remainingUrl: url };
-	}
-
-	return {
-		tileIndex: {
-			z: parseInt(match[1]),
-			x: parseInt(match[2]),
-			y: parseInt(match[3])
-		},
-		remainingUrl: url.slice(0, match.index)
-	};
-};
-
-/**
- * Parses URL structure - this is always done internally.
- * Handles om:// prefix, query params, and tile coordinates.
- *
- * The URL structure is:
- * om://<baseUrl>?<params>/<z>/<x>/<y>  (tile request)
- * om://<baseUrl>?<params>              (tilejson request)
- * om://<baseUrl>/<z>/<x>/<y>           (tile request, no params)
- * om://<baseUrl>                       (tilejson request, no params)
- */
-export const parseUrlComponents = (url: string): ParsedUrlComponents => {
-	const { tileIndex, remainingUrl } = parseTileIndex(url);
-
-	const match = remainingUrl.match(URL_REGEX);
-	if (!match) {
-		throw new Error(`Invalid OM protocol URL: ${url}`);
-	}
-
-	const [, baseUrl, queryString] = match;
-	const params = new URLSearchParams(queryString ?? '');
-
-	// Build state key from baseUrl + only data-affecting params
-	const dataParams = new URLSearchParams();
-	for (const [key, value] of params) {
-		if (!RENDERING_ONLY_PARAMS.has(key)) {
-			dataParams.set(key, value);
-		}
-	}
-	dataParams.sort();
-	const paramString = dataParams.toString();
-	const stateKey = paramString ? `${baseUrl}?${paramString}` : baseUrl;
-
-	return { baseUrl, params, stateKey, tileIndex };
-};
-
-const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
-	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
-	if (!VALID_TILE_SIZES.includes(size)) {
-		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
-	}
-	return size as 64 | 128 | 256 | 512 | 1024;
-};
-
-const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
-	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
-	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
-		throw new Error(
-			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
-		);
-	}
-	return factor as 0.5 | 1 | 2;
 };
 
 const defaultResolveDataIdentity = (

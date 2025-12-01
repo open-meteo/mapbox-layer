@@ -1,12 +1,100 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
 
-const now = new Date();
+import { ParsedUrlComponents, TileIndex } from '../types';
 
-const omUrlRegex =
+const OM_URL_REGEX = /^om:\/\/([^?]+)(?:\?(.*))?$/;
+// Match both regular and percent-encoded slashes
+const TILE_SUFFIX_REGEX = /(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)$/i;
+
+// Parameters that don't affect the data identity (only affect rendering)
+const RENDERING_ONLY_PARAMS = new Set([
+	'grid',
+	'arrows',
+	'contours',
+	'partial',
+	'tile-size', // TODO: tile_size ?
+	'resolution-factor', // TODO: resolution_factor ?
+	'interval'
+]);
+const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
+const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
+const DEFAULT_TILE_SIZE = 256;
+const DEFAULT_RESOLUTION_FACTOR = 1;
+
+const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
+	const match = url.match(TILE_SUFFIX_REGEX);
+	if (!match) {
+		return { tileIndex: null, remainingUrl: url };
+	}
+
+	return {
+		tileIndex: {
+			z: parseInt(match[1]),
+			x: parseInt(match[2]),
+			y: parseInt(match[3])
+		},
+		remainingUrl: url.slice(0, match.index)
+	};
+};
+
+/**
+ * Parses URL structure - this is always done internally.
+ * Handles om:// prefix, query params, and tile coordinates.
+ *
+ * The URL structure is:
+ * om://<baseUrl>?<params>/<z>/<x>/<y>  (tile request)
+ * om://<baseUrl>?<params>              (tilejson request)
+ * om://<baseUrl>/<z>/<x>/<y>           (tile request, no params)
+ * om://<baseUrl>                       (tilejson request, no params)
+ */
+export const parseUrlComponents = (url: string): ParsedUrlComponents => {
+	const { tileIndex, remainingUrl } = parseTileIndex(url);
+
+	const match = remainingUrl.match(OM_URL_REGEX);
+	if (!match) {
+		throw new Error(`Invalid OM protocol URL: ${url}`);
+	}
+
+	const [, baseUrl, queryString] = match;
+	const params = new URLSearchParams(queryString ?? '');
+
+	// Build state key from baseUrl + only data-affecting params
+	const dataParams = new URLSearchParams();
+	for (const [key, value] of params) {
+		if (!RENDERING_ONLY_PARAMS.has(key)) {
+			dataParams.set(key, value);
+		}
+	}
+	dataParams.sort();
+	const paramString = dataParams.toString();
+	const stateKey = paramString ? `${baseUrl}?${paramString}` : baseUrl;
+
+	return { baseUrl, params, stateKey, tileIndex };
+};
+
+export const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
+	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
+	if (!VALID_TILE_SIZES.includes(size)) {
+		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
+	}
+	return size as 64 | 128 | 256 | 512 | 1024;
+};
+
+export const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
+	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
+	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
+		throw new Error(
+			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
+		);
+	}
+	return factor as 0.5 | 1 | 2;
+};
+
+const VALID_OM_FILE_REGEX =
 	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<runYear>[\s\S]+)?\/(?<runMonth>[\s\S]+)?\/(?<runDate>[\s\S]+)?\/(?<runTime>[\s\S]+)?\/(?<file>[\s\S]+)?\.(om|json)(?<params>[\s\S]+)?/;
-const domainRegex = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<meta>[\s\S]+).json/;
-const timeStepRegex =
+const DOMAIN_REGEX = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<meta>[\s\S]+).json/;
+const TIME_STEP_REGEX =
 	/(?<capture>(current_time|valid_times))(_)?(?<modifier>(\+|-))?(?<amountAndUnit>.*)?/;
 
 /**
@@ -18,9 +106,9 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 };
 
 export const parseMetaJson = async (omUrl: string) => {
-	let date = new Date(now);
+	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { uri, domain, meta } = url.match(domainRegex)?.groups as {
+	const { uri, domain, meta } = url.match(DOMAIN_REGEX)?.groups as {
 		uri: string;
 		domain: string;
 		meta: string; // E.G. latest | in-progress
@@ -32,7 +120,7 @@ export const parseMetaJson = async (omUrl: string) => {
 
 	const parsedOmUrl = new URL(url);
 	const timeStep = parsedOmUrl.searchParams.get('time_step');
-	const timeStepMatch = timeStep?.match(timeStepRegex);
+	const timeStepMatch = timeStep?.match(TIME_STEP_REGEX);
 	if (timeStep && timeStepMatch) {
 		const { capture, modifier, amountAndUnit } = timeStepMatch.groups as {
 			capture: string;
@@ -90,7 +178,7 @@ export const parseMetaJson = async (omUrl: string) => {
 };
 
 export const assertOmUrlValid = (url: string) => {
-	const groups = url.match(omUrlRegex)?.groups;
+	const groups = url.match(VALID_OM_FILE_REGEX)?.groups;
 	if (!groups) return false;
 
 	const { domain, runYear } = groups;
