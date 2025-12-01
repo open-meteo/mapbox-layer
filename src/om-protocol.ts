@@ -253,10 +253,15 @@ const defaultResolveDataIdentity = (
 	}
 
 	const variableValue = params.get('variable');
-	const variable = variableOptions.find((v) => v.value === variableValue);
-	if (!variable) {
-		throw new Error(`Invalid variable: ${variableValue}`);
+	if (!variableValue) {
+		throw new Error(`Variable is required but not defined`);
 	}
+	const variable = variableOptions.find((v) => v.value === variableValue) ?? {
+		value: variableValue
+	};
+	// if (!variable) {
+	// 	throw new Error(`Invalid variable: ${variableValue}`);
+	// }
 
 	const partial = params.get('partial') === 'true';
 	const mapBounds = params.get('bounds')?.split(',').map(Number) as number[] | undefined;
