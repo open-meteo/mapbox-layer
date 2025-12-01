@@ -11,8 +11,8 @@ beforeEach(() => {
 });
 
 describe('om-protocol unit tests', () => {
-	it('parseOmUrl returns expected fields and computes ranges for partial=true', async () => {
-		const { defaultResolveUrlSettings, parseUrlComponents } = await import('../om-protocol');
+	it('parseUrlComponents and defaultResolveRequest return expected fields and compute ranges for partial=true', async () => {
+		const { defaultResolveRequest, parseUrlComponents } = await import('../om-protocol');
 
 		const domainOptions: Domain[] = [
 			{
@@ -29,15 +29,26 @@ describe('om-protocol unit tests', () => {
 		const url =
 			'om://https://map-tiles.open-meteo.com/data_spatial/domain1/myfunkyomfile.om?variable=temperature&bounds=0,0,10,10&dark=true&partial=true&interval=2';
 		const components = parseUrlComponents(url);
-		const parsed = defaultResolveUrlSettings(components, domainOptions, variableOptions);
 
-		expect(parsed.dark).toBe(true);
-		expect(parsed.variable.value).toBe('temperature');
-		expect(parsed.interval).toBe(2);
-		expect(parsed.mapBounds).toEqual([0, 0, 10, 10]);
+		// Create a minimal settings object for the resolver
+		const settings = {
+			...defaultOmProtocolSettings,
+			domainOptions,
+			variableOptions
+		};
+
+		const { dataIdentity, renderOptions } = defaultResolveRequest(components, settings);
+
+		// Check render options
+		expect(renderOptions.dark).toBe(true);
+		expect(renderOptions.interval).toBe(2);
+
+		// Check data identity
+		expect(dataIdentity.variable.value).toBe('temperature');
+		expect(dataIdentity.domain.value).toBe('domain1');
+
 		// If partial is true, the ranges are the overlap of the domain grid and the requested mapBounds
-		expect(parsed.partial).toBe(true);
-		expect(parsed.ranges).toEqual([
+		expect(dataIdentity.ranges).toEqual([
 			{ start: 0, end: 12 },
 			{ start: 0, end: 10 }
 		]);

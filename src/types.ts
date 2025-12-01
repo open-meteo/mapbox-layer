@@ -1,36 +1,5 @@
 import { OMapsFileReader } from './om-file-reader';
 
-export interface TileRequest {
-	type: 'getArrayBuffer' | 'getImage';
-	key: string;
-	data: Data;
-	tileIndex: TileIndex;
-	options: TileRequestOptions;
-}
-
-export interface TileRequestOptions {
-	dark: boolean;
-	ranges: DimensionRange[] | null;
-	tileSize: number;
-	interval: number;
-	domain: Domain;
-	variable: Variable;
-	colorScale: ColorScale;
-	mapBounds: number[];
-	makeGrid: boolean;
-	makeArrows: boolean;
-	makeContours: boolean;
-}
-
-export type TileResponse = ImageBitmap | ArrayBuffer;
-export type TilePromise = Promise<TileResponse>;
-
-export type WorkerResponse = {
-	type: 'returnImage' | 'returnArrayBuffer';
-	tile: TileResponse;
-	key: string;
-};
-
 export interface OmProtocolInstance {
 	omFileReader: OMapsFileReader;
 
@@ -38,7 +7,23 @@ export interface OmProtocolInstance {
 	stateByKey: Map<string, OmUrlState>;
 }
 
-/** Raw parsed URL components - always parsed internally */
+export interface DataIdentity {
+	domain: Domain;
+	variable: Variable;
+	ranges: DimensionRange[] | null;
+}
+
+export interface RenderOptions {
+	dark: boolean;
+	tileSize: 64 | 128 | 256 | 512 | 1024;
+	resolutionFactor: 0.5 | 1 | 2;
+	makeGrid: boolean;
+	makeArrows: boolean;
+	makeContours: boolean;
+	interval: number;
+	colorScale: ColorScale;
+}
+
 export interface ParsedUrlComponents {
 	baseUrl: string;
 	params: URLSearchParams;
@@ -46,31 +31,30 @@ export interface ParsedUrlComponents {
 	tileIndex: TileIndex | null;
 }
 
-/** User-customizable resolution of domain, variable, and other settings */
-export interface ResolvedUrlSettings {
-	dark: boolean;
-	partial: boolean;
-	ranges: DimensionRange[] | null;
-	tileSize: 64 | 128 | 256 | 512 | 1024;
-	domain: Domain;
-	variable: Variable;
-	mapBounds: number[];
-	resolutionFactor: 0.5 | 1 | 2;
-	makeArrows: boolean;
-	makeGrid: boolean;
-	makeContours: boolean;
-	interval: number;
+export interface ParsedRequest {
+	baseUrl: string;
+	stateKey: string;
+	tileIndex: TileIndex | null;
+	renderOptions: RenderOptions; // Only rendering-related params
+	dataIdentity: DataIdentity; // Only data-identity params
 }
 
 export interface OmUrlState {
-	domain: Domain;
-	variable: Variable;
-	ranges: DimensionRange[] | null;
+	identity: DataIdentity;
 	omFileUrl: string;
 	data: Data | null;
 	dataPromise: Promise<Data> | null;
 	lastAccess: number;
 }
+
+/**
+ * Custom resolver function type.
+ * Receives parsed URL components and settings, returns resolved identity and options.
+ */
+export type RequestResolver = (
+	components: ParsedUrlComponents,
+	settings: OmProtocolSettings
+) => { dataIdentity: DataIdentity; renderOptions: RenderOptions };
 
 export interface OmProtocolSettings {
 	// static
@@ -86,11 +70,7 @@ export interface OmProtocolSettings {
 	 * Receives parsed URL components and returns resolved settings.
 	 * Default implementation uses standard query param parsing.
 	 */
-	resolveUrlSettings: (
-		components: ParsedUrlComponents,
-		domainOptions: Domain[],
-		variableOptions: Variable[]
-	) => ResolvedUrlSettings;
+	resolveRequest: RequestResolver;
 
 	postReadCallback:
 		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
@@ -124,6 +104,24 @@ export type TileIndex = {
 	z: number;
 	x: number;
 	y: number;
+};
+
+export interface TileRequest {
+	type: 'getArrayBuffer' | 'getImage';
+	key: string;
+	data: Data;
+	tileIndex: TileIndex;
+	renderOptions: RenderOptions;
+	dataOptions: DataIdentity;
+}
+
+export type TileResponse = ImageBitmap | ArrayBuffer;
+export type TilePromise = Promise<TileResponse>;
+
+export type WorkerResponse = {
+	type: 'returnImage' | 'returnArrayBuffer';
+	tile: TileResponse;
+	key: string;
 };
 
 export type Bbox = [number, number, number, number];

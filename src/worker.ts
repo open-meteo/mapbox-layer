@@ -18,13 +18,13 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const values = message.data.data.values;
 		const { z, x, y } = message.data.tileIndex;
 
-		const options = message.data.options;
-		const dark = options.dark;
-		const ranges = options.ranges;
-		const tileSize = options.tileSize;
-		const domain = options.domain;
-		const variable = options.variable;
-		const colorScale = options.colorScale;
+		const dark = message.data.renderOptions.dark;
+		const tileSize = message.data.renderOptions.tileSize;
+		const colorScale = message.data.renderOptions.colorScale;
+
+		const ranges = message.data.dataOptions.ranges;
+		const domain = message.data.dataOptions.domain;
+		const variable = message.data.dataOptions.variable;
 
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
@@ -84,10 +84,9 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const values = message.data.data.values;
 		const directions = message.data.data.directions;
 
-		const options = message.data.options;
-		const ranges = options.ranges;
-		const domain = options.domain;
-		const interval = options.interval;
+		const ranges = message.data.dataOptions.ranges;
+		const domain = message.data.dataOptions.domain;
+		const interval = message.data.renderOptions.interval;
 
 		if (!values) {
 			throw new Error('No values provided');
@@ -95,16 +94,16 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
-		if (options.makeGrid) {
+		if (message.data.renderOptions.makeGrid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
-		if (options.makeArrows && directions) {
+		if (message.data.renderOptions.makeArrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
-		if (options.makeContours) {
+		if (message.data.renderOptions.makeContours) {
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}
