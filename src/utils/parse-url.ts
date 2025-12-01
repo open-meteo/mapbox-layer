@@ -5,7 +5,7 @@ import { ParsedUrlComponents, TileIndex } from '../types';
 
 const OM_URL_REGEX = /^om:\/\/([^?]+)(?:\?(.*))?$/;
 // Match both regular and percent-encoded slashes
-const TILE_SUFFIX_REGEX = /(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)(?:\/|%2F)(\d+)$/i;
+const TILE_SUFFIX_REGEX = /(?:\/)(\d+)(?:\/)(\d+)(?:\/)(\d+)$/i;
 
 // Parameters that don't affect the data identity (only affect rendering)
 const RENDERING_ONLY_PARAMS = new Set([
@@ -146,12 +146,13 @@ export const parseMetaJson = async (omUrl: string) => {
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
-	return (
+	// we need to return a URL that is not percent encoded
+	return decodeURIComponent(
 		'om://' +
-		parsedOmUrl.href.replace(
-			`${meta}.json`,
-			`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
-		)
+			parsedOmUrl.href.replace(
+				`${meta}.json`,
+				`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
+			)
 	);
 };
 
