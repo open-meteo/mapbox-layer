@@ -141,16 +141,21 @@ const ensureData = async (state: OmUrlState, omFileReader: OMapsFileReader): Pro
 	if (state.dataPromise) return state.dataPromise;
 
 	const promise = (async () => {
-		await omFileReader.setToOmFile(state.omFileUrl);
-		const data = await omFileReader.readVariable(
-			state.dataOptions.variable.value,
-			state.dataOptions.ranges
-		);
+		try {
+			await omFileReader.setToOmFile(state.omFileUrl);
+			const data = await omFileReader.readVariable(
+				state.dataOptions.variable.value,
+				state.dataOptions.ranges
+			);
 
-		state.data = data;
-		state.dataPromise = null;
+			state.data = data;
+			state.dataPromise = null;
 
-		return data;
+			return data;
+		} catch (error) {
+			state.dataPromise = null; // Clear promise so retry is possible
+			throw error;
+		}
 	})();
 
 	state.dataPromise = promise;
@@ -171,6 +176,10 @@ const RENDERING_ONLY_PARAMS = new Set([
 	'resolution-factor', // TODO: resolution_factor ?
 	'interval'
 ]);
+const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
+const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
+const DEFAULT_TILE_SIZE = 256;
+const DEFAULT_RESOLUTION_FACTOR = 1;
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -224,17 +233,19 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 };
 
 const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
-	const size = value ? Number(value) : 256;
-	if (![64, 128, 256, 512, 1024].includes(size)) {
-		throw new Error('Invalid tile size, please use one of: 64, 128, 256, 512, 1024');
+	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
+	if (!VALID_TILE_SIZES.includes(size)) {
+		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
 	}
 	return size as 64 | 128 | 256 | 512 | 1024;
 };
 
 const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
-	const factor = value ? Number(value) : 1;
-	if (![0.5, 1, 2].includes(factor)) {
-		throw new Error('Invalid resolution factor, please use one of: 0.5, 1, 2');
+	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
+	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
+		throw new Error(
+			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
+		);
 	}
 	return factor as 0.5 | 1 | 2;
 };
