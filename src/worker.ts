@@ -9,7 +9,8 @@ import { getColor, getOpacity } from './utils/styling';
 import { hideZero } from './utils/variables';
 
 import { GridFactory } from './grids/index';
-import { TileRequest } from './worker-pool';
+
+import { TileRequest } from './types';
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const key = message.data.key;

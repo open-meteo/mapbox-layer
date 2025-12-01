@@ -1,10 +1,38 @@
 import { OMapsFileReader } from './om-file-reader';
 
+export interface TileRequest {
+	type: 'getArrayBuffer' | 'getImage';
+	key: string;
+	data: Data;
+	tileIndex: TileIndex;
+	options: TileRequestOptions;
+}
+
+export interface TileRequestOptions {
+	dark: boolean;
+	ranges: DimensionRange[] | null;
+	tileSize: number;
+	interval: number;
+	domain: Domain;
+	variable: Variable;
+	colorScale: ColorScale;
+	mapBounds: number[];
+	makeGrid: boolean;
+	makeArrows: boolean;
+	makeContours: boolean;
+}
+
+export type TileResponse = ImageBitmap | ArrayBuffer;
+export type TilePromise = Promise<TileResponse>;
+
+export type WorkerResponse = {
+	type: 'returnImage' | 'returnArrayBuffer';
+	tile: TileResponse;
+	key: string;
+};
+
 export interface OmProtocolInstance {
-	// colorScales: ColorScales;
 	omFileReader: OMapsFileReader;
-	// domainOptions: Domain[];
-	// variableOptions: Variable[];
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;

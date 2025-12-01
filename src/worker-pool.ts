@@ -1,38 +1,7 @@
 // @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
-import type { ColorScale, Data, DimensionRange, Domain, TileIndex, Variable } from './types';
-
-export interface TileRequest {
-	type: 'getArrayBuffer' | 'getImage';
-	key: string;
-	data: Data;
-	tileIndex: TileIndex;
-	options: TileRequestOptions;
-}
-
-export interface TileRequestOptions {
-	dark: boolean;
-	ranges: DimensionRange[] | null;
-	tileSize: number;
-	interval: number;
-	domain: Domain;
-	variable: Variable;
-	colorScale: ColorScale;
-	mapBounds: number[];
-	makeGrid: boolean;
-	makeArrows: boolean;
-	makeContours: boolean;
-}
-
-export type TileResponse = ImageBitmap | ArrayBuffer;
-export type TilePromise = Promise<TileResponse>;
-
-export type WorkerResponse = {
-	type: 'returnImage' | 'returnArrayBuffer';
-	tile: TileResponse;
-	key: string;
-};
+import { TilePromise, TileRequest, TileResponse, WorkerResponse } from './types';
 
 export class WorkerPool {
 	private workers: Worker[] = [];

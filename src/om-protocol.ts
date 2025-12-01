@@ -11,7 +11,7 @@ import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
-import { TilePromise, TileRequestOptions, WorkerPool } from './worker-pool';
+import { WorkerPool } from './worker-pool';
 
 import type {
 	Data,
@@ -24,6 +24,8 @@ import type {
 	ResolvedUrlSettings,
 	TileIndex,
 	TileJSON,
+	TilePromise,
+	TileRequestOptions,
 	Variable
 } from './types';
 
