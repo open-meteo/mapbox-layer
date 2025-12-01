@@ -106,9 +106,9 @@ const defaultResolveRenderOptions = (
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
 
-	const makeGrid = params.get('grid') === 'true';
-	const makeArrows = params.get('arrows') === 'true';
-	const makeContours = params.get('contours') === 'true';
+	const drawGrid = params.get('grid') === 'true';
+	const drawArrows = params.get('arrows') === 'true';
+	const drawContours = params.get('contours') === 'true';
 	const interval = Number(params.get('interval')) || 0;
 
 	const colorScale =
@@ -120,9 +120,9 @@ const defaultResolveRenderOptions = (
 		dark,
 		tileSize,
 		resolutionFactor,
-		makeGrid,
-		makeArrows,
-		makeContours,
+		drawGrid,
+		drawArrows,
+		drawContours,
 		interval,
 		colorScale
 	};

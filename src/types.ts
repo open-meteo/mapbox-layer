@@ -17,9 +17,9 @@ export interface RenderOptions {
 	dark: boolean;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
 	resolutionFactor: 0.5 | 1 | 2;
-	makeGrid: boolean;
-	makeArrows: boolean;
-	makeContours: boolean;
+	drawGrid: boolean;
+	drawArrows: boolean;
+	drawContours: boolean;
 	interval: number;
 	colorScale: ColorScale;
 }
