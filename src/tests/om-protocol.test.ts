@@ -150,9 +150,9 @@ describe('Request Resolution', () => {
 			expect(renderOptions.dark).toBe(false);
 			expect(renderOptions.tileSize).toBe(256);
 			expect(renderOptions.resolutionFactor).toBe(1);
-			expect(renderOptions.makeGrid).toBe(false);
-			expect(renderOptions.makeArrows).toBe(false);
-			expect(renderOptions.makeContours).toBe(false);
+			expect(renderOptions.drawGrid).toBe(false);
+			expect(renderOptions.drawArrows).toBe(false);
+			expect(renderOptions.drawContours).toBe(false);
 			expect(renderOptions.interval).toBe(0);
 		});
 
@@ -168,9 +168,9 @@ describe('Request Resolution', () => {
 
 			expect(renderOptions.tileSize).toBe(512);
 			expect(renderOptions.resolutionFactor).toBe(2);
-			expect(renderOptions.makeGrid).toBe(true);
-			expect(renderOptions.makeArrows).toBe(true);
-			expect(renderOptions.makeContours).toBe(true);
+			expect(renderOptions.drawGrid).toBe(true);
+			expect(renderOptions.drawArrows).toBe(true);
+			expect(renderOptions.drawContours).toBe(true);
 		});
 
 		it('throws for invalid tile size', async () => {
