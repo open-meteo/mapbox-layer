@@ -11,7 +11,7 @@ import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
 import { OMapsFileReader } from './om-file-reader';
 import { capitalize } from './utils';
-import { TilePromise, WorkerPool } from './worker-pool';
+import { TilePromise, TileRequestOptions, WorkerPool } from './worker-pool';
 
 import type {
 	Data,
@@ -53,9 +53,6 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 	}
 
 	const instance = {
-		colorScales: settings.colorScales,
-		domainOptions: settings.domainOptions,
-		variableOptions: settings.variableOptions,
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
 		stateByKey: new Map()
 	};
@@ -156,6 +153,8 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	const [, baseUrl, queryString] = match;
 	const params = new URLSearchParams(queryString ?? '');
 
+	console.log('params', params);
+
 	// Build state key from baseUrl + only data-affecting params
 	const dataParams = new URLSearchParams();
 	for (const [key, value] of params) {
@@ -172,6 +171,7 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 
 interface UrlStateResult {
 	state: OmUrlState;
+	options: ResolvedUrlSettings;
 	stateKey: string;
 	tileIndex: TileIndex | null;
 	baseUrl: string;
@@ -185,22 +185,24 @@ const getOrCreateUrlState = (
 	const components = parseUrlComponents(url);
 	const { baseUrl, stateKey, tileIndex } = components;
 
+	const resolved = settings.resolveUrlSettings(
+		components,
+		settings.domainOptions,
+		settings.variableOptions
+	);
+
 	const existing = instance.stateByKey.get(stateKey);
 	if (existing) {
 		touchState(instance.stateByKey, stateKey, existing); // Move to end
-		return { state: existing, stateKey, tileIndex, baseUrl };
+		return { state: existing, stateKey, tileIndex, baseUrl, options: resolved };
 	}
 
 	console.warn('Creating new state for KEY:', stateKey);
 
-	const resolved = settings.resolveUrlSettings(
-		components,
-		instance.domainOptions,
-		instance.variableOptions
-	);
-
 	const state: OmUrlState = {
-		...resolved,
+		domain: resolved.domain,
+		variable: resolved.variable,
+		ranges: resolved.ranges,
 		omFileUrl: baseUrl,
 		data: null,
 		dataPromise: null,
@@ -208,7 +210,7 @@ const getOrCreateUrlState = (
 	};
 
 	instance.stateByKey.set(stateKey, state);
-	return { state, stateKey, tileIndex, baseUrl };
+	return { state, stateKey, tileIndex, baseUrl, options: resolved };
 };
 
 const ensureData = async (
@@ -276,29 +278,27 @@ const getTile = async (
 	tileIndex: TileIndex,
 	type: 'image' | 'arrayBuffer',
 	data: Data,
-	state: OmUrlState,
+	options: ResolvedUrlSettings,
 	omUrl: string,
-	protocol: OmProtocolInstance
+	settings: OmProtocolSettings
 ): TilePromise => {
 	const { z, x, y } = tileIndex;
-	const key = `${omUrl}/${state.tileSize}/${z}/${x}/${y}`;
+	const key = `${omUrl}/${options.tileSize}/${z}/${x}/${y}`;
+
+	const tileOptions: TileRequestOptions = {
+		...options,
+		colorScale:
+			settings.colorScales?.custom ??
+			settings.colorScales[options.variable.value] ??
+			getColorScale(options.variable.value)
+	};
 
 	return await workerPool.requestTile({
 		type: ('get' + capitalize(type)) as 'getImage' | 'getArrayBuffer',
-		tileIndex,
 		key,
+		tileIndex,
 		data,
-		dark: state.dark,
-		ranges: state.ranges,
-		tileSize: state.resolutionFactor * state.tileSize,
-		interval: state.interval,
-		domain: state.domain,
-		variable: state.variable,
-		colorScale:
-			protocol.colorScales?.custom ??
-			protocol.colorScales[state.variable.value] ??
-			getColorScale(state.variable.value),
-		mapBounds: state.mapBounds
+		options: tileOptions
 	});
 };
 
@@ -308,16 +308,17 @@ const renderTile = async (
 	stateKey: string,
 	type: 'image' | 'arrayBuffer',
 	state: OmUrlState,
+	options: ResolvedUrlSettings,
 	settings: OmProtocolSettings,
 	protocol: OmProtocolInstance
 ) => {
 	const data = await ensureData(baseUrl, stateKey, protocol, state, settings);
-	return getTile(tileIndex, type, data, state, baseUrl, protocol);
+	return getTile(tileIndex, type, data, options, baseUrl, settings);
 };
 
-const getTilejson = async (fullUrl: string, state: OmUrlState): Promise<TileJSON> => {
+const getTilejson = async (fullUrl: string, options: ResolvedUrlSettings): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
-	const grid = GridFactory.create(state.domain.grid, null);
+	const grid = GridFactory.create(options.domain.grid, null);
 	const bounds = grid.getBounds();
 
 	return {
@@ -338,7 +339,6 @@ export const defaultResolveUrlSettings = (
 ): ResolvedUrlSettings => {
 	const dark = params.get('dark') === 'true';
 	const partial = params.get('partial') === 'true';
-	const interval = Number(params.get('interval'));
 	const domain = domainOptions.find((dm) => dm.value === baseUrl.split('/')[4]);
 	if (!domain) {
 		throw new Error(`Invalid domain: ${baseUrl.split('/')[4]}`);
@@ -370,6 +370,13 @@ export const defaultResolveUrlSettings = (
 		throw new Error('Invalid resolution factor, please use one of: 0.5, 1, 2');
 	}
 
+	console.log('arrows param', params.get('arrows'));
+
+	const makeGrid = params.get('grid') === 'true';
+	const makeArrows = params.get('arrows') === 'true';
+	const interval = Number(params.get('interval'));
+	const makeContours = params.get('contours') === 'true';
+
 	// We initialize the grid with the ranges set to null
 	// This will return the entire grid, and allows us to parse the ranges which cover the map bounds
 	const gridGetter = GridFactory.create(domain.grid, null);
@@ -389,11 +396,14 @@ export const defaultResolveUrlSettings = (
 		partial,
 		ranges,
 		tileSize,
-		interval,
 		domain,
 		variable,
 		mapBounds,
-		resolutionFactor
+		resolutionFactor,
+		makeGrid,
+		makeArrows,
+		makeContours,
+		interval
 	};
 };
 
@@ -421,14 +431,14 @@ export const omProtocol = async (
 		parsedOmUrl = await parseMetaJson(parsedOmUrl);
 	}
 	assertOmUrlValid(parsedOmUrl);
-	const { state, stateKey, tileIndex } = getOrCreateUrlState(
+	const { state, stateKey, tileIndex, options } = getOrCreateUrlState(
 		parsedOmUrl,
 		omProtocolSettings,
 		protocol
 	);
 
 	if (params.type == 'json') {
-		return { data: await getTilejson(params.url, state) };
+		return { data: await getTilejson(params.url, options) };
 	} else if (params.type && ['image', 'arrayBuffer'].includes(params.type)) {
 		if (!tileIndex) {
 			throw new Error(`Tile coordinates required for ${params.type} request`);
@@ -440,6 +450,7 @@ export const omProtocol = async (
 				stateKey,
 				params.type as 'image' | 'arrayBuffer',
 				state,
+				options,
 				omProtocolSettings,
 				protocol
 			)

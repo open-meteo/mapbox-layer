@@ -5,9 +5,13 @@ import type { ColorScale, Data, DimensionRange, Domain, TileIndex, Variable } fr
 
 export interface TileRequest {
 	type: 'getArrayBuffer' | 'getImage';
-	tileIndex: TileIndex;
 	key: string;
 	data: Data;
+	tileIndex: TileIndex;
+	options: TileRequestOptions;
+}
+
+export interface TileRequestOptions {
 	dark: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: number;
@@ -16,6 +20,9 @@ export interface TileRequest {
 	variable: Variable;
 	colorScale: ColorScale;
 	mapBounds: number[];
+	makeGrid: boolean;
+	makeArrows: boolean;
+	makeContours: boolean;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;

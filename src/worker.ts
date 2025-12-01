@@ -12,17 +12,18 @@ import { GridFactory } from './grids/index';
 import { TileRequest } from './worker-pool';
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
+	const key = message.data.key;
 	if (message.data.type == 'getImage') {
-		const key = message.data.key;
+		const values = message.data.data.values;
 		const { z, x, y } = message.data.tileIndex;
 
-		const dark = message.data.dark;
-		const values = message.data.data.values;
-		const ranges = message.data.ranges;
-		const tileSize = message.data.tileSize;
-		const domain = message.data.domain;
-		const variable = message.data.variable;
-		const colorScale = message.data.colorScale;
+		const options = message.data.options;
+		const dark = options.dark;
+		const ranges = options.ranges;
+		const tileSize = options.tileSize;
+		const domain = options.domain;
+		const variable = options.variable;
+		const colorScale = options.colorScale;
 
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
@@ -78,14 +79,14 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		});
 		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
 	} else if (message.data.type == 'getArrayBuffer') {
-		const key = message.data.key;
 		const { z, x, y } = message.data.tileIndex;
-
 		const values = message.data.data.values;
-		const ranges = message.data.ranges;
-		const domain = message.data.domain;
-		const interval = message.data.interval;
 		const directions = message.data.data.directions;
+
+		const options = message.data.options;
+		const ranges = options.ranges;
+		const domain = options.domain;
+		const interval = options.interval;
 
 		if (!values) {
 			throw new Error('No values provided');
@@ -93,16 +94,16 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
-		if (key.includes('grid=true')) {
+		if (options.makeGrid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
-		if (key.includes('arrows=true') && directions) {
+		if (options.makeArrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
-		if (key.includes('contours=true')) {
+		if (options.makeContours) {
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}

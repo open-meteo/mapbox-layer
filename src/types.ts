@@ -1,10 +1,10 @@
 import { OMapsFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
-	colorScales: ColorScales;
+	// colorScales: ColorScales;
 	omFileReader: OMapsFileReader;
-	domainOptions: Domain[];
-	variableOptions: Variable[];
+	// domainOptions: Domain[];
+	// variableOptions: Variable[];
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;
@@ -24,14 +24,20 @@ export interface ResolvedUrlSettings {
 	partial: boolean;
 	ranges: DimensionRange[] | null;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
-	interval: number;
 	domain: Domain;
 	variable: Variable;
 	mapBounds: number[];
 	resolutionFactor: 0.5 | 1 | 2;
+	makeArrows: boolean;
+	makeGrid: boolean;
+	makeContours: boolean;
+	interval: number;
 }
 
-export interface OmUrlState extends ResolvedUrlSettings {
+export interface OmUrlState {
+	domain: Domain;
+	variable: Variable;
+	ranges: DimensionRange[] | null;
 	omFileUrl: string;
 	data: Data | null;
 	dataPromise: Promise<Data> | null;
