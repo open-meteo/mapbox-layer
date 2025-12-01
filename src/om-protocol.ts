@@ -94,7 +94,6 @@ const evictStaleStates = (stateByKey: Map<string, OmUrlState>, currentKey?: stri
 		const exceedsMax = stateByKey.size > MAX_STATES_WITH_DATA;
 
 		if (isStale || exceedsMax) {
-			console.log(`Evicting stale state for key: ${key}`);
 			stateByKey.delete(key);
 		} else {
 			break; // All remaining entries are newer, stop iterating
@@ -126,8 +125,6 @@ const getOrCreateState = (
 	}
 
 	evictStaleStates(stateByKey, stateKey);
-
-	console.warn('Creating new state for KEY:', stateKey);
 
 	const state: OmUrlState = {
 		dataOptions,
