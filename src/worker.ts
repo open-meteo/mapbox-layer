@@ -6,7 +6,7 @@ import { generateArrows } from './utils/arrows';
 import { MS_TO_KMH } from './utils/constants';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { tile2lat, tile2lon } from './utils/math';
+import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor, getOpacity } from './utils/styling';
 import { hideZero } from './utils/variables';
 
@@ -29,31 +29,52 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const variable = message.data.variable;
 		const colorScale = message.data.colorScale;
 
+		const canvas = new OffscreenCanvas(tileSize, tileSize);
+		const context = canvas.getContext('2d');
+
+		if (!context) {
+			throw new Error('Could not initialise canvas context');
+		}
+
 		const clipping = message.data.clipping;
 		let tileLiesInBoundaries = true;
-		let tileLiesWithinBoundaries = true;
-		let boundaries;
+		let simplifiedBoundary, polygon;
+
 		if (clipping) {
 			tileLiesInBoundaries = false;
-			tileLiesWithinBoundaries = false;
 			const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
-			// use for calculating tolerance icw tilebelt
-			// const polygonPoints = clipping.features[1].geometry.coordinates[0][0].length;
+			const swiss = clipping.features[1];
 
-			boundaries = [];
-			for (const feature of clipping.features) {
-				const boundary = turf.polygon(feature.geometry.coordinates[0]);
-				// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
-				const simplifiedBoundary = turf.simplify(boundary, { tolerance: 0.005, highQuality: true });
-				if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
-					tileLiesInBoundaries = true;
-				}
-				if (!tileLiesWithinBoundaries && turf.booleanWithin(tileBbox, simplifiedBoundary)) {
-					tileLiesWithinBoundaries = true;
-				}
+			// boundaries = [];
+			// for (const feature of clipping.features) {
+			// 	const boundary = turf.polygon(feature.geometry.coordinates[0]);
+			// 	// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
+			// 	const simplifiedBoundary = turf.simplify(boundary, { tolerance: 0.005, highQuality: true });
+			// 	if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
+			// 		tileLiesInBoundaries = true;
+			// 	}
+			// 	if (!tileLiesWithinBoundaries && turf.booleanWithin(tileBbox, simplifiedBoundary)) {
+			// 		tileLiesWithinBoundaries = true;
+			// 	}
 
-				boundaries.push(simplifiedBoundary);
+			// 	boundaries.push(simplifiedBoundary);
+			// }
+
+			const boundary = turf.polygon(swiss.geometry.coordinates[0]);
+			// zoomlevel 0 should be 0.1 zoomlevel 12 should be 0.0001
+			const tolerance = 0.0001 * 10 ** ((12 - z) / 3);
+
+			// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
+			simplifiedBoundary = turf.simplify(boundary, { tolerance: tolerance, highQuality: true });
+			if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
+				tileLiesInBoundaries = true;
 			}
+
+			polygon = simplifiedBoundary.geometry.coordinates[0].map((coordinate) => {
+				const polyX = lon2tile(coordinate[0], z);
+				const polyY = lat2tile(coordinate[1], z);
+				return [(polyX - x) * tileSize, (polyY - y) * tileSize];
+			});
 		}
 
 		const pixels = tileSize * tileSize;
@@ -77,13 +98,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					const ind = j + i * tileSize;
 					const lon = tile2lon(x + j / tileSize, z);
 					let px = grid.getLinearInterpolatedValue(values, lat, lon);
-
-					if (clipping && boundaries && !tileLiesWithinBoundaries) {
-						const point = turf.point([lon, lat]);
-						if (!turf.booleanPointInPolygon(point, boundaries[1])) {
-							continue;
-						}
-					}
 
 					if (isHideZero) {
 						if (px < 0.25) {
@@ -115,15 +129,33 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		}
 
 		const imageData = new ImageData(rgba, tileSize, tileSize);
-
-		const canvas = new OffscreenCanvas(tileSize, tileSize);
-		const context = canvas.getContext('2d');
-		if (!context) {
-			throw new Error('Could not initialise canvas context');
-		}
 		context.putImageData(imageData, 0, 0);
 
-		const blob = await canvas.convertToBlob({ type: 'image/png' });
+		const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
+		const clipContext = clipCanvas.getContext('2d');
+
+		if (!clipContext) {
+			throw new Error('Could not initialise canvas context');
+		}
+
+		if (polygon) {
+			clipContext.beginPath();
+			for (const [coordIndex, [polyX, polyY]] of polygon.entries()) {
+				if (coordIndex === 0) {
+					clipContext.moveTo(polyX, polyY);
+				} else {
+					clipContext.lineTo(polyX, polyY);
+				}
+			}
+			clipContext.closePath();
+			clipContext.clip();
+		}
+
+		clipContext?.drawImage(canvas, 0, 0);
+		// clipContext.fillStyle = 'red';
+		// clipContext.fill();
+
+		const blob = await clipCanvas.convertToBlob({ type: 'image/png' });
 		const arrayBuffer = await blob.arrayBuffer();
 
 		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
