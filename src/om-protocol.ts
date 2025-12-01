@@ -87,11 +87,11 @@ const resolveJSONUrl = async (url: string): Promise<string> => {
 };
 
 const buildTileKey = (request: ParsedRequest): string => {
-	const { baseUrl, renderOptions, tileIndex } = request;
+	const { baseUrl, tileIndex } = request;
 	if (!tileIndex) {
 		throw new Error('Cannot build tile key without tile index');
 	}
-	return `${baseUrl}/${renderOptions.tileSize}/${tileIndex.z}/${tileIndex.x}/${tileIndex.y}`;
+	return `${baseUrl}/${tileIndex.z}/${tileIndex.x}/${tileIndex.y}`;
 };
 
 const requestTile = async (
