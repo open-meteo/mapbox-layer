@@ -26,9 +26,9 @@
 		<script>
 			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
 				.then((response) => response.json())
-				.then((json) => {
+				.then((geojson) => {
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-					omProtocolOptions.clipping = json;
+					omProtocolOptions.clipping = { geojson: geojson };
 
 					// use the settings as argument for the protocol
 					maplibregl.addProtocol('om', (params) =>

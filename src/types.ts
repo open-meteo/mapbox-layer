@@ -206,4 +206,4 @@ export interface DomainMetaData {
 	variables: string[];
 }
 
-export type ClippingOptions = FeatureCollection;
+export type ClippingOptions = { geojson: FeatureCollection };
