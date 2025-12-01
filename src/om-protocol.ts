@@ -55,7 +55,7 @@ const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance =
 	if (omProtocolInstance) {
 		// Warn if critical settings differ from initial configuration
 		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
-			console.warn(
+			throw new Error(
 				'omProtocol: useSAB setting differs from initial configuration. ' +
 					'The protocol instance is shared and uses the first settings provided.'
 			);
