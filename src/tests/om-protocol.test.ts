@@ -37,18 +37,18 @@ describe('om-protocol unit tests', () => {
 			variableOptions
 		};
 
-		const { dataIdentity, renderOptions } = defaultResolveRequest(components, settings);
+		const { dataOptions, renderOptions } = defaultResolveRequest(components, settings);
 
 		// Check render options
 		expect(renderOptions.dark).toBe(true);
 		expect(renderOptions.interval).toBe(2);
 
 		// Check data identity
-		expect(dataIdentity.variable.value).toBe('temperature');
-		expect(dataIdentity.domain.value).toBe('domain1');
+		expect(dataOptions.variable.value).toBe('temperature');
+		expect(dataOptions.domain.value).toBe('domain1');
 
 		// If partial is true, the ranges are the overlap of the domain grid and the requested mapBounds
-		expect(dataIdentity.ranges).toEqual([
+		expect(dataOptions.ranges).toEqual([
 			{ start: 0, end: 12 },
 			{ start: 0, end: 10 }
 		]);

@@ -16,7 +16,7 @@ import { WorkerPool } from './worker-pool';
 import type {
 	ColorScales,
 	Data,
-	DataIdentity,
+	DataIdentityOptions,
 	DimensionRange,
 	Domain,
 	OmProtocolInstance,
@@ -111,7 +111,7 @@ const touchState = (stateByKey: Map<string, OmUrlState>, key: string, state: OmU
 const getOrCreateState = (
 	stateByKey: Map<string, OmUrlState>,
 	stateKey: string,
-	identity: DataIdentity,
+	dataOptions: DataIdentityOptions,
 	omFileUrl: string
 ): OmUrlState => {
 	const existing = stateByKey.get(stateKey);
@@ -125,7 +125,7 @@ const getOrCreateState = (
 	console.warn('Creating new state for KEY:', stateKey);
 
 	const state: OmUrlState = {
-		identity,
+		dataOptions,
 		omFileUrl,
 		data: null,
 		dataPromise: null,
@@ -143,8 +143,8 @@ const ensureData = async (state: OmUrlState, omFileReader: OMapsFileReader): Pro
 	const promise = (async () => {
 		await omFileReader.setToOmFile(state.omFileUrl);
 		const data = await omFileReader.readVariable(
-			state.identity.variable.value,
-			state.identity.ranges
+			state.dataOptions.variable.value,
+			state.dataOptions.ranges
 		);
 
 		state.data = data;
@@ -243,7 +243,7 @@ const defaultResolveDataIdentity = (
 	components: ParsedUrlComponents,
 	domainOptions: Domain[],
 	variableOptions: Variable[]
-): DataIdentity => {
+): DataIdentityOptions => {
 	const { baseUrl, params } = components;
 
 	const domainValue = baseUrl.split('/')[4];
@@ -282,7 +282,7 @@ const defaultResolveDataIdentity = (
 
 const defaultResolveRenderOptions = (
 	components: ParsedUrlComponents,
-	identity: DataIdentity,
+	dataOptions: DataIdentityOptions,
 	colorScales: ColorScales
 ): RenderOptions => {
 	const { params } = components;
@@ -299,8 +299,8 @@ const defaultResolveRenderOptions = (
 
 	const colorScale =
 		colorScales?.custom ??
-		colorScales[identity.variable.value] ??
-		getColorScale(identity.variable.value);
+		colorScales[dataOptions.variable.value] ??
+		getColorScale(dataOptions.variable.value);
 
 	return {
 		dark,
@@ -317,28 +317,28 @@ const defaultResolveRenderOptions = (
 export const defaultResolveRequest = (
 	components: ParsedUrlComponents,
 	settings: OmProtocolSettings
-): { dataIdentity: DataIdentity; renderOptions: RenderOptions } => {
-	const dataIdentity = defaultResolveDataIdentity(
+): { dataOptions: DataIdentityOptions; renderOptions: RenderOptions } => {
+	const dataOptions = defaultResolveDataIdentity(
 		components,
 		settings.domainOptions,
 		settings.variableOptions
 	);
 
-	const renderOptions = defaultResolveRenderOptions(components, dataIdentity, settings.colorScales);
+	const renderOptions = defaultResolveRenderOptions(components, dataOptions, settings.colorScales);
 
-	return { dataIdentity, renderOptions };
+	return { dataOptions, renderOptions };
 };
 
 const parseRequest = (url: string, settings: OmProtocolSettings): ParsedRequest => {
 	const components = parseUrlComponents(url);
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
-	const { dataIdentity, renderOptions } = resolver(components, settings);
+	const { dataOptions, renderOptions } = resolver(components, settings);
 
 	return {
 		baseUrl: components.baseUrl,
 		stateKey: components.stateKey,
 		tileIndex: components.tileIndex,
-		dataIdentity,
+		dataOptions,
 		renderOptions
 	};
 };
@@ -376,14 +376,17 @@ const requestTile = async (
 		key,
 		tileIndex: request.tileIndex,
 		data,
-		dataOptions: request.dataIdentity,
+		dataOptions: request.dataOptions,
 		renderOptions: request.renderOptions
 	});
 };
 
-const getTilejson = async (fullUrl: string, dataIdentity: DataIdentity): Promise<TileJSON> => {
+const getTilejson = async (
+	fullUrl: string,
+	dataOptions: DataIdentityOptions
+): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
-	const grid = GridFactory.create(dataIdentity.domain.grid, null);
+	const grid = GridFactory.create(dataOptions.domain.grid, null);
 	const bounds = grid.getBounds();
 
 	return {
@@ -418,7 +421,7 @@ export const getValueFromLatLong = (
 		return { value: NaN };
 	}
 
-	const grid = GridFactory.create(state.identity.domain.grid, state.identity.ranges);
+	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
 	let value = grid.getLinearInterpolatedValue(state.data.values, lat, ((lon + 180) % 360) - 180);
 
 	if (variable.value.includes('wind')) {
@@ -453,7 +456,7 @@ export const omProtocol = async (
 
 	// Handle TileJSON request
 	if (params.type == 'json') {
-		return { data: await getTilejson(params.url, request.dataIdentity) };
+		return { data: await getTilejson(params.url, request.dataOptions) };
 	}
 
 	// Handle tile request
@@ -468,7 +471,7 @@ export const omProtocol = async (
 	const state = getOrCreateState(
 		instance.stateByKey,
 		request.stateKey,
-		request.dataIdentity,
+		request.dataOptions,
 		request.baseUrl
 	);
 

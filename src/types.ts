@@ -7,7 +7,7 @@ export interface OmProtocolInstance {
 	stateByKey: Map<string, OmUrlState>;
 }
 
-export interface DataIdentity {
+export interface DataIdentityOptions {
 	domain: Domain;
 	variable: Variable;
 	ranges: DimensionRange[] | null;
@@ -36,11 +36,11 @@ export interface ParsedRequest {
 	stateKey: string;
 	tileIndex: TileIndex | null;
 	renderOptions: RenderOptions; // Only rendering-related params
-	dataIdentity: DataIdentity; // Only data-identity params
+	dataOptions: DataIdentityOptions; // Only data-identity params
 }
 
 export interface OmUrlState {
-	identity: DataIdentity;
+	dataOptions: DataIdentityOptions;
 	omFileUrl: string;
 	data: Data | null;
 	dataPromise: Promise<Data> | null;
@@ -54,7 +54,7 @@ export interface OmUrlState {
 export type RequestResolver = (
 	components: ParsedUrlComponents,
 	settings: OmProtocolSettings
-) => { dataIdentity: DataIdentity; renderOptions: RenderOptions };
+) => { dataOptions: DataIdentityOptions; renderOptions: RenderOptions };
 
 export interface OmProtocolSettings {
 	// static
@@ -112,7 +112,7 @@ export interface TileRequest {
 	data: Data;
 	tileIndex: TileIndex;
 	renderOptions: RenderOptions;
-	dataOptions: DataIdentity;
+	dataOptions: DataIdentityOptions;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;
