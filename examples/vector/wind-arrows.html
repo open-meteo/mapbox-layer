@@ -51,7 +51,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=pressure_msl&interval=2&contours=true`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=wind_u_component_10m`;
 
 			map.on('load', () => {
 				map.addSource('omFileRasterSource', {
@@ -68,7 +68,7 @@
 				});
 
 				map.addSource('omFileVectorSource', {
-					url: 'om://' + omUrl,
+					url: 'om://' + omUrl + '&arrows=true',
 					type: 'vector'
 				});
 
@@ -76,70 +76,34 @@
 					id: 'omFileVectorLayer',
 					type: 'line',
 					source: 'omFileVectorSource',
-					'source-layer': 'contours',
+					'source-layer': 'wind-arrows',
 					paint: {
-						'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'red', 'black'],
-						'line-width': [
+						'line-color': [
 							'case',
-							['boolean', ['feature-state', 'hover'], false],
-							4,
+							['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
+							'rgba(0,0,0, 0.6)',
 							[
 								'case',
-								['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-								3,
+								['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
+								'rgba(0,0,0, 0.5)',
 								[
 									'case',
-									['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-									2,
+									['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
+									'rgba(0,0,0, 0.4)',
 									[
 										'case',
-										['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
-										1.5,
-										1
+										['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
+										'rgba(0,0,0, 0.3)',
+										'rgba(0,0,0, 0.2)'
 									]
 								]
 							]
-						]
-					}
-				});
-
-				map.addLayer({
-					id: 'omFileVectorLayerLabels',
-					type: 'symbol',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
-					layout: {
-						'symbol-placement': 'line-center',
-						'symbol-spacing': 1,
-						'text-font': ['Noto Sans Regular'],
-						'text-field': ['to-string', ['get', 'value']],
-						'text-padding': 1,
-						'text-offset': [0, -0.6]
-						//'text-allow-overlap': true,
-						//'text-ignore-placement': true
+						],
+						'line-width': 2
 					},
-					paint: {
-						'text-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'red', 'black']
+					layout: {
+						'line-cap': 'round'
 					}
-				});
-
-				let hoveredLevel = 0;
-				map.on('mouseenter', 'omFileVectorLayer', (e) => {
-					if (e.features.length > 0) {
-						hoveredLevel = e.features[0].id;
-						map.setFeatureState(
-							{ source: 'omFileVectorSource', id: hoveredLevel, sourceLayer: 'contours' },
-							{ hover: true }
-						);
-					}
-				});
-
-				map.on('mouseleave', 'omFileVectorLayer', () => {
-					map.setFeatureState(
-						{ source: 'omFileVectorSource', id: hoveredLevel, sourceLayer: 'contours' },
-						{ hover: false }
-					);
-					hoveredLevel = null;
 				});
 			});
 		</script>

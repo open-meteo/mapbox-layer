@@ -3,13 +3,13 @@ import Pbf from 'pbf';
 import { lat2tile, lon2tile } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
-import { ProjectedGridData, RegularGridData } from '../types';
+import { RegularGridData } from '../types';
 
 export const generateGridPoints = (
 	pbf: Pbf,
 	values: Float32Array,
 	directions: Float32Array | undefined,
-	grid: RegularGridData | ProjectedGridData,
+	grid: RegularGridData,
 	x: number,
 	y: number,
 	z: number,
@@ -17,17 +17,6 @@ export const generateGridPoints = (
 	margin: number = 0
 ) => {
 	const features = [];
-
-	// let mod = 4;
-	// if (z > 1) {
-	// 	mod = 3;
-	// }
-	// if (z > 2) {
-	// 	mod = 2;
-	// }
-	// if (z > 3) {
-	// 	mod = 1;
-	// }
 
 	for (let j = 0; j < grid.ny; j++) {
 		const lat = grid.latMin + grid.dy * j;
