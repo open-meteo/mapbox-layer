@@ -4,12 +4,11 @@
 		<title>Open-Meteo Mapbox Layer - Custom Colorscales</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.10.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
 		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.7/dist/index.js"></script>-->
 		<!-- x-release-please-end -->
-
 		<!-- Local development -->
 		<script src="../dist/index.js"></script>
 		<style>
@@ -146,18 +145,26 @@
 			// const customVariableOptions = [{ value: 'ffmc', label: 'Fire POEP' }];
 			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 			omProtocolOptions.colorScales = customColorScales;
-			omProtocolOptions.parseUrlCallback = (url) => {
-				const [omUrl, omParams] = url.replace('om://', '').split('?');
+			omProtocolOptions.resolveRequest = (urlComponents, settings) => {
 				const domain = OpenMeteoMapboxLayer.domainOptions.find((d) => d.value === 'dwd_icon_eu');
-				console.log(domain);
 				const variable = { value: 'ffmc', label: 'Fire POEP' };
-				return {
-					partial: false,
+				const dataOptions = {
 					domain: domain,
 					variable: variable,
-					ranges: null,
-					omUrl: omUrl
+					ranges: null
 				};
+				const renderOptions = {
+					dark: false,
+					tileSize: 512,
+					resolutionFactor: 1,
+					drawGrid: false,
+					drawArrows: false,
+					drawContours: false,
+					interval: 1,
+					colorScale: customColorScales['ffmc']
+				};
+
+				return { dataOptions, renderOptions };
 			};
 
 			// use the settings as argument for the protocol
