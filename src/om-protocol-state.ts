@@ -28,7 +28,12 @@ const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 setupGlobalCache();
 
-export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
+export const getProtocolInstance = (
+	abortController: AbortController,
+	settings: OmProtocolSettings
+): OmProtocolInstance => {
+	const signal = abortController.signal;
+
 	if (omProtocolInstance) {
 		// Warn if critical settings differ from initial configuration
 		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
@@ -41,7 +46,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 	}
 
 	const instance = {
-		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
+		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }, signal),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;

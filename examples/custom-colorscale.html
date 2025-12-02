@@ -72,12 +72,14 @@
 				}
 			};
 
+			const abortController = OpenMeteoMapboxLayer.defaultAbortController;
+
 			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 			omProtocolOptions.colorScales = customColorScales;
 
 			// use the settings as argument for the protocol
 			maplibregl.addProtocol('om', (params) =>
-				OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+				OpenMeteoMapboxLayer.omProtocol(params, abortController, omProtocolOptions)
 			);
 
 			const map = new maplibregl.Map({
