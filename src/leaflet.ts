@@ -2,7 +2,7 @@ import L, { Coords, DoneCallback, GridLayerOptions } from 'leaflet';
 
 import { parseRequest } from './utils/parse-request';
 
-import { defaultOmProtocolSettings, omProtocol, requestTile } from './om-protocol';
+import { defaultOmProtocolSettings, requestTile } from './om-protocol';
 import { ensureData, getOrCreateState, getProtocolInstance } from './om-protocol-state';
 
 import { OmProtocolInstance, ParsedRequest, TileResponse } from './types';
