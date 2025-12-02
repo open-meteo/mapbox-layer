@@ -119,8 +119,11 @@ let setDomainOptions: Domain[];
 let setVariableOptions: Variable[];
 export const initProtocol = async (
 	url: string,
+	abortController: AbortController,
 	omProtocolSettings: OmProtocolSettings
 ): Promise<void> => {
+	const signal = abortController.signal;
+
 	const { useSAB } = omProtocolSettings;
 	tileSize = omProtocolSettings.tileSize;
 	setColorScales = omProtocolSettings.colorScales;
@@ -138,7 +141,9 @@ export const initProtocol = async (
 	const { variable, ranges, omFileUrl } = omProtocolSettings.parseUrlCallback(parsedOmUrl);
 
 	if (!omFileReader) {
-		omFileReader = new OMapsFileReader({ useSAB: useSAB });
+		omFileReader = new OMapsFileReader({ useSAB }, signal);
+	} else {
+		abortController.abort();
 	}
 
 	return new Promise((resolve, reject) => {
@@ -151,7 +156,7 @@ export const initProtocol = async (
 					resolve();
 
 					if (omProtocolSettings.postReadCallback) {
-						omProtocolSettings.postReadCallback(omFileReader, omFileUrl, data);
+						omProtocolSettings.postReadCallback(omFileReader, omFileUrl, data, signal);
 					}
 				});
 			})
@@ -210,7 +215,7 @@ export interface OmProtocolSettings {
 	resolutionFactor: 0.5 | 1 | 2;
 	parseUrlCallback: (url: string) => OmParseUrlCallbackResult;
 	postReadCallback:
-		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
+		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data, signal: AbortSignal) => void)
 		| undefined;
 }
 
@@ -225,15 +230,16 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
-// let protocolPromise: Promise<void>;
+export const defaultAbortController = new AbortController();
+
 export const omProtocol = async (
 	params: RequestParameters,
-	abortController?: AbortController,
+	abortController = defaultAbortController,
 	omProtocolSettings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	if (params.type == 'json') {
 		try {
-			await initProtocol(params.url, omProtocolSettings);
+			await initProtocol(params.url, abortController, omProtocolSettings);
 		} catch (e) {
 			throw new Error(e as string);
 		}

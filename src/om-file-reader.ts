@@ -27,12 +27,13 @@ interface FileReaderConfig {
  * Caches the backend of recently accessed files.
  */
 export class OMapsFileReader {
+	private signal: AbortSignal;
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
 	private readonly config: Required<FileReaderConfig>;
 
-	constructor(config: FileReaderConfig = {}) {
+	constructor(config: FileReaderConfig = {}, signal: AbortSignal) {
 		this.config = {
 			useSAB: false,
 			maxCachedFiles: 50,
@@ -40,6 +41,7 @@ export class OMapsFileReader {
 			eTagValidation: false,
 			...config
 		};
+		this.signal = signal;
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {
@@ -239,6 +241,7 @@ export class OMapsFileReader {
 					OMapsFileReader.s3BackendCache.set(nextOmUrl, s3_backend);
 					// Trigger a small fetch to prepare CF to already cache the file
 					fetch(nextOmUrl, {
+						signal: this.signal,
 						method: 'GET',
 						headers: {
 							Range: 'bytes=0-255' // Just fetch first 256 bytes to trigger caching
