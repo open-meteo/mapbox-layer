@@ -7,7 +7,7 @@
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
-		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.7/dist/index.js"></script>-->
+		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>-->
 		<!-- x-release-please-end -->
 		<!-- Local development -->
 		<script src="../../../dist/index.js"></script>
@@ -28,7 +28,7 @@
 				.then((response) => response.json())
 				.then((geojson) => {
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-					omProtocolOptions.clipping = { geojson: geojson };
+					omProtocolOptions.clippingOptions = { geojson: geojson };
 
 					// use the settings as argument for the protocol
 					maplibregl.addProtocol('om', (params) =>

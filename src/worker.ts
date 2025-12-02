@@ -11,30 +11,32 @@ import { getColor, getOpacity } from './utils/styling';
 import { hideZero } from './utils/variables';
 
 import { GridFactory } from './grids/index';
-import { TileRequest } from './worker-pool';
+
+import { TileRequest } from './types';
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
+	const key = message.data.key;
+	const { z, x, y } = message.data.tileIndex;
+	const ranges = message.data.dataOptions.ranges;
+	const domain = message.data.dataOptions.domain;
+	const values = message.data.data.values;
+
+	if (!values) {
+		throw new Error('No values provided');
+	}
+
 	if (message.data.type == 'getImage') {
-		const key = message.data.key;
+		const dark = message.data.renderOptions.dark;
+		const tileSize = message.data.renderOptions.tileSize;
+		const colorScale = message.data.renderOptions.colorScale;
+		const variable = message.data.dataOptions.variable;
 
-		const x = message.data.x;
-		const y = message.data.y;
-		const z = message.data.z;
-
-		const dark = message.data.dark;
-		const values = message.data.data.values;
-		const ranges = message.data.ranges;
-		const tileSize = message.data.tileSize;
-		const domain = message.data.domain;
-		const variable = message.data.variable;
-		const colorScale = message.data.colorScale;
-
-		const clipping = message.data.clipping;
+		const clippingOptions = message.data.clippingOptions;
 
 		let tileLiesInBoundaries = true;
 		let tileLiesWithinBoundaries = true;
 		let boundaries, polygons;
-		if (clipping) {
+		if (clippingOptions) {
 			try {
 				// optional dependancy
 				// const turf = await import('@turf/turf');
@@ -48,7 +50,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 				boundaries = [];
 				polygons = [];
-				for (const feature of clipping.geojson.features) {
+				for (const feature of clippingOptions.geojson.features) {
 					const boundary = turf.polygon(feature.geometry.coordinates[0]);
 					// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
 					const simplifiedBoundary = turf.simplify(boundary, {
@@ -83,11 +85,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const pixels = tileSize * tileSize;
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		if (!values) {
-			throw new Error('No values provided');
-		}
-
-		// const interpolationMethod = getInterpolationMethod(colorScale);
 		const grid = GridFactory.create(domain.grid, ranges);
 
 		const isWind = variable.value.includes('wind');
@@ -144,7 +141,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		let blob;
 		// if tile lies completely within boundaries, no need to clip
-		if (clipping && !tileLiesWithinBoundaries && !clipping.onlyClipCompleteTiles) {
+		if (clippingOptions && !tileLiesWithinBoundaries && !clippingOptions.onlyClipCompleteTiles) {
 			// generate 2nd OffscreenCanvas to handle clipping
 			const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
 			const clipContext = clipCanvas.getContext('2d');
@@ -183,35 +180,21 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
 	} else if (message.data.type == 'getArrayBuffer') {
-		const key = message.data.key;
-
-		const x = message.data.x;
-		const y = message.data.y;
-		const z = message.data.z;
-
-		const values = message.data.data.values;
-		const ranges = message.data.ranges;
-		const domain = message.data.domain;
-		const interval = message.data.interval;
 		const directions = message.data.data.directions;
-		const colorScale = message.data.colorScale;
-
-		if (!values) {
-			throw new Error('No values provided');
-		}
 
 		const pbf = new Pbf();
 
-		if (key.includes('grid=true')) {
+		if (message.data.renderOptions.drawGrid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
-		if (key.includes('arrows=true') && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, colorScale);
+		if (message.data.renderOptions.drawArrows && directions) {
+			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
-		if (key.includes('contours=true')) {
+		if (message.data.renderOptions.drawContours) {
+			const interval = message.data.renderOptions.interval;
 			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, interval ? interval : 2);
 		}
