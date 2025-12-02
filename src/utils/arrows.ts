@@ -4,7 +4,7 @@ import Pbf from 'pbf';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
-import { ColorScale, DimensionRange, Domain } from '../types';
+import { DimensionRange, Domain } from '../types';
 
 export const generateArrows = (
 	pbf: Pbf,
@@ -15,7 +15,6 @@ export const generateArrows = (
 	x: number,
 	y: number,
 	z: number,
-	colorScale: ColorScale,
 	extent: number = 4096,
 	arrows: number = 27
 ) => {
@@ -30,34 +29,27 @@ export const generateArrows = (
 	const size = extent / arrows;
 
 	let cursor = [0, 0];
-	const grid = GridFactory.create(domain.grid);
+	const grid = GridFactory.create(domain.grid, ranges);
 
 	for (let tileY = 0; tileY < extent + 1; tileY += size) {
-		let lat = tile2lat(y + tileY / extent, z);
+		const lat = tile2lat(y + tileY / extent, z);
 		for (let tileX = 0; tileX < extent + 1; tileX += size) {
-			let lon = tile2lon(x + tileX / extent, z);
+			const lon = tile2lon(x + tileX / extent, z);
 
-			let center = [tileX - size / 2, tileY - size / 2];
+			const center = [tileX - size / 2, tileY - size / 2];
 			const geom = [];
 
-			// make scale to zoomlevel
-			let index = grid.getIndex(lat, lon)
-			if (index % domain.grid.nx < 20) {
-				continue
-			}
-			if (index /  domain.grid.ny > (domain.grid.nx -20)) {
-				continue
-			}
-
-			let speed = grid.getLinearInterpolatedValue(values, lat, lon);
-			let direction = degreesToRadians(grid.getLinearInterpolatedValue(directions, lat, lon) + 180);
+			const speed = grid.getLinearInterpolatedValue(values, lat, lon);
+			const direction = degreesToRadians(
+				grid.getLinearInterpolatedValue(directions, lat, lon) + 180
+			);
 
 			const properties: { value?: number; direction?: number } = {
 				value: speed,
 				direction: direction
 			};
 
-			let rotation = direction;
+			const rotation = direction;
 			let length = 0.95;
 			if (speed < 30) {
 				length = 0.9;
@@ -85,7 +77,7 @@ export const generateArrows = (
 			}
 
 			// left arrow head
-			let [xt0, yt0] = rotatePoint(
+			const [xt0, yt0] = rotatePoint(
 				center[0],
 				center[1],
 				rotation,
