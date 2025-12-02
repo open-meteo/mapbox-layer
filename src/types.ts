@@ -159,7 +159,6 @@ export type ColorScale = {
 	opacity?: number;
 	scalefactor: number;
 	getOpacity?: (px: number) => number;
-	interpolationMethod: InterpolationMethod;
 };
 
 export interface ColorSegment {
@@ -177,7 +176,6 @@ export interface ColorScaleDefinition {
 	steps: number;
 	colors: string[] | ColorSegment[];
 	getOpacity?: (px: number) => number;
-	interpolationMethod: 'linear' | 'none';
 	unit: string;
 }
 

@@ -47,7 +47,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 4000,
 		steps: 100,
 		colors: ['green', 'orange', 'red'],
-		interpolationMethod: 'linear',
 		getOpacity: (px) => {
 			return (px ** 1.5 / 1000) * 100;
 		}
@@ -57,8 +56,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		min: 0,
 		max: 20900,
 		steps: 100,
-		colors: ['#fff', '#c3c2c2'],
-		interpolationMethod: 'linear'
+		colors: ['#fff', '#c3c2c2']
 	},
 	cloud_cover: {
 		unit: '%',
@@ -66,7 +64,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 100,
 		steps: 100,
 		colors: ['#fff', '#c3c2c2'],
-		interpolationMethod: 'linear',
 		getOpacity: () => {
 			return 100;
 		}
@@ -76,8 +73,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		min: 0,
 		max: 6000,
 		steps: 100,
-		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
-		interpolationMethod: 'none'
+		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9']
 	},
 	precipitation: {
 		unit: 'mm',
@@ -88,32 +84,28 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 5 },
 			{ colors: ['green', 'orange'], steps: 5 },
 			{ colors: ['orange', 'red'], steps: 10 }
-		],
-		interpolationMethod: 'linear'
+		]
 	},
 	pressure: {
 		unit: 'hPa',
 		min: 950,
 		max: 1050,
 		steps: 50,
-		colors: ['#4444ff', '#fff', '#ff4444'],
-		interpolationMethod: 'linear'
+		colors: ['#4444ff', '#fff', '#ff4444']
 	},
 	relative: {
 		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
-		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'].reverse(),
-		interpolationMethod: 'linear'
+		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'].reverse()
 	},
 	shortwave: {
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
 		steps: 100,
-		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
-		interpolationMethod: 'linear'
+		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e']
 	},
 	temperature: {
 		unit: 'C°',
@@ -127,8 +119,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 12 },
 			{ colors: ['orange', 'red'], steps: 14 },
 			{ colors: ['red', 'purple'], steps: 18 }
-		],
-		interpolationMethod: 'linear'
+		]
 	},
 	temperature_2m_anomaly: {
 		unit: 'K',
@@ -138,8 +129,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		colors: [
 			{ colors: ['blue', 'white'], steps: 10 },
 			{ colors: ['white', 'red'], steps: 10 }
-		],
-		interpolationMethod: 'linear'
+		]
 	},
 	thunderstorm: {
 		unit: '%',
@@ -150,8 +140,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 33 },
 			{ colors: ['green', 'orange'], steps: 33 },
 			{ colors: ['orange', 'red'], steps: 34 }
-		],
-		interpolationMethod: 'linear'
+		]
 	},
 	swell: {
 		unit: 'm',
@@ -162,16 +151,14 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 2m
 			{ colors: ['green', 'orange'], steps: 20 }, // 2 to 6m
 			{ colors: ['orange', 'red'], steps: 20 } // 6 to 10m
-		],
-		interpolationMethod: 'linear'
+		]
 	},
 	uv: {
 		unit: '',
 		min: 0,
 		max: 12,
 		steps: 12,
-		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
-		interpolationMethod: 'linear'
+		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e']
 	},
 	wind: {
 		unit: 'm/s',
@@ -182,8 +169,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10kn
 			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20kn
 			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40kn
-		],
-		interpolationMethod: 'linear'
+		]
 	}
 };
 
@@ -261,8 +247,7 @@ function generateTypeScript(): void {
 
 export const colorScales: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
-		const { min, max, steps, colors, unit, getOpacity, interpolationMethod, scalefactor } =
-			colorScale;
+		const { min, max, steps, colors, unit, getOpacity, scalefactor } = colorScale;
 
 		content += `
 	'${key}': {
@@ -275,7 +260,6 @@ export const colorScales: ColorScales = {`;
 			content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
 		}
 		content += `],
-		interpolationMethod: '${interpolationMethod}',
 		scalefactor: ${scalefactor},`;
 
 		if (getOpacity) {

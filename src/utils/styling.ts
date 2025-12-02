@@ -25,7 +25,7 @@ export const getOpacity = (
 		if (typeof colorScale.getOpacity == 'function') {
 			return 255 * (colorScale.getOpacity(px) / 100) * (OPACITY / 100);
 		} else {
-			let getOpacity = eval(colorScale.getOpacity);
+			const getOpacity = eval(colorScale.getOpacity);
 			return 255 * (getOpacity(px) / 100) * (OPACITY / 100);
 		}
 	} else if (v == 'cloud_cover' || v == 'thunderstorm_probability') {
@@ -57,15 +57,4 @@ export const getColorScale = (variable: Variable['value']) => {
 		colorScales[variable.split('_')[0] + '_' + variable.split('_')[1]] ??
 		colorScales['temperature']
 	);
-};
-
-export const getInterpolationMethod = (colorScale: ColorScale): 'nearest' | 'linear' => {
-	if (!colorScale.interpolationMethod || colorScale.interpolationMethod === 'none') {
-		return 'nearest';
-	} else if (colorScale.interpolationMethod === 'linear') {
-		return 'linear';
-	} else {
-		// default is linear
-		return 'linear';
-	}
 };

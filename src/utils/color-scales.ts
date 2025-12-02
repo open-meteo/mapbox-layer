@@ -108,7 +108,6 @@ export const colorScales: ColorScales = {
 			[255, 3, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 0.025,
 		getOpacity: (px) => {
 			return (px ** 1.5 / 1e3) * 100;
@@ -221,7 +220,6 @@ export const colorScales: ColorScales = {
 			[196, 195, 195],
 			[195, 194, 194]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 0.004784688995215311
 	},
 	cloud_cover: {
@@ -331,7 +329,6 @@ export const colorScales: ColorScales = {
 			[196, 195, 195],
 			[195, 194, 194]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1,
 		getOpacity: () => {
 			return 100;
@@ -444,7 +441,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		interpolationMethod: 'none',
 		scalefactor: 0.016666666666666666
 	},
 	precipitation: {
@@ -474,7 +470,6 @@ export const colorScales: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	pressure: {
@@ -534,7 +529,6 @@ export const colorScales: ColorScales = {
 			[255, 76, 76],
 			[255, 68, 68]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 0.5
 	},
 	relative: {
@@ -644,7 +638,6 @@ export const colorScales: ColorScales = {
 			[2, 150, 146],
 			[0, 147, 146]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	shortwave: {
@@ -754,7 +747,6 @@ export const colorScales: ColorScales = {
 			[209, 90, 124],
 			[207, 89, 126]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 0.1
 	},
 	temperature: {
@@ -864,7 +856,6 @@ export const colorScales: ColorScales = {
 			[135, 0, 128],
 			[128, 0, 128]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	temperature_2m_anomaly: {
@@ -894,7 +885,6 @@ export const colorScales: ColorScales = {
 			[255, 28, 28],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 2
 	},
 	thunderstorm: {
@@ -1004,7 +994,6 @@ export const colorScales: ColorScales = {
 			[255, 5, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	swell: {
@@ -1064,7 +1053,6 @@ export const colorScales: ColorScales = {
 			[255, 9, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 5
 	},
 	uv: {
@@ -1086,7 +1074,6 @@ export const colorScales: ColorScales = {
 			[232, 132, 113],
 			[207, 89, 126]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	wind: {
@@ -1136,7 +1123,6 @@ export const colorScales: ColorScales = {
 			[255, 9, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 0.5714285714285714
 	},
 	rain: {
@@ -1166,7 +1152,6 @@ export const colorScales: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 1
 	},
 	convective_cloud_base: {
@@ -1276,7 +1261,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		interpolationMethod: 'none',
 		scalefactor: 0.016666666666666666
 	},
 	wave: {
@@ -1336,7 +1320,6 @@ export const colorScales: ColorScales = {
 			[255, 9, 0],
 			[255, 0, 0]
 		],
-		interpolationMethod: 'linear',
 		scalefactor: 5
 	}
 };
