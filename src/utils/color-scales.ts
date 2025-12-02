@@ -2,7 +2,7 @@ import type { ColorScales } from '../types';
 
 export const colorScales: ColorScales = {
 	cape: {
-		unit: '',
+		unit: 'J/kg',
 		min: 0,
 		max: 4000,
 		steps: 100,
@@ -1090,7 +1090,7 @@ export const colorScales: ColorScales = {
 		scalefactor: 1
 	},
 	wind: {
-		unit: 'km/h',
+		unit: 'm/s',
 		min: 0,
 		max: 70,
 		steps: 40,

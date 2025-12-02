@@ -6,8 +6,6 @@ import { fileURLToPath } from 'url';
 
 import type { AliasConfig, ColorScale, ColorScaleDefinition, ColorSegment } from '../src/types';
 
-const OPACITY = 75;
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -44,7 +42,7 @@ function interpolateColorScale(
 
 const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	cape: {
-		unit: '',
+		unit: 'J/kg',
 		min: 0,
 		max: 4000,
 		steps: 100,
@@ -74,14 +72,15 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		}
 	},
 	convective_cloud_top: {
+		unit: 'm',
 		min: 0,
 		max: 6000,
 		steps: 100,
 		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
-		interpolationMethod: 'none',
-		unit: 'm'
+		interpolationMethod: 'none'
 	},
 	precipitation: {
+		unit: 'mm',
 		min: 0,
 		max: 20,
 		steps: 20,
@@ -90,34 +89,34 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 5 },
 			{ colors: ['orange', 'red'], steps: 10 }
 		],
-		interpolationMethod: 'linear',
-		unit: 'mm'
+		interpolationMethod: 'linear'
 	},
 	pressure: {
+		unit: 'hPa',
 		min: 950,
 		max: 1050,
 		steps: 50,
 		colors: ['#4444ff', '#fff', '#ff4444'],
-		interpolationMethod: 'linear',
-		unit: 'hPa'
+		interpolationMethod: 'linear'
 	},
 	relative: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
 		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'].reverse(),
-		interpolationMethod: 'linear',
-		unit: '%'
+		interpolationMethod: 'linear'
 	},
 	shortwave: {
+		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
 		steps: 100,
 		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
-		interpolationMethod: 'linear',
-		unit: 'W/m^2'
+		interpolationMethod: 'linear'
 	},
 	temperature: {
+		unit: 'C°',
 		min: -40,
 		max: 60,
 		steps: 100,
@@ -129,10 +128,10 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['orange', 'red'], steps: 14 },
 			{ colors: ['red', 'purple'], steps: 18 }
 		],
-		interpolationMethod: 'linear',
-		unit: 'C°'
+		interpolationMethod: 'linear'
 	},
 	temperature_2m_anomaly: {
+		unit: 'K',
 		min: -5,
 		max: 5,
 		steps: 20,
@@ -140,10 +139,10 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'white'], steps: 10 },
 			{ colors: ['white', 'red'], steps: 10 }
 		],
-		interpolationMethod: 'linear',
-		unit: 'K'
+		interpolationMethod: 'linear'
 	},
 	thunderstorm: {
+		unit: '%',
 		min: 0,
 		max: 100,
 		steps: 100,
@@ -152,10 +151,10 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 33 },
 			{ colors: ['orange', 'red'], steps: 34 }
 		],
-		interpolationMethod: 'linear',
-		unit: '%'
+		interpolationMethod: 'linear'
 	},
 	swell: {
+		unit: 'm',
 		min: 0,
 		max: 10,
 		steps: 50,
@@ -164,18 +163,18 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 20 }, // 2 to 6m
 			{ colors: ['orange', 'red'], steps: 20 } // 6 to 10m
 		],
-		interpolationMethod: 'linear',
-		unit: 'm'
+		interpolationMethod: 'linear'
 	},
 	uv: {
+		unit: '',
 		min: 0,
 		max: 12,
 		steps: 12,
 		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e'],
-		interpolationMethod: 'linear',
-		unit: ''
+		interpolationMethod: 'linear'
 	},
 	wind: {
+		unit: 'm/s',
 		min: 0,
 		max: 70,
 		steps: 40,
@@ -184,8 +183,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20kn
 			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40kn
 		],
-		interpolationMethod: 'linear',
-		unit: 'km/h'
+		interpolationMethod: 'linear'
 	}
 };
 
@@ -273,7 +271,7 @@ export const colorScales: ColorScales = {`;
 		max: ${max},
 		steps: ${steps},
 		colors: [`;
-		for (let color of colors) {
+		for (const color of colors) {
 			content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
 		}
 		content += `],
