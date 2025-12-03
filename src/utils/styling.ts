@@ -103,10 +103,12 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	albedo: colorScales['cloud_cover'],
 	boundary_layer_height: { ...colorScales['convective_cloud_top'], min: 0, max: 2000 },
 	cloud_base: colorScales['convective_cloud_top'],
+	cloud_top: colorScales['convective_cloud_top'],
 	convective_cloud_base: colorScales['convective_cloud_top'],
 	dew_point: colorScales['temperature'],
 	diffuse_radiation: colorScales['shortwave'],
 	direct_radiation: colorScales['shortwave'],
+	freezing_level_height: { ...colorScales['temperature'], unit: 'm', min: 0, max: 4000 },
 	latent_heat_flux: {
 		...colorScales['temperature'],
 		unit: 'W/m²',
