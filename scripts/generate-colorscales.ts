@@ -63,9 +63,16 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		unit: '%',
 		min: 0,
 		max: 100,
-		steps: 100,
-		colors: ['#fff', '#c3c2c2'],
-		opacity: defaultPowerScaleOpacity
+		steps: 20,
+		colors: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
+		opacity: {
+			mode: 'linear-then-constant',
+			params: {
+				threshold: 33,
+				opacityDark: 85,
+				opacityLight: 75
+			}
+		}
 	},
 	convective_cloud_top: {
 		unit: 'm',
