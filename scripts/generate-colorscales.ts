@@ -1,4 +1,8 @@
-import { defaultLinearThenConstantOpacity, defaultPowerScaleOpacity } from '../src/utils/styling';
+import {
+	defaultLinearThenConstantOpacity,
+	defaultPowerScaleOpacity,
+	linearThenConstantWithThreshold
+} from '../src/utils/styling';
 import { color } from 'd3-color';
 import { interpolateHsl, interpolateRgb } from 'd3-interpolate';
 import { writeFileSync } from 'fs';
@@ -9,15 +13,6 @@ import type { ColorScale, OpacityDefinition } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-const linearThenConstantWithThreshold = (threshold: number): OpacityDefinition => ({
-	mode: 'linear-then-constant',
-	params: {
-		threshold,
-		opacityDark: 50,
-		opacityLight: 100
-	}
-});
 
 function interpolateColorScale(
 	colors: string[],
@@ -133,6 +128,19 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['red', 'purple'], steps: 6 }
 		],
 		opacity: linearThenConstantWithThreshold(0.15)
+	},
+	soil_moisture: {
+		unit: 'vol. %',
+		min: 0,
+		max: 0.5,
+		steps: 20,
+		colors: [
+			{ colors: ['#e8c88a', '#c68b67'], steps: 6 },
+			{ colors: ['#c68b67', '#cad988'], steps: 6 },
+			// { colors: ['#c4ffad', '#a4f5ff'], steps: 2 },
+			{ colors: ['#a4f5ff', '#5172be'], steps: 7 }
+		],
+		opacity: linearThenConstantWithThreshold(0.0001)
 	},
 	swell: {
 		unit: 'm',

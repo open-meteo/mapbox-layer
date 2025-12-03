@@ -29,6 +29,15 @@ export const defaultConstantOpacity: OpacityDefinition = {
 	}
 };
 
+export const linearThenConstantWithThreshold = (threshold: number): OpacityDefinition => ({
+	mode: 'linear-then-constant',
+	params: {
+		threshold,
+		opacityDark: 50,
+		opacityLight: 100
+	}
+});
+
 export const defaultLinearThenConstantOpacity: OpacityDefinition = {
 	mode: 'linear-then-constant',
 	params: {
@@ -96,15 +105,9 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	convective_cloud_base: colorScales['convective_cloud_top'],
 	diffuse_radiation: colorScales['shortwave'],
 	direct_radiation: colorScales['shortwave'],
-	soil_moisture: {
-		...colorScales['shortwave'],
-		unit: '',
-		min: 0,
-		max: 1,
-		opacity: defaultLinearThenConstantOpacity
-	},
 	rain: colorScales['precipitation'],
 	showers: colorScales['precipitation'],
+	snow_depth_water_equivalent: { ...colorScales['precipitation'], unit: 'mm', min: 0, max: 3200 },
 	wave: colorScales['swell']
 };
 
