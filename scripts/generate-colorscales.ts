@@ -10,6 +10,15 @@ import type { ColorScale, OpacityDefinition } from '../src/types';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const linearThenConstantWithThreshold = (threshold: number): OpacityDefinition => ({
+	mode: 'linear-then-constant',
+	params: {
+		threshold,
+		opacityDark: 50,
+		opacityLight: 100
+	}
+});
+
 function interpolateColorScale(
 	colors: string[],
 	steps: number,
@@ -64,14 +73,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 6000,
 		steps: 100,
 		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				opacityDark: 50,
-				opacityLight: 100,
-				threshold: 600
-			}
-		}
+		opacity: linearThenConstantWithThreshold(600)
 	},
 	precipitation: {
 		unit: 'mm',
@@ -116,14 +118,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['yellow', 'red'], steps: 7 },
 			{ colors: ['red', 'purple'], steps: 6 }
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 0.15,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacity: linearThenConstantWithThreshold(0.15)
 	},
 	swell: {
 		unit: 'm',
@@ -213,8 +208,19 @@ const aliases: Record<string, AliasConfig> = {
 	convective_cloud_base: {
 		source: 'convective_cloud_top'
 	},
+	diffuse_radiation: {
+		source: 'shortwave'
+	},
 	direct_radiation: {
 		source: 'shortwave'
+	},
+	soil_moisture: {
+		source: 'relative',
+		overrides: {
+			min: 0,
+			max: 1,
+			opacity: linearThenConstantWithThreshold(0.1)
+		}
 	},
 	rain: {
 		source: 'precipitation'
@@ -267,15 +273,23 @@ function generateColorScales(): Record<string, ColorScale> {
 
 	// Generate aliases
 	for (const [aliasName, aliasConfig] of Object.entries(aliases)) {
-		const { source } = aliasConfig;
+		const { source, overrides } = aliasConfig;
 
-		// Get the source (could be a base definition or another alias)
-		const sourceColorScale = colorScales[source];
-		if (!sourceColorScale) {
+		// If base definition exists, prefer merging with it and regenerate the colors properly
+		const sourceDef = colorScaleDefinitions[source];
+		if (!sourceDef) {
 			throw new Error(`Source color scale '${source}' not found for alias '${aliasName}'`);
 		}
-		// Simple copy
-		colorScales[aliasName] = { ...sourceColorScale };
+		const mergedDef: ColorScaleDefinition = {
+			...sourceDef,
+			// only override fields that exist in overrides
+			min: overrides?.min ?? sourceDef.min,
+			max: overrides?.max ?? sourceDef.max,
+			unit: overrides?.unit ?? sourceDef.unit,
+			opacity: overrides?.opacity ?? sourceDef.opacity
+		};
+		colorScales[aliasName] = generateSingleColorScale(mergedDef);
+		continue;
 	}
 
 	return colorScales;
@@ -337,6 +351,12 @@ interface ColorSegment {
 
 interface AliasConfig {
 	source: string;
+	overrides?: {
+		min?: number;
+		max?: number;
+		unit?: string;
+		opacity?: OpacityDefinition;
+	};
 }
 
 interface ColorScaleDefinition {
