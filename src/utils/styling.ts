@@ -97,3 +97,56 @@ export const getColorScale = (variable: Variable['value']) => {
 		colorScales['temperature']
 	);
 };
+
+const LEVEL_REGEX = /_(\d+)(hPa)?$/i;
+
+// ISA / barometric constants
+const ISA = {
+	p0_hPa: 1013.25, // reference pressure in hPa
+	T0: 288.15, // sea-level standard temperature (K)
+	L: 0.0065, // temperature lapse rate (K/m)
+	R: 287.05, // specific gas constant for dry air (J/(kg·K))
+	g0: 9.80665 // gravity (m/s^2)
+};
+
+/** Convert pressure in hPa to geopotential height (meters) using ISA troposphere formula.
+ *  valid for typical tropospheric pressures (roughly 1000 -> 200 hPa). */
+const pressureHpaToIsaHeight = (hpa: number): number => {
+	if (hpa <= 0) return 0;
+	const { p0_hPa, T0, L, R, g0 } = ISA;
+	const r = hpa / p0_hPa;
+	const exponent = (R * L) / g0; // ~0.1903
+	// H = (T0 / L) * (1 - r^exponent)
+	const height = (T0 / L) * (1 - Math.pow(r, exponent));
+	return Math.max(0, height);
+};
+
+export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
+	const scale = getColorScale(variable);
+
+	// try to parse level from the variable string, e.g. geopotential_height_500hPa
+	const m = variable.match(LEVEL_REGEX);
+	if (!m) {
+		return scale;
+	}
+
+	const levelNum = Number(m[1]);
+
+	// 1) geopotential height variables -> derive typical height from ISA
+	// Detect variable name indicating geopotential height; adjust min/max around ISA value.
+	if (variable.includes('geopotential_height')) {
+		// Only handle hPa suffix for now (LEVEL_REGEX captured the hPa optional part)
+		// Compute ISA height (meters) for the pressure level
+		// const center = pressureHpaToIsaHeight(levelNum);
+		const computedMax = pressureHpaToIsaHeight(0.9 * levelNum);
+		const computedMin = pressureHpaToIsaHeight(1.1 * levelNum);
+
+		return {
+			...scale,
+			min: computedMin,
+			max: computedMax
+		};
+	}
+
+	return scale;
+};

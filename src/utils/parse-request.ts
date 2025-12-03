@@ -1,7 +1,7 @@
 import { GridFactory } from '../grids/index';
 
 import { parseUrlComponents } from './parse-url';
-import { getColorScale } from './styling';
+import { getColorScaleMinMaxScaled } from './styling';
 
 import type {
 	ColorScales,
@@ -114,7 +114,7 @@ const defaultResolveRenderOptions = (
 	const colorScale =
 		colorScales?.custom ??
 		colorScales[dataOptions.variable.value] ??
-		getColorScale(dataOptions.variable.value);
+		getColorScaleMinMaxScaled(dataOptions.variable.value);
 
 	return {
 		dark,
