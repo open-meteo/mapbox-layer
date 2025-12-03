@@ -1,4 +1,4 @@
-import { defaultPowerScaleOpacity } from '../src/utils/styling';
+import { defaultLinearThenConstantOpacity, defaultPowerScaleOpacity } from '../src/utils/styling';
 import { color } from 'd3-color';
 import { interpolateHsl, interpolateRgb } from 'd3-interpolate';
 import { writeFileSync } from 'fs';
@@ -50,13 +50,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		colors: ['green', 'orange', 'red'],
 		opacity: defaultPowerScaleOpacity
 	},
-	cloud_base: {
-		unit: 'm',
-		min: 0,
-		max: 20900,
-		steps: 100,
-		colors: ['#fff', '#c3c2c2']
-	},
 	cloud_cover: {
 		unit: '%',
 		min: 0,
@@ -90,14 +83,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 5 },
 			{ colors: ['orange', 'red'], steps: 10 }
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 1.5,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacity: defaultLinearThenConstantOpacity
 	},
 	pressure: {
 		unit: 'hPa',
@@ -119,6 +105,36 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 1000,
 		steps: 100,
 		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e']
+	},
+	snow_depth: {
+		unit: 'm',
+		min: 0,
+		max: 5,
+		steps: 20,
+		colors: [
+			{ colors: ['green', 'yellow'], steps: 7 },
+			{ colors: ['yellow', 'red'], steps: 7 },
+			{ colors: ['red', 'purple'], steps: 6 }
+		],
+		opacity: {
+			mode: 'linear-then-constant',
+			params: {
+				threshold: 0.15,
+				opacityDark: 50,
+				opacityLight: 100
+			}
+		}
+	},
+	swell: {
+		unit: 'm',
+		min: 0,
+		max: 10,
+		steps: 50,
+		colors: [
+			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 2m
+			{ colors: ['green', 'orange'], steps: 20 }, // 2 to 6m
+			{ colors: ['orange', 'red'], steps: 20 } // 6 to 10m
+		]
 	},
 	temperature: {
 		unit: 'C°',
@@ -156,17 +172,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		],
 		opacity: defaultPowerScaleOpacity
 	},
-	swell: {
-		unit: 'm',
-		min: 0,
-		max: 10,
-		steps: 50,
-		colors: [
-			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 2m
-			{ colors: ['green', 'orange'], steps: 20 }, // 2 to 6m
-			{ colors: ['orange', 'red'], steps: 20 } // 6 to 10m
-		]
-	},
 	uv: {
 		unit: '',
 		min: 0,
@@ -199,17 +204,23 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 
 const aliases: Record<string, AliasConfig> = {
 	// Simple aliases (exact copy)
+	boundary_layer_height: {
+		source: 'convective_cloud_top'
+	},
+	cloud_base: {
+		source: 'convective_cloud_top'
+	},
+	convective_cloud_base: {
+		source: 'convective_cloud_top'
+	},
+	direct_radiation: {
+		source: 'shortwave'
+	},
 	rain: {
 		source: 'precipitation'
 	},
 	showers: {
 		source: 'precipitation'
-	},
-	convective_cloud_base: {
-		source: 'convective_cloud_top'
-	},
-	boundary_layer_height: {
-		source: 'convective_cloud_top'
 	},
 	wave: {
 		source: 'swell'

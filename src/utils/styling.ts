@@ -29,6 +29,15 @@ export const defaultConstantOpacity: OpacityDefinition = {
 	}
 };
 
+export const defaultLinearThenConstantOpacity: OpacityDefinition = {
+	mode: 'linear-then-constant',
+	params: {
+		threshold: 1.5,
+		opacityDark: 50,
+		opacityLight: 100
+	}
+};
+
 export const getOpacity = (
 	v: string,
 	px: number,
