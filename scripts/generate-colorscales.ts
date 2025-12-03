@@ -70,10 +70,17 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	convective_cloud_top: {
 		unit: 'm',
 		min: 0,
-		max: 6000,
+		max: 6200,
 		steps: 100,
 		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
 		opacity: linearThenConstantWithThreshold(600)
+	},
+	geopotential_height: {
+		unit: 'm',
+		min: 4600,
+		max: 6000,
+		steps: 40,
+		colors: ['#2E8B7A', '#5A3E8A', '#003366', '#006400', '#B5A000', '#550000']
 	},
 	precipitation: {
 		unit: 'mm',

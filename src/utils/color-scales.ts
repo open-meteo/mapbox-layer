@@ -240,7 +240,7 @@ export const colorScales: ColorScales = {
 	convective_cloud_top: {
 		unit: 'm',
 		min: 0,
-		max: 6000,
+		max: 6200,
 		steps: 100,
 		colors: [
 			[192, 57, 43],
@@ -344,7 +344,7 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016666666666666666,
+		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -353,6 +353,55 @@ export const colorScales: ColorScales = {
 				opacityLight: 100
 			}
 		}
+	},
+	geopotential_height: {
+		unit: 'm',
+		min: 4600,
+		max: 6000,
+		steps: 40,
+		colors: [
+			[46, 139, 122],
+			[48, 135, 139],
+			[50, 116, 139],
+			[53, 97, 139],
+			[55, 80, 139],
+			[57, 63, 138],
+			[71, 60, 138],
+			[90, 62, 138],
+			[90, 62, 138],
+			[71, 49, 137],
+			[50, 38, 134],
+			[28, 28, 130],
+			[19, 33, 125],
+			[12, 38, 118],
+			[5, 45, 111],
+			[0, 51, 102],
+			[0, 51, 102],
+			[0, 73, 102],
+			[0, 94, 101],
+			[0, 101, 87],
+			[0, 101, 65],
+			[0, 101, 43],
+			[0, 100, 21],
+			[0, 100, 0],
+			[0, 100, 0],
+			[18, 112, 0],
+			[39, 123, 0],
+			[64, 135, 0],
+			[93, 146, 0],
+			[126, 158, 0],
+			[162, 169, 0],
+			[181, 160, 0],
+			[181, 160, 0],
+			[167, 127, 0],
+			[154, 97, 0],
+			[140, 71, 0],
+			[126, 48, 0],
+			[112, 28, 0],
+			[99, 12, 0],
+			[85, 0, 0]
+		],
+		scalefactor: 0.02857142857142857
 	},
 	precipitation: {
 		unit: 'mm',
@@ -1103,7 +1152,7 @@ export const colorScales: ColorScales = {
 	boundary_layer_height: {
 		unit: 'm',
 		min: 0,
-		max: 6000,
+		max: 6200,
 		steps: 100,
 		colors: [
 			[192, 57, 43],
@@ -1207,7 +1256,7 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016666666666666666,
+		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1220,7 +1269,7 @@ export const colorScales: ColorScales = {
 	cloud_base: {
 		unit: 'm',
 		min: 0,
-		max: 6000,
+		max: 6200,
 		steps: 100,
 		colors: [
 			[192, 57, 43],
@@ -1324,7 +1373,7 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016666666666666666,
+		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1337,7 +1386,7 @@ export const colorScales: ColorScales = {
 	convective_cloud_base: {
 		unit: 'm',
 		min: 0,
-		max: 6000,
+		max: 6200,
 		steps: 100,
 		colors: [
 			[192, 57, 43],
@@ -1441,7 +1490,7 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016666666666666666,
+		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
