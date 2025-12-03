@@ -58,7 +58,7 @@ export const variableOptions = [
 	{ value: 'snowfall', label: 'Snowfall' },
 	{ value: 'snowfall_probability', label: 'Snowfall Probability' },
 	{ value: 'snowfall_height', label: 'Snowfall Height' },
-	{ value: 'snowfall_water_equivalent', label: 'Snow Water Equivalent' },
+	{ value: 'snowfall_water_equivalent', label: 'Snowfall Water Equivalent' },
 
 	{ value: 'shortwave_radiation', label: 'Shortwave Solar Radiation' },
 

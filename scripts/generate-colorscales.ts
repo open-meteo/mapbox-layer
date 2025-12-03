@@ -69,6 +69,13 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			}
 		}
 	},
+	convective_inhibition: {
+		unit: 'J/kg',
+		min: 0,
+		max: 500,
+		steps: 20,
+		colors: ['white', 'purple', 'turquoise', 'green', 'orange', 'red', 'beige']
+	},
 	convective_cloud_top: {
 		unit: 'm',
 		min: 0,
@@ -148,10 +155,17 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 10,
 		steps: 50,
 		colors: [
-			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 2m
-			{ colors: ['green', 'orange'], steps: 20 }, // 2 to 6m
-			{ colors: ['orange', 'red'], steps: 20 } // 6 to 10m
+			{ colors: ['blue', 'green'], steps: 10 },
+			{ colors: ['green', 'orange'], steps: 20 },
+			{ colors: ['orange', 'red'], steps: 20 }
 		]
+	},
+	swell_period: {
+		unit: 's',
+		min: 0,
+		max: 20,
+		steps: 20,
+		colors: ['#a0614b', '#dfcd8c', '#34ad4a', '#2679be']
 	},
 	temperature: {
 		unit: 'C°',

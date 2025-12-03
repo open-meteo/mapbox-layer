@@ -100,15 +100,45 @@ export const getOpacity = (
 
 const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...colorScales,
-	boundary_layer_height: colorScales['convective_cloud_top'],
+	albedo: colorScales['cloud_cover'],
+	boundary_layer_height: { ...colorScales['convective_cloud_top'], min: 0, max: 2000 },
 	cloud_base: colorScales['convective_cloud_top'],
 	convective_cloud_base: colorScales['convective_cloud_top'],
+	dew_point: colorScales['temperature'],
 	diffuse_radiation: colorScales['shortwave'],
 	direct_radiation: colorScales['shortwave'],
+	latent_heat_flux: {
+		...colorScales['temperature'],
+		unit: 'W/m²',
+		min: -50,
+		max: 20
+	},
+	sensible_heat_flux: {
+		...colorScales['temperature'],
+		unit: 'W/m²',
+		min: -50,
+		max: 50
+	},
 	rain: colorScales['precipitation'],
 	showers: colorScales['precipitation'],
 	snow_depth_water_equivalent: { ...colorScales['precipitation'], unit: 'mm', min: 0, max: 3200 },
-	wave: colorScales['swell']
+	snowfall_water_equivalent: colorScales['precipitation'],
+	visibility: {
+		...colorScales['geopotential_height'],
+		colors: colorScales['geopotential_height'].colors.reverse(),
+		min: 0,
+		max: 20000
+	},
+	wave: colorScales['swell'],
+	wind_wave_height: colorScales['swell'],
+	swell_wave_height: colorScales['swell'],
+	secondary_swell_wave_height: colorScales['swell'],
+	tertiary_swell_wave_height: colorScales['swell'],
+	wave_peak_period: colorScales['swell_period'],
+	wave_period: colorScales['swell_period'],
+	swell_wave_period: colorScales['swell_period'],
+	secondary_swell_wave_period: colorScales['swell_period'],
+	tertiary_swell_wave_period: colorScales['swell_period']
 };
 
 export const getColorScale = (variable: Variable['value']) => {
