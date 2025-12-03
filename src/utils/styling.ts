@@ -20,13 +20,25 @@ export const getOpacity = (
 	colorScale: ColorScale
 ): number => {
 	if (colorScale.opacity) {
-		return 255 * (colorScale.opacity / 100);
-	} else if (colorScale.getOpacity) {
-		if (typeof colorScale.getOpacity == 'function') {
-			return 255 * (colorScale.getOpacity(px) / 100) * (OPACITY / 100);
-		} else {
-			const getOpacity = eval(colorScale.getOpacity);
-			return 255 * (getOpacity(px) / 100) * (OPACITY / 100);
+		switch (colorScale.opacity.mode) {
+			case 'constant': {
+				const params = colorScale.opacity.params;
+				return 255 * (params.value / 100);
+			}
+			case 'power': {
+				const params = colorScale.opacity.params;
+				return (
+					255 *
+					(Math.min(
+						Math.max(
+							(Math.pow(Math.max(px, 0), params.exponent) / params.denom) * params.scalePct,
+							0
+						),
+						100
+					) /
+						100)
+				);
+			}
 		}
 	} else if (v == 'cloud_cover' || v == 'thunderstorm_probability') {
 		// scale opacity with percentage

@@ -109,8 +109,13 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		scalefactor: 0.025,
-		getOpacity: (px) => {
-			return (px ** 1.5 / 1e3) * 100;
+		opacity: {
+			mode: 'power',
+			params: {
+				exponent: 1.5,
+				denom: 1000,
+				scalePct: 100
+			}
 		}
 	},
 	cloud_base: {
@@ -330,8 +335,11 @@ export const colorScales: ColorScales = {
 			[195, 194, 194]
 		],
 		scalefactor: 1,
-		getOpacity: () => {
-			return 100;
+		opacity: {
+			mode: 'constant',
+			params: {
+				value: 100
+			}
 		}
 	},
 	convective_cloud_top: {

@@ -156,10 +156,42 @@ export type ColorScale = {
 	unit: string;
 	steps: number;
 	colors: [number, number, number][];
-	opacity?: number;
 	scalefactor: number;
-	getOpacity?: (px: number) => number;
+	opacity?: OpacityDefinition;
+	// getOpacity?: (px: number) => number;
 };
+
+// Opacity modes supported by the worker
+export type OpacityMode = 'constant' | 'power';
+
+export type OpacityDefinition =
+	| {
+			mode: 'constant';
+			params: {
+				// Percentage 0..100 (defaults to 100)
+				value: number;
+			};
+			// no LUT
+	  }
+	| {
+			mode: 'power';
+			params: {
+				// px ** exponent / denom * scalePct  (defaults: exponent=1.5, denom=1000, scalePct=100)
+				exponent: number;
+				denom: number;
+				scalePct: number; // percent multiplier (0..100)
+			};
+	  };
+
+// export interface OpacityDefinition {
+// 	mode: 'constant' | 'power';
+// 	params: {
+// 		value?: number;
+// 		exponent?: number;
+// 		denom?: number;
+// 		scalefactor?: number;
+// 	};
+// }
 
 export interface ColorSegment {
 	colors: string[];
