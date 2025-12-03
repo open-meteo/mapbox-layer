@@ -1,6 +1,6 @@
 import { colorScales } from './color-scales';
 
-import type { ColorScale, Variable } from '../types';
+import type { ColorScale, OpacityDefinition, Variable } from '../types';
 
 const OPACITY = 75;
 
@@ -13,6 +13,16 @@ export const getColor = (colorScale: ColorScale, px: number): [number, number, n
 	];
 };
 
+export const defaultPowerScaleOpacity: OpacityDefinition = {
+	mode: 'power',
+	params: {
+		exponent: 1.5,
+		denom: 1000,
+		opacityDark: 75,
+		opacityLight: 75
+	}
+};
+
 export const getOpacity = (
 	v: string,
 	px: number,
@@ -23,26 +33,22 @@ export const getOpacity = (
 		switch (colorScale.opacity.mode) {
 			case 'constant': {
 				const params = colorScale.opacity.params;
-				return 255 * (params.value / 100);
+				const scalePct = dark ? params.opacityDark : params.opacityLight;
+				return 255 * (scalePct / 100);
 			}
 			case 'power': {
 				const params = colorScale.opacity.params;
+				const scalePct = dark ? params.opacityDark : params.opacityLight;
 				return (
 					255 *
 					(Math.min(
-						Math.max(
-							(Math.pow(Math.max(px, 0), params.exponent) / params.denom) * params.scalePct,
-							0
-						),
+						Math.max((Math.pow(Math.max(px, 0), params.exponent) / params.denom) * scalePct, 0),
 						100
 					) /
 						100)
 				);
 			}
 		}
-	} else if (v == 'cloud_cover' || v == 'thunderstorm_probability') {
-		// scale opacity with percentage
-		return 255 * (px ** 1.5 / 1000) * (OPACITY / 100);
 	} else if (v.startsWith('cloud_base')) {
 		// scale cloud base to 20900m
 		return Math.min(1 - px / 20900, 1) * 255 * (OPACITY / 100);

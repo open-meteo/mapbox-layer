@@ -114,7 +114,8 @@ export const colorScales: ColorScales = {
 			params: {
 				exponent: 1.5,
 				denom: 1000,
-				scalePct: 100
+				opacityDark: 75,
+				opacityLight: 75
 			}
 		}
 	},
@@ -336,9 +337,12 @@ export const colorScales: ColorScales = {
 		],
 		scalefactor: 1,
 		opacity: {
-			mode: 'constant',
+			mode: 'power',
 			params: {
-				value: 100
+				exponent: 1.5,
+				denom: 1000,
+				opacityDark: 75,
+				opacityLight: 75
 			}
 		}
 	},
@@ -1002,7 +1006,16 @@ export const colorScales: ColorScales = {
 			[255, 5, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 1
+		scalefactor: 1,
+		opacity: {
+			mode: 'power',
+			params: {
+				exponent: 1.5,
+				denom: 1000,
+				opacityDark: 75,
+				opacityLight: 75
+			}
+		}
 	},
 	swell: {
 		unit: 'm',

@@ -1,3 +1,4 @@
+import { defaultPowerScaleOpacity } from '../src/utils/styling';
 import { color } from 'd3-color';
 import { interpolateHsl, interpolateRgb } from 'd3-interpolate';
 import { writeFileSync } from 'fs';
@@ -47,14 +48,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 4000,
 		steps: 100,
 		colors: ['green', 'orange', 'red'],
-		opacity: {
-			mode: 'power',
-			params: {
-				exponent: 1.5,
-				denom: 1000,
-				scalePct: 100
-			}
-		}
+		opacity: defaultPowerScaleOpacity
 	},
 	cloud_base: {
 		unit: 'm',
@@ -69,12 +63,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 100,
 		steps: 100,
 		colors: ['#fff', '#c3c2c2'],
-		opacity: {
-			mode: 'constant',
-			params: {
-				value: 100
-			}
-		}
+		opacity: defaultPowerScaleOpacity
 	},
 	convective_cloud_top: {
 		unit: 'm',
@@ -148,7 +137,8 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 33 },
 			{ colors: ['green', 'orange'], steps: 33 },
 			{ colors: ['orange', 'red'], steps: 34 }
-		]
+		],
+		opacity: defaultPowerScaleOpacity
 	},
 	swell: {
 		unit: 'm',

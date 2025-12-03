@@ -169,7 +169,8 @@ export type OpacityDefinition =
 			mode: 'constant';
 			params: {
 				// Percentage 0..100 (defaults to 100)
-				value: number;
+				opacityDark: number;
+				opacityLight: number;
 			};
 			// no LUT
 	  }
@@ -179,7 +180,8 @@ export type OpacityDefinition =
 				// px ** exponent / denom * scalePct  (defaults: exponent=1.5, denom=1000, scalePct=100)
 				exponent: number;
 				denom: number;
-				scalePct: number; // percent multiplier (0..100)
+				opacityDark: number;
+				opacityLight: number;
 			};
 	  };
 
