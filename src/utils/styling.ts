@@ -1,6 +1,6 @@
 import { colorScales } from './color-scales';
 
-import type { ColorScale, OpacityDefinition, Variable } from '../types';
+import type { ColorScale, ColorScales, OpacityDefinition, Variable } from '../types';
 
 export const getColor = (colorScale: ColorScale, px: number): [number, number, number] => {
 	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
@@ -89,12 +89,31 @@ export const getOpacity = (
 	}
 };
 
+const COLOR_SCALES_WITH_ALIASES: ColorScales = {
+	...colorScales,
+	boundary_layer_height: colorScales['convective_cloud_top'],
+	cloud_base: colorScales['convective_cloud_top'],
+	convective_cloud_base: colorScales['convective_cloud_top'],
+	diffuse_radiation: colorScales['shortwave'],
+	direct_radiation: colorScales['shortwave'],
+	soil_moisture: {
+		...colorScales['shortwave'],
+		unit: '',
+		min: 0,
+		max: 1,
+		opacity: defaultLinearThenConstantOpacity
+	},
+	rain: colorScales['precipitation'],
+	showers: colorScales['precipitation'],
+	wave: colorScales['swell']
+};
+
 export const getColorScale = (variable: Variable['value']) => {
 	return (
-		colorScales[variable] ??
-		colorScales[variable.split('_')[0]] ??
-		colorScales[variable.split('_')[0] + '_' + variable.split('_')[1]] ??
-		colorScales['temperature']
+		COLOR_SCALES_WITH_ALIASES[variable] ??
+		COLOR_SCALES_WITH_ALIASES[variable.split('_')[0]] ??
+		COLOR_SCALES_WITH_ALIASES[variable.split('_')[0] + '_' + variable.split('_')[1]] ??
+		COLOR_SCALES_WITH_ALIASES['temperature']
 	);
 };
 

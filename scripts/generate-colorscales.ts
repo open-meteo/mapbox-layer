@@ -194,9 +194,9 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 20,
 		steps: 40,
 		colors: [
-			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10m/s
-			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20m/s
-			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40m/s
+			{ colors: ['blue', 'green'], steps: 10 },
+			{ colors: ['green', 'orange'], steps: 10 },
+			{ colors: ['orange', 'red'], steps: 20 }
 		],
 		opacity: {
 			mode: 'power-then-constant',
@@ -208,42 +208,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 				threshold: 10 / 3.6
 			}
 		}
-	}
-};
-
-const aliases: Record<string, AliasConfig> = {
-	// Simple aliases (exact copy)
-	boundary_layer_height: {
-		source: 'convective_cloud_top'
-	},
-	cloud_base: {
-		source: 'convective_cloud_top'
-	},
-	convective_cloud_base: {
-		source: 'convective_cloud_top'
-	},
-	diffuse_radiation: {
-		source: 'shortwave'
-	},
-	direct_radiation: {
-		source: 'shortwave'
-	},
-	soil_moisture: {
-		source: 'relative',
-		overrides: {
-			min: 0,
-			max: 1,
-			opacity: linearThenConstantWithThreshold(0.1)
-		}
-	},
-	rain: {
-		source: 'precipitation'
-	},
-	showers: {
-		source: 'precipitation'
-	},
-	wave: {
-		source: 'swell'
 	}
 };
 
@@ -282,27 +246,6 @@ function generateColorScales(): Record<string, ColorScale> {
 	// Generate base color scales
 	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
 		colorScales[key] = generateSingleColorScale(definition);
-	}
-
-	// Generate aliases
-	for (const [aliasName, aliasConfig] of Object.entries(aliases)) {
-		const { source, overrides } = aliasConfig;
-
-		// If base definition exists, prefer merging with it and regenerate the colors properly
-		const sourceDef = colorScaleDefinitions[source];
-		if (!sourceDef) {
-			throw new Error(`Source color scale '${source}' not found for alias '${aliasName}'`);
-		}
-		const mergedDef: ColorScaleDefinition = {
-			...sourceDef,
-			// only override fields that exist in overrides
-			min: overrides?.min ?? sourceDef.min,
-			max: overrides?.max ?? sourceDef.max,
-			unit: overrides?.unit ?? sourceDef.unit,
-			opacity: overrides?.opacity ?? sourceDef.opacity
-		};
-		colorScales[aliasName] = generateSingleColorScale(mergedDef);
-		continue;
 	}
 
 	return colorScales;
@@ -357,16 +300,6 @@ generateTypeScript();
 interface ColorSegment {
 	colors: string[];
 	steps: number;
-}
-
-interface AliasConfig {
-	source: string;
-	overrides?: {
-		min?: number;
-		max?: number;
-		unit?: string;
-		opacity?: OpacityDefinition;
-	};
 }
 
 interface ColorScaleDefinition {
