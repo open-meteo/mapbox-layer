@@ -28,11 +28,10 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const variable = message.data.dataOptions.variable;
 
 		const pixels = tileSize * tileSize;
+		// Initialized with zeros
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
 		const grid = GridFactory.create(domain.grid, ranges);
-
-		const isWeatherCode = variable.value === 'weather_code';
 
 		for (let i = 0; i < tileSize; i++) {
 			const lat = tile2lat(y + i / tileSize, z);
@@ -41,20 +40,12 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				const lon = tile2lon(x + j / tileSize, z);
 				const px = grid.getLinearInterpolatedValue(values, lat, lon);
 
-				if (isNaN(px) || px === Infinity || isWeatherCode) {
-					rgba[4 * ind] = 0;
-					rgba[4 * ind + 1] = 0;
-					rgba[4 * ind + 2] = 0;
-					rgba[4 * ind + 3] = 0;
-				} else {
+				if (isFinite(px)) {
 					const color = getColor(colorScale, px);
-
-					if (color) {
-						rgba[4 * ind] = color[0];
-						rgba[4 * ind + 1] = color[1];
-						rgba[4 * ind + 2] = color[2];
-						rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
-					}
+					rgba[4 * ind] = color[0];
+					rgba[4 * ind + 1] = color[1];
+					rgba[4 * ind + 2] = color[2];
+					rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
 				}
 			}
 		}
