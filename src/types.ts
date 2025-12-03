@@ -177,7 +177,7 @@ export type OpacityDefinition =
 	| {
 			mode: 'power';
 			params: {
-				// px ** exponent / denom * scalePct  (defaults: exponent=1.5, denom=1000, scalePct=100)
+				// px ** exponent / denom * {opacityDark|opacityLight}  (defaults: exponent=1.5, denom=1000, scalePct=100)
 				exponent: number;
 				denom: number;
 				opacityDark: number;

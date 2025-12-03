@@ -161,12 +161,12 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	wind: {
 		unit: 'm/s',
 		min: 0,
-		max: 70,
+		max: 70 / 3.6,
 		steps: 40,
 		colors: [
-			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10kn
-			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20kn
-			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40kn
+			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10m/s
+			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20m/s
+			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40m/s
 		]
 	}
 };

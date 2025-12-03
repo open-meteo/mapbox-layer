@@ -57,7 +57,7 @@ export const getOpacity = (
 		return Math.min(px / 1.5, 1) * 255 * (OPACITY / 100);
 	} else if (v.startsWith('wind')) {
 		// scale opacity with wind values below 10kmh
-		if (px < 10) {
+		if (px < 10 / 3.6) {
 			return Math.min(Math.pow(px - 2, 3) / 1000, 1) * 255 * (OPACITY / 100);
 		} else {
 			return 255 * (OPACITY / 100);

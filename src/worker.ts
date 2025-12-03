@@ -1,7 +1,6 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
-import { MS_TO_KMH } from './utils/constants';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { tile2lat, tile2lon } from './utils/math';
@@ -34,7 +33,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 
-		const isWind = variable.value.includes('wind');
 		const isHideZero = hideZero.includes(variable.value);
 		const isWeatherCode = variable.value === 'weather_code';
 
@@ -49,10 +47,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					if (px < 0.25) {
 						px = NaN;
 					}
-				}
-
-				if (isWind) {
-					px = px * MS_TO_KMH;
 				}
 
 				if (isNaN(px) || px === Infinity || isWeatherCode) {

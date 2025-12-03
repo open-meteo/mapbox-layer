@@ -1100,7 +1100,7 @@ export const colorScales: ColorScales = {
 	wind: {
 		unit: 'm/s',
 		min: 0,
-		max: 70,
+		max: 19.444444444444443,
 		steps: 40,
 		colors: [
 			[0, 0, 255],
@@ -1144,7 +1144,7 @@ export const colorScales: ColorScales = {
 			[255, 9, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 0.5714285714285714
+		scalefactor: 2.0571428571428574
 	},
 	rain: {
 		unit: 'mm',
