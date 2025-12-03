@@ -181,6 +181,13 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		steps: 12,
 		colors: ['#009392', '#39b185', '#9ccb86', '#e9e29c', '#eeb479', '#e88471', '#cf597e']
 	},
+	vertical_velocity: {
+		unit: 'm/s',
+		min: -0.75,
+		max: 0.75,
+		steps: 20,
+		colors: ['blue', 'white', 'red']
+	},
 	wind: {
 		unit: 'm/s',
 		min: 0,
