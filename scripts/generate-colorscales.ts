@@ -70,7 +70,15 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		min: 0,
 		max: 6000,
 		steps: 100,
-		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9']
+		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
+		opacity: {
+			mode: 'linear-then-constant',
+			params: {
+				opacityDark: 50,
+				opacityLight: 100,
+				threshold: 600
+			}
+		}
 	},
 	precipitation: {
 		unit: 'mm',
@@ -81,7 +89,15 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 5 },
 			{ colors: ['green', 'orange'], steps: 5 },
 			{ colors: ['orange', 'red'], steps: 10 }
-		]
+		],
+		opacity: {
+			mode: 'linear-then-constant',
+			params: {
+				threshold: 1.5,
+				opacityDark: 50,
+				opacityLight: 100
+			}
+		}
 	},
 	pressure: {
 		unit: 'hPa',
@@ -167,7 +183,17 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10m/s
 			{ colors: ['green', 'orange'], steps: 10 }, // 10 to 20m/s
 			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40m/s
-		]
+		],
+		opacity: {
+			mode: 'power-then-constant',
+			params: {
+				exponent: 4,
+				denom: 20,
+				opacityDark: 50,
+				opacityLight: 100,
+				threshold: 10 / 3.6
+			}
+		}
 	}
 };
 
@@ -176,7 +202,13 @@ const aliases: Record<string, AliasConfig> = {
 	rain: {
 		source: 'precipitation'
 	},
+	showers: {
+		source: 'precipitation'
+	},
 	convective_cloud_base: {
+		source: 'convective_cloud_top'
+	},
+	boundary_layer_height: {
 		source: 'convective_cloud_top'
 	},
 	wave: {

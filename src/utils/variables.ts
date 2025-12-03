@@ -150,12 +150,4 @@ for (const height of heights) {
 	variableOptions.push({ value: `wind_speed_${height}m`, label: `Wind ${height}m` });
 }
 
-export const hideZero = [
-	'rain',
-	'cloud_cover',
-	'precipitation',
-	'convective_cloud_top',
-	'convective_cloud_base'
-];
-
 export const drawOnTiles = ['pressure_msl'];

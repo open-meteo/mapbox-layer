@@ -5,7 +5,6 @@ import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { tile2lat, tile2lon } from './utils/math';
 import { getColor, getOpacity } from './utils/styling';
-import { hideZero } from './utils/variables';
 
 import { GridFactory } from './grids/index';
 
@@ -33,7 +32,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 
-		const isHideZero = hideZero.includes(variable.value);
 		const isWeatherCode = variable.value === 'weather_code';
 
 		for (let i = 0; i < tileSize; i++) {
@@ -41,13 +39,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			for (let j = 0; j < tileSize; j++) {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
-				let px = grid.getLinearInterpolatedValue(values, lat, lon);
-
-				if (isHideZero) {
-					if (px < 0.25) {
-						px = NaN;
-					}
-				}
+				const px = grid.getLinearInterpolatedValue(values, lat, lon);
 
 				if (isNaN(px) || px === Infinity || isWeatherCode) {
 					rgba[4 * ind] = 0;

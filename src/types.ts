@@ -158,32 +158,64 @@ export type ColorScale = {
 	colors: [number, number, number][];
 	scalefactor: number;
 	opacity?: OpacityDefinition;
-	// getOpacity?: (px: number) => number;
 };
 
-// Opacity modes supported by the worker
-export type OpacityMode = 'constant' | 'power';
+type ConstantOpacity = {
+	mode: 'constant';
+	params: {
+		// Percentage 0..100
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type PowerOpacity = {
+	mode: 'power';
+	params: {
+		// px ** exponent / denom * {opacityDark|opacityLight}
+		exponent: number;
+		denom: number;
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type LinearThenConstantOpacity = {
+	mode: 'linear-then-constant';
+	params: {
+		threshold: number;
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type ZeroThenConstantOpacity = {
+	mode: 'zero-then-constant';
+	params: {
+		opacityDark: number;
+		opacityLight: number;
+		threshold: number;
+	};
+};
+
+type PowerThenConstantOpacity = {
+	mode: 'power-then-constant';
+	params: {
+		// px ** exponent / denom * {opacityDark|opacityLight}
+		exponent: number;
+		denom: number;
+		opacityDark: number;
+		opacityLight: number;
+		threshold: number;
+	};
+};
 
 export type OpacityDefinition =
-	| {
-			mode: 'constant';
-			params: {
-				// Percentage 0..100 (defaults to 100)
-				opacityDark: number;
-				opacityLight: number;
-			};
-			// no LUT
-	  }
-	| {
-			mode: 'power';
-			params: {
-				// px ** exponent / denom * {opacityDark|opacityLight}  (defaults: exponent=1.5, denom=1000, scalePct=100)
-				exponent: number;
-				denom: number;
-				opacityDark: number;
-				opacityLight: number;
-			};
-	  };
+	| ConstantOpacity
+	| PowerOpacity
+	| LinearThenConstantOpacity
+	| ZeroThenConstantOpacity
+	| PowerThenConstantOpacity;
 
 export type ColorScales = {
 	[key: string]: ColorScale;
