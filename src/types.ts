@@ -183,34 +183,6 @@ export type OpacityDefinition =
 			};
 	  };
 
-// export interface OpacityDefinition {
-// 	mode: 'constant' | 'power';
-// 	params: {
-// 		value?: number;
-// 		exponent?: number;
-// 		denom?: number;
-// 		scalefactor?: number;
-// 	};
-// }
-
-export interface ColorSegment {
-	colors: string[];
-	steps: number;
-}
-
-export interface AliasConfig {
-	source: string;
-}
-
-export interface ColorScaleDefinition {
-	min: number;
-	max: number;
-	steps: number;
-	colors: string[] | ColorSegment[];
-	getOpacity?: (px: number) => number;
-	unit: string;
-}
-
 export type ColorScales = {
 	[key: string]: ColorScale;
 };

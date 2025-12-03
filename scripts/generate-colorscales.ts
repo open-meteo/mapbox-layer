@@ -4,7 +4,7 @@ import { writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-import type { AliasConfig, ColorScale, ColorScaleDefinition, ColorSegment } from '../src/types';
+import type { ColorScale, OpacityDefinition } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,8 +47,13 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 4000,
 		steps: 100,
 		colors: ['green', 'orange', 'red'],
-		getOpacity: (px) => {
-			return (px ** 1.5 / 1000) * 100;
+		opacity: {
+			mode: 'power',
+			params: {
+				exponent: 1.5,
+				denom: 1000,
+				scalePct: 100
+			}
 		}
 	},
 	cloud_base: {
@@ -64,8 +69,11 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 100,
 		steps: 100,
 		colors: ['#fff', '#c3c2c2'],
-		getOpacity: () => {
-			return 100;
+		opacity: {
+			mode: 'constant',
+			params: {
+				value: 100
+			}
 		}
 	},
 	convective_cloud_top: {
@@ -191,7 +199,7 @@ function generateColorScales(): Record<string, ColorScale> {
 
 	// Helper function to generate a single color scale
 	function generateSingleColorScale(definition: ColorScaleDefinition): ColorScale {
-		const { min, max, steps, colors } = definition;
+		const { min, max, steps, colors, opacity } = definition;
 
 		let generatedColors: [number, number, number][];
 
@@ -215,7 +223,8 @@ function generateColorScales(): Record<string, ColorScale> {
 			generatedColors = interpolateColorScale(colorStrings, steps, 'hsl');
 		}
 
-		return { ...definition, scalefactor: steps / (max - min), colors: generatedColors };
+		const scalefactor = steps / (max - min);
+		return { ...definition, scalefactor, colors: generatedColors, opacity };
 	}
 
 	// Generate base color scales
@@ -239,6 +248,17 @@ function generateColorScales(): Record<string, ColorScale> {
 	return colorScales;
 }
 
+function serializeOpacity(opacity: OpacityDefinition): string {
+	if (!opacity) return '';
+	const mode = opacity.mode;
+	const params = opacity.params || {};
+	let paramsLines = '';
+	for (const [k, v] of Object.entries(params)) {
+		paramsLines += `\n\t\t\t${k}: ${JSON.stringify(v)},`;
+	}
+	return `\n\t\topacity: {\n\t\t\tmode: '${mode}',\n\t\t\tparams: {${paramsLines}\n\t\t\t}\n\t\t},`;
+}
+
 function generateTypeScript(): void {
 	const colorScales = generateColorScales();
 	console.log(colorScales['cloud_cover']['getOpacity']);
@@ -247,7 +267,7 @@ function generateTypeScript(): void {
 
 export const colorScales: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
-		const { min, max, steps, colors, unit, getOpacity, scalefactor } = colorScale;
+		const { min, max, steps, colors, unit, opacity, scalefactor } = colorScale;
 
 		content += `
 	'${key}': {
@@ -262,8 +282,8 @@ export const colorScales: ColorScales = {`;
 		content += `],
 		scalefactor: ${scalefactor},`;
 
-		if (getOpacity) {
-			content += `		getOpacity: ${getOpacity},`;
+		if (opacity) {
+			content += serializeOpacity(opacity);
 		}
 		content += `
 	},`;
@@ -276,3 +296,21 @@ export const colorScales: ColorScales = {`;
 }
 
 generateTypeScript();
+
+interface ColorSegment {
+	colors: string[];
+	steps: number;
+}
+
+interface AliasConfig {
+	source: string;
+}
+
+interface ColorScaleDefinition {
+	min: number;
+	max: number;
+	steps: number;
+	colors: string[] | ColorSegment[];
+	opacity?: OpacityDefinition;
+	unit: string;
+}
