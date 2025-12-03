@@ -225,9 +225,7 @@ describe('Request Resolution', () => {
 						min: 0,
 						max: 100,
 						colors: [],
-						steps: 10,
 						unit: 'C',
-						scalefactor: 1,
 						interpolationMethod: 'linear'
 					}
 				}

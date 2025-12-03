@@ -154,9 +154,7 @@ export type ColorScale = {
 	min: number;
 	max: number;
 	unit: string;
-	steps: number;
 	colors: [number, number, number][];
-	scalefactor: number;
 	opacity?: OpacityDefinition;
 };
 

@@ -3,12 +3,12 @@ import { colorScales } from './color-scales';
 import type { ColorScale, OpacityDefinition, Variable } from '../types';
 
 export const getColor = (colorScale: ColorScale, px: number): [number, number, number] => {
-	return colorScale.colors[
-		Math.min(
-			colorScale.colors.length - 1,
-			Math.max(0, Math.floor((px - colorScale.min) * colorScale.scalefactor))
-		)
-	];
+	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
+	const index = Math.min(
+		colorScale.colors.length - 1,
+		Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
+	);
+	return colorScale.colors[index];
 };
 
 export const defaultPowerScaleOpacity: OpacityDefinition = {
@@ -121,6 +121,21 @@ const pressureHpaToIsaHeight = (hpa: number): number => {
 	return Math.max(0, height);
 };
 
+/** Compute ISA temperature (°C) at geopotential height (meters) within troposphere:
+ *  T(K) = T0 - L * z
+ */
+const scaleTemperatureMinMax = (
+	min: number,
+	max: number,
+	pressureLevel: number
+): { min: number; max: number } => {
+	const height = pressureHpaToIsaHeight(pressureLevel);
+	return {
+		min: min - 0.0065 * height,
+		max: max - 0.0065 * height
+	};
+};
+
 export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 	const scale = getColorScale(variable);
 
@@ -145,6 +160,71 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 			...scale,
 			min: computedMin,
 			max: computedMax
+		};
+	}
+
+	if (variable.includes('temperature')) {
+		const { min: computedMin, max: computedMax } = scaleTemperatureMinMax(
+			scale.min,
+			scale.max,
+			levelNum
+		);
+
+		return {
+			...scale,
+			min: computedMin,
+			max: computedMax
+		};
+	}
+
+	// Custom wind-speed breakpoints (m/s) by pressure level (hPa).
+	// These are chosen to reflect typical magnitude ranges at different levels
+	// (surface / boundary layer -> mid-troposphere -> upper-level jet regions).
+	// If an exact level isn't present, we'll pick the nearest defined breakpoint.
+	const windBreakpoints: Record<number, { min: number; max: number }> = {
+		1000: { min: 0, max: 25 },
+		925: { min: 0, max: 30 },
+		850: { min: 0, max: 30 },
+		700: { min: 0, max: 40 },
+		500: { min: 0, max: 50 },
+		400: { min: 0, max: 60 },
+		300: { min: 0, max: 70 },
+		250: { min: 0, max: 75 },
+		200: { min: 0, max: 80 },
+		150: { min: 0, max: 80 },
+		100: { min: 0, max: 60 }
+	};
+
+	if (variable.includes('wind')) {
+		// find exact or nearest breakpoint
+		const keys = Object.keys(windBreakpoints).map((k) => Number(k));
+		// prefer exact match
+		if (windBreakpoints[levelNum]) {
+			const bp = windBreakpoints[levelNum];
+			console.log(`Exact wind breakpoint for level ${levelNum} is ${bp.min} to ${bp.max} m/s`);
+			return {
+				...scale,
+				min: bp.min,
+				max: bp.max
+			};
+		}
+		// otherwise choose nearest breakpoint level
+		let nearest = keys[0];
+		let bestDelta = Math.abs(levelNum - nearest);
+		for (let i = 1; i < keys.length; i++) {
+			const k = keys[i];
+			const d = Math.abs(levelNum - k);
+			if (d < bestDelta) {
+				bestDelta = d;
+				nearest = k;
+			}
+		}
+		const bp = windBreakpoints[nearest];
+		console.log(`Nearest wind breakpoint for level ${levelNum} is ${bp.min} to ${bp.max} m/s`);
+		return {
+			...scale,
+			min: bp.min,
+			max: bp.max
 		};
 	}
 

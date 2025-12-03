@@ -5,7 +5,6 @@ export const colorScales: ColorScales = {
 		unit: 'J/kg',
 		min: 0,
 		max: 4000,
-		steps: 100,
 		colors: [
 			[0, 128, 0],
 			[4, 131, 0],
@@ -108,7 +107,6 @@ export const colorScales: ColorScales = {
 			[255, 3, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 0.025,
 		opacity: {
 			mode: 'power',
 			params: {
@@ -123,7 +121,6 @@ export const colorScales: ColorScales = {
 		unit: '%',
 		min: 0,
 		max: 100,
-		steps: 100,
 		colors: [
 			[255, 255, 255],
 			[254, 254, 254],
@@ -226,7 +223,6 @@ export const colorScales: ColorScales = {
 			[196, 195, 195],
 			[195, 194, 194]
 		],
-		scalefactor: 1,
 		opacity: {
 			mode: 'power',
 			params: {
@@ -241,7 +237,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 6200,
-		steps: 100,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -344,7 +339,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -358,7 +352,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 4600,
 		max: 6000,
-		steps: 40,
 		colors: [
 			[46, 139, 122],
 			[48, 135, 139],
@@ -400,14 +393,12 @@ export const colorScales: ColorScales = {
 			[112, 28, 0],
 			[99, 12, 0],
 			[85, 0, 0]
-		],
-		scalefactor: 0.02857142857142857
+		]
 	},
 	precipitation: {
 		unit: 'mm',
 		min: 0,
 		max: 20,
-		steps: 20,
 		colors: [
 			[0, 0, 255],
 			[0, 112, 223],
@@ -430,7 +421,6 @@ export const colorScales: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 1,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -444,7 +434,6 @@ export const colorScales: ColorScales = {
 		unit: 'hPa',
 		min: 950,
 		max: 1050,
-		steps: 50,
 		colors: [
 			[68, 68, 255],
 			[76, 76, 255],
@@ -496,14 +485,12 @@ export const colorScales: ColorScales = {
 			[255, 84, 84],
 			[255, 76, 76],
 			[255, 68, 68]
-		],
-		scalefactor: 0.5
+		]
 	},
 	relative: {
 		unit: '%',
 		min: 0,
 		max: 100,
-		steps: 100,
 		colors: [
 			[207, 89, 126],
 			[209, 90, 124],
@@ -605,14 +592,12 @@ export const colorScales: ColorScales = {
 			[5, 153, 145],
 			[2, 150, 146],
 			[0, 147, 146]
-		],
-		scalefactor: 1
+		]
 	},
 	shortwave: {
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
-		steps: 100,
 		colors: [
 			[0, 147, 146],
 			[2, 150, 146],
@@ -714,14 +699,12 @@ export const colorScales: ColorScales = {
 			[211, 92, 122],
 			[209, 90, 124],
 			[207, 89, 126]
-		],
-		scalefactor: 0.1
+		]
 	},
 	snow_depth: {
 		unit: 'm',
 		min: 0,
 		max: 5,
-		steps: 20,
 		colors: [
 			[0, 128, 0],
 			[25, 149, 0],
@@ -744,7 +727,6 @@ export const colorScales: ColorScales = {
 			[153, 0, 123],
 			[128, 0, 128]
 		],
-		scalefactor: 4,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -758,7 +740,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 10,
-		steps: 50,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -810,14 +791,12 @@ export const colorScales: ColorScales = {
 			[255, 17, 0],
 			[255, 9, 0],
 			[255, 0, 0]
-		],
-		scalefactor: 5
+		]
 	},
 	temperature: {
 		unit: 'C°',
 		min: -40,
 		max: 60,
-		steps: 100,
 		colors: [
 			[255, 255, 255],
 			[255, 235, 255],
@@ -919,14 +898,12 @@ export const colorScales: ColorScales = {
 			[143, 0, 126],
 			[135, 0, 128],
 			[128, 0, 128]
-		],
-		scalefactor: 1
+		]
 	},
 	temperature_2m_anomaly: {
 		unit: 'K',
 		min: -5,
 		max: 5,
-		steps: 20,
 		colors: [
 			[0, 0, 255],
 			[28, 28, 255],
@@ -948,14 +925,12 @@ export const colorScales: ColorScales = {
 			[255, 57, 57],
 			[255, 28, 28],
 			[255, 0, 0]
-		],
-		scalefactor: 2
+		]
 	},
 	thunderstorm: {
 		unit: '%',
 		min: 0,
 		max: 100,
-		steps: 100,
 		colors: [
 			[0, 0, 255],
 			[0, 16, 251],
@@ -1058,7 +1033,6 @@ export const colorScales: ColorScales = {
 			[255, 5, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 1,
 		opacity: {
 			mode: 'power',
 			params: {
@@ -1073,7 +1047,6 @@ export const colorScales: ColorScales = {
 		unit: '',
 		min: 0,
 		max: 12,
-		steps: 12,
 		colors: [
 			[0, 147, 146],
 			[57, 177, 133],
@@ -1087,14 +1060,12 @@ export const colorScales: ColorScales = {
 			[232, 132, 113],
 			[232, 132, 113],
 			[207, 89, 126]
-		],
-		scalefactor: 1
+		]
 	},
 	wind: {
 		unit: 'm/s',
 		min: 0,
-		max: 19.444444444444443,
-		steps: 40,
+		max: 20,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -1137,7 +1108,6 @@ export const colorScales: ColorScales = {
 			[255, 9, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 2.0571428571428574,
 		opacity: {
 			mode: 'power-then-constant',
 			params: {
@@ -1153,7 +1123,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 6200,
-		steps: 100,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -1256,7 +1225,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1270,7 +1238,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 6200,
-		steps: 100,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -1373,7 +1340,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1387,7 +1353,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 6200,
-		steps: 100,
 		colors: [
 			[192, 57, 43],
 			[193, 57, 41],
@@ -1490,7 +1455,6 @@ export const colorScales: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		scalefactor: 0.016129032258064516,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1504,7 +1468,6 @@ export const colorScales: ColorScales = {
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
-		steps: 100,
 		colors: [
 			[0, 147, 146],
 			[2, 150, 146],
@@ -1606,14 +1569,12 @@ export const colorScales: ColorScales = {
 			[211, 92, 122],
 			[209, 90, 124],
 			[207, 89, 126]
-		],
-		scalefactor: 0.1
+		]
 	},
 	direct_radiation: {
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
-		steps: 100,
 		colors: [
 			[0, 147, 146],
 			[2, 150, 146],
@@ -1715,14 +1676,12 @@ export const colorScales: ColorScales = {
 			[211, 92, 122],
 			[209, 90, 124],
 			[207, 89, 126]
-		],
-		scalefactor: 0.1
+		]
 	},
 	soil_moisture: {
 		unit: '%',
 		min: 0,
 		max: 1,
-		steps: 100,
 		colors: [
 			[207, 89, 126],
 			[209, 90, 124],
@@ -1825,7 +1784,6 @@ export const colorScales: ColorScales = {
 			[2, 150, 146],
 			[0, 147, 146]
 		],
-		scalefactor: 100,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1839,7 +1797,6 @@ export const colorScales: ColorScales = {
 		unit: 'mm',
 		min: 0,
 		max: 20,
-		steps: 20,
 		colors: [
 			[0, 0, 255],
 			[0, 112, 223],
@@ -1862,7 +1819,6 @@ export const colorScales: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 1,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1876,7 +1832,6 @@ export const colorScales: ColorScales = {
 		unit: 'mm',
 		min: 0,
 		max: 20,
-		steps: 20,
 		colors: [
 			[0, 0, 255],
 			[0, 112, 223],
@@ -1899,7 +1854,6 @@ export const colorScales: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		scalefactor: 1,
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -1913,7 +1867,6 @@ export const colorScales: ColorScales = {
 		unit: 'm',
 		min: 0,
 		max: 10,
-		steps: 50,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
@@ -1965,7 +1918,6 @@ export const colorScales: ColorScales = {
 			[255, 17, 0],
 			[255, 9, 0],
 			[255, 0, 0]
-		],
-		scalefactor: 5
+		]
 	}
 };

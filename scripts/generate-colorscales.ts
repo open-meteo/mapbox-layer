@@ -184,7 +184,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	wind: {
 		unit: 'm/s',
 		min: 0,
-		max: 70 / 3.6,
+		max: 20,
 		steps: 40,
 		colors: [
 			{ colors: ['blue', 'green'], steps: 10 }, // 0 to 10m/s
@@ -245,7 +245,7 @@ function generateColorScales(): Record<string, ColorScale> {
 
 	// Helper function to generate a single color scale
 	function generateSingleColorScale(definition: ColorScaleDefinition): ColorScale {
-		const { min, max, steps, colors, opacity } = definition;
+		const { steps, colors, opacity } = definition;
 
 		let generatedColors: [number, number, number][];
 
@@ -269,8 +269,7 @@ function generateColorScales(): Record<string, ColorScale> {
 			generatedColors = interpolateColorScale(colorStrings, steps, 'hsl');
 		}
 
-		const scalefactor = steps / (max - min);
-		return { ...definition, scalefactor, colors: generatedColors, opacity };
+		return { ...definition, colors: generatedColors, opacity };
 	}
 
 	// Generate base color scales
@@ -321,21 +320,18 @@ function generateTypeScript(): void {
 
 export const colorScales: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
-		const { min, max, steps, colors, unit, opacity, scalefactor } = colorScale;
+		const { min, max, colors, unit, opacity } = colorScale;
 
 		content += `
 	'${key}': {
 		unit: '${unit}',
 		min: ${min},
 		max: ${max},
-		steps: ${steps},
 		colors: [`;
 		for (const color of colors) {
 			content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
 		}
-		content += `],
-		scalefactor: ${scalefactor},`;
-
+		content += `],`;
 		if (opacity) {
 			content += serializeOpacity(opacity);
 		}
