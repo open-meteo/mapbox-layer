@@ -178,6 +178,17 @@ type PowerOpacity = {
 	};
 };
 
+type CenteredPowerOpacity = {
+	mode: 'centered-power';
+	params: {
+		exponent: number;
+		// Percentage 0..100
+		opacityDark: number;
+		opacityLight: number;
+		scale: number;
+	};
+};
+
 type LinearThenConstantOpacity = {
 	mode: 'linear-then-constant';
 	params: {
@@ -211,6 +222,7 @@ type PowerThenConstantOpacity = {
 export type OpacityDefinition =
 	| ConstantOpacity
 	| PowerOpacity
+	| CenteredPowerOpacity
 	| LinearThenConstantOpacity
 	| ZeroThenConstantOpacity
 	| PowerThenConstantOpacity;

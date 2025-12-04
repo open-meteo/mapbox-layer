@@ -21,6 +21,17 @@ export const defaultPowerScaleOpacity: OpacityDefinition = {
 	}
 };
 
+export const centeredPowerOpacity = (scale: number): OpacityDefinition => ({
+	mode: 'centered-power',
+	params: {
+		// 'scale' is the absolute value at which opacity reaches full
+		scale: scale,
+		exponent: 1.5,
+		opacityDark: 75,
+		opacityLight: 75
+	}
+});
+
 export const defaultConstantOpacity: OpacityDefinition = {
 	mode: 'constant',
 	params: {
@@ -72,6 +83,14 @@ export const getOpacity = (
 					100)
 			);
 		}
+		case 'centered-power': {
+			const params = opacityConfig.params;
+			const scalePct = dark ? params.opacityDark : params.opacityLight;
+			const scaleVal = params.scale;
+			// fraction goes from 0 (px==0) to 1 (|px| >= scaleVal)
+			const frac = Math.min(Math.pow(Math.abs(px) / scaleVal, params.exponent), 1);
+			return 255 * (frac * (scalePct / 100));
+		}
 		case 'power-then-constant': {
 			const params = opacityConfig.params;
 			const scalePct = dark ? params.opacityDark : params.opacityLight;
@@ -115,6 +134,11 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 		min: -50,
 		max: 20
 	},
+	sea_surface_temperature: {
+		...colorScales['temperature'],
+		min: -2,
+		max: 35
+	},
 	sensible_heat_flux: {
 		...colorScales['temperature'],
 		unit: 'W/m²',
@@ -143,13 +167,28 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	tertiary_swell_wave_period: colorScales['swell_period']
 };
 
-export const getColorScale = (variable: Variable['value']) => {
+const getOptionalColorScale = (variable: Variable['value']): ColorScale | undefined => {
+	const exactMatch = COLOR_SCALES_WITH_ALIASES[variable];
+	if (exactMatch) return exactMatch;
+	const parts = variable.split('_');
+	const lastIndex = parts.length - 1;
+
+	if (['mean', 'max', 'min'].includes(parts[lastIndex])) {
+		return getOptionalColorScale(parts.slice(0, -1).join('_'));
+	} else if (parts[lastIndex] == 'anomaly') {
+		const match = getOptionalColorScale(parts.slice(0, -1).join('_'));
+		if (match) {
+			const delta = (match.max - match.min) / 5;
+			return { ...match, max: delta, min: -delta, opacity: centeredPowerOpacity(delta * 0.5) };
+		}
+	}
 	return (
-		COLOR_SCALES_WITH_ALIASES[variable] ??
-		COLOR_SCALES_WITH_ALIASES[variable.split('_')[0]] ??
-		COLOR_SCALES_WITH_ALIASES[variable.split('_')[0] + '_' + variable.split('_')[1]] ??
-		COLOR_SCALES_WITH_ALIASES['temperature']
+		COLOR_SCALES_WITH_ALIASES[parts[0] + '_' + parts[1]] ?? COLOR_SCALES_WITH_ALIASES[parts[0]]
 	);
+};
+
+export const getColorScale = (variable: Variable['value']): ColorScale => {
+	return getOptionalColorScale(variable) ?? COLOR_SCALES_WITH_ALIASES['temperature'];
 };
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;
@@ -207,8 +246,7 @@ const isaTemperatureAtHeight = (heightM: number): number => {
 };
 
 /** Compute ISA temperature (°C) at geopotential height (meters) within troposphere:
- *  T(K) = T0 - L * z
- */
+ *  T(K) = T0 - L * z */
 const scaleTemperatureMinMax = (
 	min: number,
 	max: number,
