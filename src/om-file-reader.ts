@@ -94,7 +94,6 @@ export class OMapsFileReader {
 			if (typeof rule.pattern === 'string') {
 				return variable.includes(rule.pattern);
 			} else {
-				console.log('Checking pattern:', rule.pattern);
 				return rule.pattern.test(variable);
 			}
 		});
@@ -180,10 +179,8 @@ export class OMapsFileReader {
 		const derivationRule = this.findDerivationRule(variable);
 
 		if (derivationRule) {
-			console.log('Derivation rule found:', derivationRule);
 			return this.readWithDerivationRule(variable, derivationRule, ranges);
 		} else {
-			console.log('No derivation rule found');
 			return this.readSimpleVariable(variable, ranges);
 		}
 	}
