@@ -266,9 +266,8 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 	// (surface / boundary layer -> mid-troposphere -> upper-level jet regions).
 	// If an exact level isn't present, we'll pick the nearest defined breakpoint.
 	const windBreakpoints: Record<number, { min: number; max: number }> = {
-		1000: { min: 0, max: 25 },
-		925: { min: 0, max: 30 },
-		850: { min: 0, max: 30 },
+		1000: { min: 0, max: 30 },
+		850: { min: 0, max: 35 },
 		700: { min: 0, max: 40 },
 		500: { min: 0, max: 50 },
 		400: { min: 0, max: 60 },
@@ -285,7 +284,6 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 		// prefer exact match
 		if (windBreakpoints[levelNum]) {
 			const bp = windBreakpoints[levelNum];
-			console.log(`Exact wind breakpoint for level ${levelNum} is ${bp.min} to ${bp.max} m/s`);
 			return {
 				...scale,
 				min: bp.min,
@@ -304,7 +302,6 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 			}
 		}
 		const bp = windBreakpoints[nearest];
-		console.log(`Nearest wind breakpoint for level ${levelNum} is ${bp.min} to ${bp.max} m/s`);
 		return {
 			...scale,
 			min: bp.min,
