@@ -32,7 +32,7 @@ export const domainOptions: Array<Domain> = [
 	// 		dy: 180 / 1536,
 	// 		zoom: 1,
 	// 	},
-	// 	time_interval: 1,
+	// 	time_interval: 'hourly',
 	// },
 
 	// DMI
@@ -57,8 +57,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// DWD
@@ -75,8 +75,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.125,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'dwd_icon_eu',
@@ -91,8 +91,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.0625,
 			zoom: 3.2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'dwd_icon_d2',
@@ -107,8 +107,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.02,
 			zoom: 5.2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'dwd_gwam',
@@ -123,8 +123,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.25,
 			zoom: 1
 		},
-		time_interval: 3,
-		model_interval: 12
+		time_interval: '3hourly',
+		model_interval: '12hourly'
 	},
 	{
 		value: 'dwd_ewam',
@@ -139,8 +139,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.05,
 			zoom: 3.2
 		},
-		time_interval: 1,
-		model_interval: 12
+		time_interval: 'hourly',
+		model_interval: '12hourly'
 	},
 
 	// GFS
@@ -157,8 +157,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.25,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ncep_gfs013',
@@ -173,8 +173,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.11714935,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ncep_hrrr_conus',
@@ -194,8 +194,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 1
+		time_interval: 'hourly',
+		model_interval: 'hourly'
 	},
 	{
 		value: 'ncep_nbm_conus',
@@ -218,8 +218,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 1
+		time_interval: 'hourly',
+		model_interval: 'hourly'
 	},
 	{
 		value: 'ncep_nam_conus',
@@ -239,8 +239,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ncep_gfswave025',
@@ -255,8 +255,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.25,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ncep_gfswave016',
@@ -271,8 +271,8 @@ export const domainOptions: Array<Domain> = [
 			dy: (52.5 + 15) / (406 - 1),
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 
 	// ECWMF
@@ -289,8 +289,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / (721 - 1),
 			zoom: 1
 		},
-		time_interval: 3,
-		model_interval: 6
+		time_interval: '3hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ecmwf_aifs025_single',
@@ -305,8 +305,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / (721 - 1),
 			zoom: 1
 		},
-		time_interval: 6,
-		model_interval: 6
+		time_interval: '6hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ecmwf_ifs',
@@ -318,8 +318,8 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 1280
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'ecmwf_wam025',
@@ -334,8 +334,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / (721 - 1),
 			zoom: 1
 		},
-		time_interval: 3,
-		model_interval: 6
+		time_interval: '3hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ecmwf_wam',
@@ -347,8 +347,8 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 1280
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'ecmwf_seas5_monthly',
@@ -374,7 +374,7 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 320
 		},
 		time_interval: 'weekly',
-		model_interval: 24
+		model_interval: 'daily'
 	},
 
 	// GEM
@@ -391,8 +391,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.15,
 			zoom: 1
 		},
-		time_interval: 3,
-		model_interval: 12
+		time_interval: '3hourly',
+		model_interval: '12hourly'
 	},
 	{
 		value: 'cmc_gem_hrdps',
@@ -410,8 +410,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'cmc_gem_hrdps_west',
@@ -431,8 +431,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 12
+		time_interval: 'hourly',
+		model_interval: '12hourly'
 	},
 	{
 		value: 'cmc_gem_rdps',
@@ -451,8 +451,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'StereographicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 6
+		time_interval: 'hourly',
+		model_interval: '6hourly'
 	},
 
 	// ItaliaMeteo
@@ -469,8 +469,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.02,
 			zoom: 5.2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// JMA
@@ -487,8 +487,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.5,
 			zoom: 1
 		},
-		time_interval: 6,
-		model_interval: 6
+		time_interval: '6hourly',
+		model_interval: '6hourly'
 	},
 	{
 		value: 'jma_msm',
@@ -503,8 +503,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.05,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// MeteoFrance
@@ -521,8 +521,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.25,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'meteofrance_arpege_europe',
@@ -537,8 +537,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.1,
 			zoom: 3.5
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'meteofrance_arome_france0025',
@@ -553,8 +553,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.025,
 			zoom: 5.2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	{
@@ -570,8 +570,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.01,
 			zoom: 5.2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'meteofrance_wave',
@@ -586,8 +586,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 1 / 12,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// MetNo
@@ -609,8 +609,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// KMA
@@ -627,8 +627,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / 1920,
 			zoom: 2
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'kma_ldps',
@@ -651,8 +651,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertConformalConicProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// KNMI
@@ -672,8 +672,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'knmi_harmonie_arome_netherlands',
@@ -688,8 +688,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.018,
 			zoom: 6
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// MeteoSwiss ICON
@@ -711,8 +711,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'meteoswiss_icon_ch2',
@@ -732,8 +732,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 
 	// UKMO
@@ -750,8 +750,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / 1920,
 			zoom: 1
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	},
 	{
 		value: 'ukmo_uk_deterministic_2km',
@@ -772,7 +772,7 @@ export const domainOptions: Array<Domain> = [
 				name: 'LambertAzimuthalEqualAreaProjection'
 			}
 		},
-		time_interval: 1,
-		model_interval: 3
+		time_interval: 'hourly',
+		model_interval: '3hourly'
 	}
 ];
