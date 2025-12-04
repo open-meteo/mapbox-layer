@@ -373,7 +373,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 320
 		},
-		time_interval: 'weekly',
+		time_interval: 'weekly_on_monday',
 		model_interval: 'daily'
 	},
 

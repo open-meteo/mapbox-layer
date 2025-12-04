@@ -1,6 +1,6 @@
 import * as maplibregl from 'maplibre-gl';
 
-import type { Domain, Variable } from '../types';
+import type { Domain, ModelDt, ModelUpdateInterval, Variable } from '../types';
 
 const now = new Date();
 now.setHours(now.getHours() + 1, 0, 0, 0);
@@ -12,6 +12,88 @@ export const pad = (n: string | number) => {
 export function capitalize(s: string) {
 	return String(s[0]).toUpperCase() + String(s).slice(1);
 }
+
+export const domainStep = (
+	time: Date,
+	timeInterval: ModelDt,
+	direction: 'forward' | 'backward' | 'nearest' = 'nearest'
+): Date => {
+	console.log('domainStep time', time);
+	const newTime = new Date(time.getTime());
+	const operator = direction === 'nearest' ? 0 : direction === 'forward' ? 1 : -1;
+	switch (timeInterval) {
+		case 'hourly':
+			newTime.setUTCHours(time.getUTCHours() + operator);
+			break;
+		case '3hourly':
+			newTime.setUTCHours(Math.floor(time.getUTCHours() / 3) * 3 + operator * 3);
+			break;
+		case '6hourly':
+			newTime.setUTCHours(Math.floor(time.getUTCHours() / 6) * 6 + operator * 6);
+			break;
+		case 'weekly_on_monday': {
+			const dayOfWeek = newTime.getUTCDay();
+			const nextMondayInDays = (8 - dayOfWeek) % 7;
+			switch (direction) {
+				case 'nearest':
+					newTime.setUTCDate(time.getUTCDate() + nextMondayInDays);
+					break;
+				case 'backward':
+					newTime.setUTCDate(time.getUTCDate() - 7);
+					break;
+				case 'forward':
+					if (nextMondayInDays === 0) {
+						newTime.setUTCDate(time.getUTCDate() + 7);
+					} else {
+						newTime.setUTCDate(time.getUTCDate() + nextMondayInDays);
+					}
+					break;
+			}
+			newTime.setUTCHours(0);
+			break;
+		}
+		case 'monthly':
+			newTime.setUTCMonth(time.getUTCMonth() + operator);
+			break;
+		default:
+			throw new Error(`Invalid time interval: ${timeInterval}`);
+	}
+	return newTime;
+};
+
+export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval): Date => {
+	const newTime = new Date(time.getTime());
+	console.log('closestModelRun newTime', newTime);
+
+	let hours: number;
+	switch (modelInterval) {
+		case 'hourly':
+			hours = time.getUTCHours();
+			break;
+		case '3hourly':
+			hours = Math.floor(time.getUTCHours() / 3) * 3;
+			break;
+		case '6hourly':
+			hours = Math.floor(time.getUTCHours() / 6) * 6;
+			break;
+		case '12hourly':
+			hours = Math.floor(time.getUTCHours() / 12) * 12;
+			break;
+		case 'daily':
+			hours = 0;
+			break;
+		case 'monthly':
+			newTime.setUTCDate(1);
+			hours = 0;
+			break;
+		default:
+			throw new Error(`Invalid model interval: ${modelInterval}`);
+	}
+
+	newTime.setUTCHours(hours, 0, 0, 0);
+
+	return newTime;
+};
 
 export const getOMUrl = (
 	time: Date,

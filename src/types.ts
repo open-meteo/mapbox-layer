@@ -272,19 +272,18 @@ export interface Domain {
 	value: string;
 	label?: string;
 	grid: GridData;
-	time_interval: ModelTimeInterval;
-	model_interval: ModelInterval;
+	time_interval: ModelDt;
+	model_interval: ModelUpdateInterval;
 }
 
-export type ModelTimeInterval = 'hourly' | '3hourly' | '6hourly' | 'weekly' | 'monthly';
+export type ModelDt = 'hourly' | '3hourly' | '6hourly' | 'weekly_on_monday' | 'monthly';
 
-export type ModelInterval =
+export type ModelUpdateInterval =
 	| 'hourly'
 	| '3hourly'
 	| '6hourly'
 	| '12hourly'
 	| 'daily'
-	| 'weekly'
 	| 'monthly';
 
 export interface DomainGroups {
