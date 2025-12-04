@@ -157,22 +157,53 @@ const LEVEL_REGEX = /_(\d+)(hPa)?$/i;
 // ISA / barometric constants
 const ISA = {
 	p0_hPa: 1013.25, // reference pressure in hPa
-	T0: 288.15, // sea-level standard temperature (K)
-	L: 0.0065, // temperature lapse rate (K/m)
-	R: 287.05, // specific gas constant for dry air (J/(kg·K))
+	t0: 288.15, // sea-level standard temperature (K)
+	lapse: 0.0065, // temperature lapse rate (K/m)
+	gasConstant: 287.05, // specific gas constant for dry air (J/(kg·K))
 	g0: 9.80665 // gravity (m/s^2)
 };
 
-/** Convert pressure in hPa to geopotential height (meters) using ISA troposphere formula.
- *  valid for typical tropospheric pressures (roughly 1000 -> 200 hPa). */
+/* Tropopause / lower stratosphere constants (ISA standard) */
+const P_TROPOPAUSE = 226.32; // hPa (pressure at ~11 km)
+const H_TROPOPAUSE = 11000; // m  (height of tropopause ~11 km)
+const T_TROPOPAUSE = 216.65; // K  (temperature in lower stratosphere)
+
 const pressureHpaToIsaHeight = (hpa: number): number => {
-	if (hpa <= 0) return 0;
-	const { p0_hPa, T0, L, R, g0 } = ISA;
+	if (!isFinite(hpa) || hpa <= 0) return NaN;
+
+	// Use troposphere formula for pressures >= tropopause pressure; otherwise use isothermal stratosphere formula.
+	return hpa >= P_TROPOPAUSE
+		? troposphereHeightFromPressure(hpa)
+		: stratosphereHeightFromPressure(hpa);
+};
+
+const troposphereHeightFromPressure = (hpa: number): number => {
+	const { p0_hPa, t0, lapse, gasConstant, g0 } = ISA;
 	const r = hpa / p0_hPa;
-	const exponent = (R * L) / g0; // ~0.1903
+	const exponent = (gasConstant * lapse) / g0; // dimensionless (~0.1903)
 	// H = (T0 / L) * (1 - r^exponent)
-	const height = (T0 / L) * (1 - Math.pow(r, exponent));
-	return Math.max(0, height);
+	return (t0 / lapse) * (1 - Math.pow(r, exponent));
+};
+
+const stratosphereHeightFromPressure = (hpa: number): number => {
+	// H = H_tropopause + (R * T_tropopause / g0) * ln(P_tropopause / P)
+	return H_TROPOPAUSE + ((ISA.gasConstant * T_TROPOPAUSE) / ISA.g0) * Math.log(P_TROPOPAUSE / hpa);
+};
+
+/**
+ * ISA temperature at geopotential height (meters).
+ * Returns temperature difference from ISA.t0
+ */
+const isaTemperatureAtHeight = (heightM: number): number => {
+	if (!isFinite(heightM)) return NaN;
+	if (heightM <= 0) return ISA.t0;
+	if (heightM <= H_TROPOPAUSE) {
+		// Troposphere: linear lapse
+		return -ISA.lapse * heightM;
+	}
+	// Lower stratosphere (isothermal approximation)
+	// For simplicity we keep it constant at T_tropopause.
+	return T_TROPOPAUSE - ISA.t0;
 };
 
 /** Compute ISA temperature (°C) at geopotential height (meters) within troposphere:
@@ -184,9 +215,10 @@ const scaleTemperatureMinMax = (
 	pressureLevel: number
 ): { min: number; max: number } => {
 	const height = pressureHpaToIsaHeight(pressureLevel);
+	const isaAtHeight = isaTemperatureAtHeight(height);
 	return {
-		min: min - 0.0065 * height,
-		max: max - 0.0065 * height
+		min: min + isaAtHeight,
+		max: max + isaAtHeight
 	};
 };
 
@@ -201,14 +233,11 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 
 	const levelNum = Number(m[1]);
 
-	// 1) geopotential height variables -> derive typical height from ISA
-	// Detect variable name indicating geopotential height; adjust min/max around ISA value.
+	// geopotential height variables -> derive typical height from ISA
 	if (variable.includes('geopotential_height')) {
-		// Only handle hPa suffix for now (LEVEL_REGEX captured the hPa optional part)
 		// Compute ISA height (meters) for the pressure level
-		// const center = pressureHpaToIsaHeight(levelNum);
-		const computedMax = pressureHpaToIsaHeight(0.9 * levelNum);
-		const computedMin = pressureHpaToIsaHeight(1.1 * levelNum);
+		const computedMax = pressureHpaToIsaHeight(Math.floor(0.9 * levelNum));
+		const computedMin = pressureHpaToIsaHeight(Math.ceil(1.1 * levelNum));
 
 		return {
 			...scale,
@@ -217,6 +246,7 @@ export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
 		};
 	}
 
+	// temperature variables -> scale min and max
 	if (variable.includes('temperature')) {
 		const { min: computedMin, max: computedMax } = scaleTemperatureMinMax(
 			scale.min,
