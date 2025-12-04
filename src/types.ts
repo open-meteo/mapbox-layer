@@ -64,10 +64,10 @@ export interface OmProtocolSettings {
 	useSAB: boolean;
 
 	// dynamic
-	clippingOptions: ClippingOptions;
 	colorScales: ColorScales;
 	domainOptions: Domain[];
 	variableOptions: Variable[];
+	clippingOptions: ClippingOptions;
 
 	/**
 	 * Optional custom resolver for URL settings.
@@ -311,4 +311,6 @@ export interface DomainMetaData {
 	variables: string[];
 }
 
-export type ClippingOptions = { geojson: FeatureCollection } | undefined;
+export type ZoomLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+
+export type ClippingOptions = { polygons: [number, number][][]; bounds: Bounds } | undefined;

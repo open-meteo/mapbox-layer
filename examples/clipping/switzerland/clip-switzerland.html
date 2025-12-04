@@ -6,6 +6,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
 		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>-->
 		<!-- x-release-please-end -->
@@ -27,8 +28,19 @@
 			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
+					// optionally use turf to do some simplication
+					const swissPolygon = turf.multiPolygon(geojson.features[1].geometry.coordinates);
+					const swissBbox = turf.bbox(swissPolygon);
+					const simplifiedSwissPolygon = turf.simplify(swissPolygon, {
+						tolerance: 0.00025,
+						highQuality: true
+					});
+
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-					omProtocolOptions.clippingOptions = { geojson: geojson };
+					omProtocolOptions.clippingOptions = {
+						polygons: [...simplifiedSwissPolygon.geometry.coordinates[0]],
+						bounds: swissBbox
+					};
 
 					// use the settings as argument for the protocol
 					maplibregl.addProtocol('om', (params) =>

@@ -1,3 +1,5 @@
+import { Bounds } from '../types';
+
 const PI = Math.PI;
 
 export const degreesToRadians = (degree: number) => {
@@ -91,4 +93,32 @@ export const hermite = (t: number, p0: number, p1: number, m0: number, m1: numbe
 	const h11 = t3 - t2;
 
 	return h00 * p0 + h10 * m0 + h01 * p1 + h11 * m1;
+};
+
+/*
+Compares list of bounds against the first bounds passed to function
+*/
+export const clipBounds = (boundsList: Bounds[]): Bounds => {
+	if (boundsList.length === 0) throw new Error('No bounds to compare');
+	if (boundsList.length === 1) return boundsList[0];
+
+	// shifts the first entry out, so it's not compared against itself
+	let [minLon, minLat, maxLon, maxLat] = boundsList.shift() as Bounds;
+
+	for (const bounds of boundsList) {
+		if (minLon < bounds[0]) {
+			minLon = bounds[0];
+		}
+		if (minLat < bounds[1]) {
+			minLat = bounds[1];
+		}
+		if (maxLon > bounds[2]) {
+			maxLon = bounds[2];
+		}
+		if (maxLat > bounds[3]) {
+			maxLat = bounds[3];
+		}
+	}
+
+	return [minLon, minLat, maxLon, maxLat];
 };

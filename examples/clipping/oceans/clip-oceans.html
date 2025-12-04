@@ -27,8 +27,23 @@
 			fetch('./ne_50m_land_10km_buffer.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
+					const polygons = [];
+					for (let feature of geojson.features) {
+						for (let coordinateGroup of feature.geometry.coordinates) {
+							if (typeof coordinateGroup[0][0] === 'number') {
+								polygons.push(coordinateGroup);
+							} else {
+								for (let coordinates of coordinateGroup) {
+									polygons.push(coordinates);
+								}
+							}
+						}
+					}
+
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-					omProtocolOptions.clippingOptions = { geojson: geojson };
+					omProtocolOptions.clippingOptions = {
+						polygons: polygons
+					};
 
 					// use the settings as argument for the protocol
 					maplibregl.addProtocol('om', (params) =>
@@ -58,7 +73,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
