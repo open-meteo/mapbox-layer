@@ -1,6 +1,7 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
 import { colorScales as defaultColorScales } from './utils/color-scales';
+import { clipBounds } from './utils/math';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
 import { variableOptions as defaultVariableOptions } from './utils/variables';
@@ -12,6 +13,7 @@ import { capitalize } from './utils';
 import { WorkerPool } from './worker-pool';
 
 import type {
+	ClippingOptions,
 	Data,
 	DataIdentityOptions,
 	OmProtocolSettings,
@@ -27,6 +29,7 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	useSAB: false,
 
 	// dynamic
+	clippingOptions: undefined,
 	colorScales: defaultColorScales,
 	domainOptions: defaultDomainOptions,
 	variableOptions: defaultVariableOptions,
@@ -47,7 +50,7 @@ export const omProtocol = async (
 
 	// Handle TileJSON request
 	if (params.type == 'json') {
-		return { data: await getTilejson(params.url, request.dataOptions) };
+		return { data: await getTilejson(params.url, request.dataOptions, settings.clippingOptions) };
 	}
 
 	// Handle tile request
@@ -111,17 +114,24 @@ const requestTile = async (
 		tileIndex: request.tileIndex,
 		data,
 		dataOptions: request.dataOptions,
-		renderOptions: request.renderOptions
+		renderOptions: request.renderOptions,
+		clippingOptions: request.clippingOptions
 	});
 };
 
 const getTilejson = async (
 	fullUrl: string,
-	dataOptions: DataIdentityOptions
+	dataOptions: DataIdentityOptions,
+	clippingOptions?: ClippingOptions
 ): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
-	const bounds = grid.getBounds();
+	let bounds;
+	if (clippingOptions && clippingOptions.bounds) {
+		bounds = clipBounds([grid.getBounds(), clippingOptions.bounds]);
+	} else {
+		bounds = grid.getBounds();
+	}
 
 	return {
 		tilejson: '2.2.0',
