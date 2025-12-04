@@ -39,7 +39,7 @@ export const domainStep = (
 					newTime.setUTCDate(time.getUTCDate() + nextMondayInDays);
 					break;
 				case 'backward':
-					newTime.setUTCDate(time.getUTCDate() - 7);
+					newTime.setUTCDate(time.getUTCDate() + nextMondayInDays - 7);
 					break;
 				case 'forward':
 					if (nextMondayInDays === 0) {
