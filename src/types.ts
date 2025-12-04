@@ -1,5 +1,3 @@
-import { FeatureCollection } from 'geojson';
-
 import { OMapsFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
