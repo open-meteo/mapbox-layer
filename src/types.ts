@@ -272,8 +272,8 @@ export interface Domain {
 	value: string;
 	label?: string;
 	grid: GridData;
-	time_interval: number;
-	model_interval: number;
+	time_interval: number | 'weekly' | 'monthly';
+	model_interval: number | 'monthly';
 	windUVComponents: boolean;
 }
 
