@@ -379,8 +379,8 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 320
 		},
-		time_interval: 24 * 30,
-		model_interval: 24 * 30,
+		time_interval: 'monthly',
+		model_interval: 'monthly',
 		windUVComponents: true
 	},
 	{
@@ -393,7 +393,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2,
 			gaussianGridLatitudeLines: 320
 		},
-		time_interval: 24 * 7,
+		time_interval: 'weekly',
 		model_interval: 24,
 		windUVComponents: true
 	},
