@@ -274,7 +274,6 @@ export interface Domain {
 	grid: GridData;
 	time_interval: number | 'weekly' | 'monthly';
 	model_interval: number | 'monthly';
-	windUVComponents: boolean;
 }
 
 export interface DomainGroups {

@@ -33,7 +33,6 @@ export const domainOptions: Array<Domain> = [
 	// 		zoom: 1,
 	// 	},
 	// 	time_interval: 1,
-	// 	windUVComponents: false
 	// },
 
 	// DMI
@@ -59,8 +58,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 
 	// DWD
@@ -78,8 +76,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'dwd_icon_eu',
@@ -95,8 +92,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'dwd_icon_d2',
@@ -112,8 +108,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 5.2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'dwd_gwam',
@@ -129,8 +124,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 3,
-		model_interval: 12,
-		windUVComponents: true
+		model_interval: 12
 	},
 	{
 		value: 'dwd_ewam',
@@ -146,8 +140,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2
 		},
 		time_interval: 1,
-		model_interval: 12,
-		windUVComponents: true
+		model_interval: 12
 	},
 
 	// GFS
@@ -165,8 +158,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ncep_gfs013',
@@ -182,8 +174,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ncep_hrrr_conus',
@@ -204,8 +195,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 1,
-		windUVComponents: true
+		model_interval: 1
 	},
 	{
 		value: 'ncep_nbm_conus',
@@ -229,8 +219,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 1,
-		windUVComponents: false
+		model_interval: 1
 	},
 	{
 		value: 'ncep_nam_conus',
@@ -251,8 +240,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ncep_gfswave025',
@@ -268,8 +256,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ncep_gfswave016',
@@ -285,8 +272,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 
 	// ECWMF
@@ -304,8 +290,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 3,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ecmwf_aifs025_single',
@@ -321,8 +306,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 6,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ecmwf_ifs',
@@ -335,8 +319,7 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 1280
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'ecmwf_wam025',
@@ -352,8 +335,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 3,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ecmwf_wam',
@@ -366,8 +348,7 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 1280
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'ecmwf_seas5_monthly',
@@ -380,8 +361,7 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 320
 		},
 		time_interval: 'monthly',
-		model_interval: 'monthly',
-		windUVComponents: true
+		model_interval: 'monthly'
 	},
 	{
 		value: 'ecmwf_ec46_weekly',
@@ -394,8 +374,7 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 320
 		},
 		time_interval: 'weekly',
-		model_interval: 24,
-		windUVComponents: true
+		model_interval: 24
 	},
 
 	// GEM
@@ -413,8 +392,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 3,
-		model_interval: 12,
-		windUVComponents: false
+		model_interval: 12
 	},
 	{
 		value: 'cmc_gem_hrdps',
@@ -433,8 +411,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: false
+		model_interval: 6
 	},
 	{
 		value: 'cmc_gem_hrdps_west',
@@ -455,8 +432,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 12,
-		windUVComponents: false
+		model_interval: 12
 	},
 	{
 		value: 'cmc_gem_rdps',
@@ -476,8 +452,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 6,
-		windUVComponents: false
+		model_interval: 6
 	},
 
 	// ItaliaMeteo
@@ -495,8 +470,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 5.2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 
 	// JMA
@@ -514,8 +488,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 6,
-		model_interval: 6,
-		windUVComponents: true
+		model_interval: 6
 	},
 	{
 		value: 'jma_msm',
@@ -531,8 +504,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 
 	// MeteoFrance
@@ -550,8 +522,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'meteofrance_arpege_europe',
@@ -567,8 +538,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.5
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'meteofrance_arome_france0025',
@@ -584,8 +554,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 5.2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 
 	{
@@ -602,8 +571,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 5.2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'meteofrance_wave',
@@ -619,8 +587,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 
 	// MetNo
@@ -643,8 +610,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 
 	// KMA
@@ -662,8 +628,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 2
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 	{
 		value: 'kma_ldps',
@@ -687,8 +652,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 
 	// KNMI
@@ -709,8 +673,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 	{
 		value: 'knmi_harmonie_arome_netherlands',
@@ -726,8 +689,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 6
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 
 	// MeteoSwiss ICON
@@ -750,8 +712,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 	{
 		value: 'meteoswiss_icon_ch2',
@@ -772,8 +733,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: true
+		model_interval: 3
 	},
 
 	// UKMO
@@ -791,8 +751,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	},
 	{
 		value: 'ukmo_uk_deterministic_2km',
@@ -814,7 +773,6 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 1,
-		model_interval: 3,
-		windUVComponents: false
+		model_interval: 3
 	}
 ];

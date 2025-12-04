@@ -57,8 +57,7 @@ const createTestDomain = (value: string, grid = {}): Domain => ({
 		...grid
 	},
 	time_interval: 1,
-	model_interval: 3,
-	windUVComponents: false
+	model_interval: 3
 });
 
 const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProtocolSettings => ({
