@@ -56,8 +56,8 @@ const createTestDomain = (value: string, grid = {}): Domain => ({
 		dy: 1,
 		...grid
 	},
-	time_interval: 1,
-	model_interval: 3
+	time_interval: 'hourly',
+	model_interval: '3hourly'
 });
 
 const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProtocolSettings => ({
