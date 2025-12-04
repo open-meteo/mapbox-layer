@@ -339,7 +339,7 @@ describe('getValueFromLatLong', () => {
 		await omProtocol({ url, type: 'arrayBuffer' }, undefined, defaultOmProtocolSettings);
 
 		// Then query value
-		const result = getValueFromLatLong(0, 0, url, { value: 'temperature_2m' });
+		const result = getValueFromLatLong(0, 0, url);
 
 		expect(result.value).toBe(0); // Mock returns zeros
 	});
@@ -351,8 +351,7 @@ describe('getValueFromLatLong', () => {
 			getValueFromLatLong(
 				0,
 				0,
-				'om://https://example.com/data_spatial/dwd_icon/file.om?variable=temp',
-				{ value: 'temp' }
+				'om://https://example.com/data_spatial/dwd_icon/file.om?variable=temp'
 			)
 		).toThrow('OmProtocolInstance is not initialized');
 	});
@@ -376,8 +375,7 @@ describe('getValueFromLatLong', () => {
 			getValueFromLatLong(
 				0,
 				0,
-				'om://https://example.com/data_spatial/dwd_icon/other.om?variable=other',
-				{ value: 'other' }
+				'om://https://example.com/data_spatial/dwd_icon/other.om?variable=other'
 			)
 		).toThrow('State not found');
 	});
