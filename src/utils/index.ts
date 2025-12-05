@@ -2,9 +2,6 @@ import * as maplibregl from 'maplibre-gl';
 
 import type { Domain, ModelDt, ModelUpdateInterval, Variable } from '../types';
 
-const now = new Date();
-now.setHours(now.getHours() + 1, 0, 0, 0);
-
 export const pad = (n: string | number) => {
 	return ('0' + n).slice(-2);
 };
