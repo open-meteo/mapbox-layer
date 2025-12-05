@@ -31,7 +31,7 @@ test('fastAtan2 approximates Math.atan2 within 0.00001 radians', () => {
 describe('domainStep', () => {
 	test('hourly nearest does not leave time unchanged', () => {
 		const t = new Date(Date.UTC(2024, 0, 1, 5, 10, 20));
-		const out = domainStep(t, 'hourly', 'nearest');
+		const out = domainStep(t, 'hourly', 'floor');
 		expect(out.toISOString()).toBe('2024-01-01T05:00:00.000Z');
 	});
 
@@ -43,23 +43,30 @@ describe('domainStep', () => {
 
 	test('3_hourly rounds to multiples of 3', () => {
 		const t = new Date(Date.UTC(2024, 0, 1, 5, 0, 0));
-		expect(domainStep(t, '3_hourly', 'nearest').getUTCHours() % 3).toBe(0);
+		expect(domainStep(t, '3_hourly', 'floor').getUTCHours() % 3).toBe(0);
 	});
 
 	test('weekly_on_monday behavior on Monday for directions', () => {
 		// Monday 2025-12-01 (UTC) 12:00
 		const monday = new Date(Date.UTC(2025, 11, 1, 12));
+		const tuesday = new Date(Date.UTC(2025, 11, 2, 12));
 
-		const n = domainStep(monday, 'weekly_on_monday', 'nearest');
-		expect(n.toISOString()).toBe('2025-12-01T00:00:00.000Z');
+		const flooredMonday = domainStep(monday, 'weekly_on_monday', 'floor');
+		expect(flooredMonday.toISOString()).toBe('2025-12-01T00:00:00.000Z');
+		const flooredTuesday = domainStep(tuesday, 'weekly_on_monday', 'floor');
+		expect(flooredTuesday.toISOString()).toBe('2025-12-01T00:00:00.000Z');
 
 		// forward from Monday should give next Monday
-		const f = domainStep(monday, 'weekly_on_monday', 'forward');
-		expect(f.toISOString()).toBe('2025-12-08T00:00:00.000Z');
+		const forwardMonday = domainStep(monday, 'weekly_on_monday', 'forward');
+		expect(forwardMonday.toISOString()).toBe('2025-12-08T00:00:00.000Z');
+		const forwardTuesday = domainStep(tuesday, 'weekly_on_monday', 'forward');
+		expect(forwardTuesday.toISOString()).toBe('2025-12-08T00:00:00.000Z');
 
 		// backward from Monday -> previous Monday
-		const b = domainStep(monday, 'weekly_on_monday', 'backward');
-		expect(b.toISOString()).toBe('2025-11-24T00:00:00.000Z');
+		const backwardMonday = domainStep(monday, 'weekly_on_monday', 'backward');
+		expect(backwardMonday.toISOString()).toBe('2025-11-24T00:00:00.000Z');
+		const backwardTuesday = domainStep(tuesday, 'weekly_on_monday', 'backward');
+		expect(backwardTuesday.toISOString()).toBe('2025-12-01T00:00:00.000Z');
 	});
 
 	test('monthly forward across month length boundaries (Jan 31 -> behaviour is JS Date overflow)', () => {
