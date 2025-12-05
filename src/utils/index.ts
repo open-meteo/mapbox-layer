@@ -61,7 +61,7 @@ export const domainStep = (
 };
 
 export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval): Date => {
-	const newTime = new Date(time.getTime());
+	const newTime = new Date(time);
 
 	let hours: number;
 	switch (modelInterval) {
