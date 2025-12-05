@@ -1,6 +1,4 @@
-import * as maplibregl from 'maplibre-gl';
-
-import type { Domain, ModelDt, ModelUpdateInterval, Variable } from '../types';
+import type { ModelDt, ModelUpdateInterval } from '../types';
 
 export const pad = (n: string | number) => {
 	return ('0' + n).slice(-2);
