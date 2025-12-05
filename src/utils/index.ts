@@ -18,7 +18,6 @@ export const domainStep = (
 	timeInterval: ModelDt,
 	direction: 'forward' | 'backward' | 'nearest' = 'nearest'
 ): Date => {
-	console.log('domainStep time', time);
 	const newTime = new Date(time.getTime());
 	const operator = direction === 'nearest' ? 0 : direction === 'forward' ? 1 : -1;
 	switch (timeInterval) {
@@ -63,7 +62,6 @@ export const domainStep = (
 
 export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval): Date => {
 	const newTime = new Date(time.getTime());
-	console.log('closestModelRun newTime', newTime);
 
 	let hours: number;
 	switch (modelInterval) {
