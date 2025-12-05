@@ -29,13 +29,13 @@ export const domainStep = (
 			newTime.setUTCMinutes(Math.floor(time.getUTCMinutes() / 15) * 15 + operator * 15);
 			break;
 		case 'hourly':
-			newTime.setUTCHours(time.getUTCHours() + operator);
+			newTime.setUTCHours(time.getUTCHours() + operator, 0, 0, 0);
 			break;
 		case '3_hourly':
-			newTime.setUTCHours(Math.floor(time.getUTCHours() / 3) * 3 + operator * 3);
+			newTime.setUTCHours(Math.floor(time.getUTCHours() / 3) * 3 + operator * 3, 0, 0, 0);
 			break;
 		case '6_hourly':
-			newTime.setUTCHours(Math.floor(time.getUTCHours() / 6) * 6 + operator * 6);
+			newTime.setUTCHours(Math.floor(time.getUTCHours() / 6) * 6 + operator * 6, 0, 0, 0);
 			break;
 		case 'weekly_on_monday': {
 			const dayOfWeek = newTime.getUTCDay();
@@ -55,11 +55,13 @@ export const domainStep = (
 					}
 					break;
 			}
-			newTime.setUTCHours(0);
+			newTime.setUTCHours(0, 0, 0, 0);
 			break;
 		}
 		case 'monthly':
 			newTime.setUTCMonth(time.getUTCMonth() + operator);
+			newTime.setUTCDate(1);
+			newTime.setUTCHours(0, 0, 0, 0);
 			break;
 		default: {
 			// This ensures exhaustiveness checking
