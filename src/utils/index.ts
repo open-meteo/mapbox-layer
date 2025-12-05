@@ -39,6 +39,13 @@ export const domainStep = (
 		case '6_hourly':
 			newTime.setUTCHours(Math.floor(time.getUTCHours() / 6) * 6 + modifier * 6, 0, 0, 0);
 			break;
+		case '12_hourly':
+			newTime.setUTCHours(Math.floor(time.getUTCHours() / 12) * 12 + modifier * 12, 0, 0, 0);
+			break;
+		case 'daily':
+			newTime.setUTCDate(time.getUTCDate() + modifier);
+			newTime.setUTCHours(0, 0, 0, 0);
+			break;
 		case 'weekly_on_monday': {
 			const dayOfWeek = newTime.getUTCDay();
 			const nextMondayInDays = (8 - dayOfWeek) % 7;
@@ -82,37 +89,6 @@ export const domainStep = (
  * - 'hourly', '3_hourly', '6_hourly', '12_hourly', 'daily', 'monthly'
  */
 export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval): Date => {
-	const newTime = new Date(time);
-
-	let hours: number;
-	switch (modelInterval) {
-		case 'hourly':
-			hours = time.getUTCHours();
-			break;
-		case '3_hourly':
-			hours = Math.floor(time.getUTCHours() / 3) * 3;
-			break;
-		case '6_hourly':
-			hours = Math.floor(time.getUTCHours() / 6) * 6;
-			break;
-		case '12_hourly':
-			hours = Math.floor(time.getUTCHours() / 12) * 12;
-			break;
-		case 'daily':
-			hours = 0;
-			break;
-		case 'monthly':
-			newTime.setUTCDate(1);
-			hours = 0;
-			break;
-		default: {
-			// This ensures exhaustiveness checking
-			const _exhaustive: never = modelInterval;
-			throw new Error(`Invalid model interval: ${modelInterval}`);
-		}
-	}
-
-	newTime.setUTCHours(hours, 0, 0, 0);
-
-	return newTime;
+	const modelDtCompatible: ModelDt = modelInterval;
+	return domainStep(time, modelDtCompatible, 'floor');
 };

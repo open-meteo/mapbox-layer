@@ -281,6 +281,8 @@ export type ModelDt =
 	| 'hourly'
 	| '3_hourly'
 	| '6_hourly'
+	| '12_hourly'
+	| 'daily'
 	| 'weekly_on_monday'
 	| 'monthly';
 
