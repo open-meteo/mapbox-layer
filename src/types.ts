@@ -276,13 +276,13 @@ export interface Domain {
 	model_interval: ModelUpdateInterval;
 }
 
-export type ModelDt = 'hourly' | '3hourly' | '6hourly' | 'weekly_on_monday' | 'monthly';
+export type ModelDt = 'hourly' | '3_hourly' | '6_hourly' | 'weekly_on_monday' | 'monthly';
 
 export type ModelUpdateInterval =
 	| 'hourly'
-	| '3hourly'
-	| '6hourly'
-	| '12hourly'
+	| '3_hourly'
+	| '6_hourly'
+	| '12_hourly'
 	| 'daily'
 	| 'monthly';
 

@@ -19,10 +19,10 @@ export const domainStep = (
 		case 'hourly':
 			newTime.setUTCHours(time.getUTCHours() + operator);
 			break;
-		case '3hourly':
+		case '3_hourly':
 			newTime.setUTCHours(Math.floor(time.getUTCHours() / 3) * 3 + operator * 3);
 			break;
-		case '6hourly':
+		case '6_hourly':
 			newTime.setUTCHours(Math.floor(time.getUTCHours() / 6) * 6 + operator * 6);
 			break;
 		case 'weekly_on_monday': {
@@ -63,13 +63,13 @@ export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval):
 		case 'hourly':
 			hours = time.getUTCHours();
 			break;
-		case '3hourly':
+		case '3_hourly':
 			hours = Math.floor(time.getUTCHours() / 3) * 3;
 			break;
-		case '6hourly':
+		case '6_hourly':
 			hours = Math.floor(time.getUTCHours() / 6) * 6;
 			break;
-		case '12hourly':
+		case '12_hourly':
 			hours = Math.floor(time.getUTCHours() / 12) * 12;
 			break;
 		case 'daily':
