@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.9](https://github.com/open-meteo/mapbox-layer/compare/v0.0.8...v0.0.9) (2025-12-05)
+
+
+### Features
+
+* improve reader derivation rules for values and directions ([#99](https://github.com/open-meteo/mapbox-layer/issues/99)) ([3722506](https://github.com/open-meteo/mapbox-layer/commit/3722506b2cbfd3902a8618d1145697b44633b692))
+* improve time_interval and model_interval of Domain type ([#100](https://github.com/open-meteo/mapbox-layer/issues/100)) ([5d383a1](https://github.com/open-meteo/mapbox-layer/commit/5d383a176e33113d2b7e2e196bf25266ab50d7f2))
+
+
+### Bug Fixes
+
+* change readme examples to capture api ([7c0b06a](https://github.com/open-meteo/mapbox-layer/commit/7c0b06af6930aa1142a8bbc4f527f3fb57857dce))
+
 ## [0.0.8](https://github.com/open-meteo/mapbox-layer/compare/v0.0.7...v0.0.8) (2025-12-02)
 
 
