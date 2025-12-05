@@ -18,7 +18,7 @@ export const domainStep = (
 	timeInterval: ModelDt,
 	direction: 'forward' | 'backward' | 'nearest' = 'nearest'
 ): Date => {
-	const newTime = new Date(time.getTime());
+	const newTime = new Date(time);
 	const operator = direction === 'nearest' ? 0 : direction === 'forward' ? 1 : -1;
 	switch (timeInterval) {
 		case 'hourly':
