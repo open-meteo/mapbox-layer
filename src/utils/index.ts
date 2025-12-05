@@ -8,6 +8,15 @@ export const capitalize = (s: string) => {
 	return String(s[0]).toUpperCase() + String(s).slice(1);
 };
 
+/**
+ * Computes the next/previous/nearest time step for a model domain using UTC.
+ * `timeInterval` must be one of:
+ * - '15_minute', 'hourly', '3_hourly', '6_hourly', 'weekly_on_monday', 'monthly'
+ * @param time
+ * @param timeInterval
+ * @param direction
+ * @returns
+ */
 export const domainStep = (
 	time: Date,
 	timeInterval: ModelDt,
@@ -16,6 +25,9 @@ export const domainStep = (
 	const newTime = new Date(time);
 	const operator = direction === 'nearest' ? 0 : direction === 'forward' ? 1 : -1;
 	switch (timeInterval) {
+		case '15_minute':
+			newTime.setUTCMinutes(Math.floor(time.getUTCMinutes() / 15) * 15 + operator * 15);
+			break;
 		case 'hourly':
 			newTime.setUTCHours(time.getUTCHours() + operator);
 			break;
@@ -49,8 +61,11 @@ export const domainStep = (
 		case 'monthly':
 			newTime.setUTCMonth(time.getUTCMonth() + operator);
 			break;
-		default:
+		default: {
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = timeInterval;
 			throw new Error(`Invalid time interval: ${timeInterval}`);
+		}
 	}
 	return newTime;
 };
@@ -79,8 +94,11 @@ export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval):
 			newTime.setUTCDate(1);
 			hours = 0;
 			break;
-		default:
+		default: {
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = modelInterval;
 			throw new Error(`Invalid model interval: ${modelInterval}`);
+		}
 	}
 
 	newTime.setUTCHours(hours, 0, 0, 0);

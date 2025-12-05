@@ -574,6 +574,22 @@ export const domainOptions: Array<Domain> = [
 		model_interval: '3_hourly'
 	},
 	{
+		value: 'meteofrance_arome_france_hd_15min',
+		label: 'MF AROME France HD 15min',
+		grid: {
+			type: 'regular',
+			nx: 2801,
+			ny: 1791,
+			latMin: 37.5,
+			lonMin: -12,
+			dx: 0.01,
+			dy: 0.01,
+			zoom: 5.2
+		},
+		time_interval: '15_minute',
+		model_interval: 'hourly'
+	},
+	{
 		value: 'meteofrance_wave',
 		label: 'MF Wave',
 		grid: {
