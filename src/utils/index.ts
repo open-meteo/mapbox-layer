@@ -89,19 +89,3 @@ export const closestModelRun = (time: Date, modelInterval: ModelUpdateInterval):
 
 	return newTime;
 };
-
-export const getOMUrl = (
-	time: Date,
-	mode: 'dark' | 'bright',
-	partial: boolean,
-	domain: Domain,
-	variable: Variable,
-	modelRun: Date,
-	paddedBounds?: maplibregl.LngLatBounds
-) => {
-	if (paddedBounds) {
-		return `https://map-tiles.open-meteo.com/data_spatial/${domain.value}/${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${time.getUTCFullYear()}-${pad(time.getUTCMonth() + 1)}-${pad(time.getUTCDate())}T${pad(time.getUTCHours())}00.om?dark=${mode === 'dark'}&variable=${variable.value}&partial=${partial}&bounds=${paddedBounds.getSouth()},${paddedBounds.getWest()},${paddedBounds.getNorth()},${paddedBounds.getEast()}`;
-	} else {
-		return `https://map-tiles.open-meteo.com/data_spatial/${domain.value}/${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${time.getUTCFullYear()}-${pad(time.getUTCMonth() + 1)}-${pad(time.getUTCDate())}T${pad(time.getUTCHours())}00.om?dark=${mode === 'dark'}&variable=${variable.value}&partial=${partial}`;
-	}
-};
