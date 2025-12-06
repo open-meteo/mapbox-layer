@@ -94,7 +94,7 @@ const buildTileKey = (request: ParsedRequest): string => {
 	return `${baseUrl}/${tileIndex.z}/${tileIndex.x}/${tileIndex.y}`;
 };
 
-const requestTile = async (
+export const requestTile = async (
 	request: ParsedRequest,
 	data: Data,
 	type: 'image' | 'arrayBuffer'
