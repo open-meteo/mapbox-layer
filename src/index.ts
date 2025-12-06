@@ -17,3 +17,5 @@ export * from './om-protocol-state';
 export * from './worker-pool';
 
 export * from './types';
+export * from './webgl-raster-layer';
+export * from './webgl-wind-layer';
