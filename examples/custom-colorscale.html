@@ -29,9 +29,6 @@
 				temperature_2m: {
 					min: -40,
 					max: 60,
-					steps: 30,
-					scalefactor: 30 / (60 - -40), // (steps / (max - min))
-					interpolationMethod: 'linear', // linear or none
 
 					// colors as rgb array
 					colors: [
@@ -67,8 +64,15 @@
 						[128, 0, 128]
 					],
 
-					unit: 'F°', // optional
-					opacity: 65 // optional
+					// optional:
+					unit: 'F°',
+					opacity: {
+						mode: 'constant',
+						params: {
+							opacityLight: 65,
+							opacityDark: 65
+						}
+					}
 				}
 			};
 

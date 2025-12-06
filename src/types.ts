@@ -154,12 +154,78 @@ export type ColorScale = {
 	min: number;
 	max: number;
 	unit: string;
-	steps: number;
 	colors: [number, number, number][];
-	opacity?: number;
-	scalefactor: number;
-	interpolationMethod: InterpolationMethod;
+	opacity?: OpacityDefinition;
 };
+
+type ConstantOpacity = {
+	mode: 'constant';
+	params: {
+		// Percentage 0..100
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type PowerOpacity = {
+	mode: 'power';
+	params: {
+		// px ** exponent / denom * {opacityDark|opacityLight}
+		exponent: number;
+		denom: number;
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type CenteredPowerOpacity = {
+	mode: 'centered-power';
+	params: {
+		exponent: number;
+		// Percentage 0..100
+		opacityDark: number;
+		opacityLight: number;
+		scale: number;
+	};
+};
+
+type LinearThenConstantOpacity = {
+	mode: 'linear-then-constant';
+	params: {
+		threshold: number;
+		opacityDark: number;
+		opacityLight: number;
+	};
+};
+
+type ZeroThenConstantOpacity = {
+	mode: 'zero-then-constant';
+	params: {
+		opacityDark: number;
+		opacityLight: number;
+		threshold: number;
+	};
+};
+
+type PowerThenConstantOpacity = {
+	mode: 'power-then-constant';
+	params: {
+		// px ** exponent / denom * {opacityDark|opacityLight}
+		exponent: number;
+		denom: number;
+		opacityDark: number;
+		opacityLight: number;
+		threshold: number;
+	};
+};
+
+export type OpacityDefinition =
+	| ConstantOpacity
+	| PowerOpacity
+	| CenteredPowerOpacity
+	| LinearThenConstantOpacity
+	| ZeroThenConstantOpacity
+	| PowerThenConstantOpacity;
 
 export type ColorScales = {
 	[key: string]: ColorScale;
