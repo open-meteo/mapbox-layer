@@ -293,7 +293,6 @@ function serializeOpacity(opacity: OpacityDefinition): string {
 
 function generateTypeScript(): void {
 	const colorScales = generateColorScales();
-	console.log(colorScales['cloud_cover']['getOpacity']);
 
 	let content = `import type { ColorScales } from '../types';
 
