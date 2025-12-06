@@ -100,6 +100,7 @@ The repository contains an `examples` directory with ready-to-run demos:
 - `examples/precipitation.html` – displays precipitation using a similar setup.
 - `examples/wind.html` – displays wind values with directional arrows.
 - `examples/custom-colorscale.html` – shows how to use your own color definition.
+- `examples/darkmode.html` – uses the `dark=true` url flag for dark background basemaps.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
