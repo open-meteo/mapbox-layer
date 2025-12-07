@@ -5,8 +5,9 @@ const pressureLevels = [
 ];
 
 const heights = [
-	2, 10, 20, 30, 40, 50, 75, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 700, 800, 1000, 1250,
-	1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000, 4500, 5000, 5500, 6000
+	2, 10, 20, 30, 40, 50, 75, 80, 100, 120, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800,
+	1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000, 4500, 5000, 5500,
+	6000
 ];
 
 export const variableOptions = [
@@ -18,9 +19,11 @@ export const variableOptions = [
 
 	{ value: 'cloud_base', label: 'Cloud Base' },
 	{ value: 'cloud_cover', label: 'Cloud Cover' },
+	{ value: 'cloud_cover_2m', label: 'Cloud Cover 2m' },
 	{ value: 'cloud_cover_high', label: 'Cloud Cover High' },
 	{ value: 'cloud_cover_mid', label: 'Cloud Cover Mid' },
 	{ value: 'cloud_cover_low', label: 'Cloud Cover Low' },
+	{ value: 'cloud_top', label: 'Cloud Top' },
 
 	{ value: 'convective_cloud_base', label: 'Convective Cloud Base' },
 	{ value: 'convective_cloud_top', label: 'Convective Cloud Top' },
@@ -98,6 +101,10 @@ export const variableOptions = [
 	{ value: 'soil_temperature_6cm', label: 'Soil Temperature (6 cm)' },
 	{ value: 'soil_temperature_18cm', label: 'Soil Temperature (18 cm)' },
 	{ value: 'soil_temperature_54cm', label: 'Soil Temperature (54 cm)' },
+	{ value: 'soil_temperature_162cm', label: 'Soil Temperature (162 cm)' },
+	{ value: 'soil_temperature_468cm', label: 'Soil Temperature (486 cm)' },
+	{ value: 'soil_temperature_1458cm', label: 'Soil Temperature (1458 cm)' },
+
 	{ value: 'soil_temperature_0_to_7cm', label: 'Soil Temperature (0-7 cm)' },
 	{ value: 'soil_temperature_0_to_10cm', label: 'Soil Temperature (0-10 cm)' },
 	{ value: 'soil_temperature_7_to_28cm', label: 'Soil Temperature (7-28 cm)' },
@@ -117,7 +124,26 @@ export const variableOptions = [
 	{ value: 'soil_moisture_40_to_100cm', label: 'Soil Moisture (40-100 cm)' },
 	{ value: 'soil_moisture_100_to_200cm', label: 'Soil Moisture (100-200 cm)' },
 
-	{ value: 'temperature_2m_anomaly', label: 'Temperature (2m) Anomaly' }
+	{ value: 'temperature_2m_anomaly', label: 'Temperature (2m) Anomaly' },
+
+	// level groups
+	{ value: 'geopotential_height', label: 'Geopotential Height' },
+	{ value: 'relative_humidity', label: 'Relative Humidity' },
+	{ value: 'soil_moisture', label: 'Soil Moisture' },
+	{ value: 'soil_temperature', label: 'Soil Temperature' },
+	{ value: 'temperature', label: 'Temperature' },
+	{ value: 'vertical_velocity', label: 'Vertical Velocity' },
+
+	{ value: 'wind', label: 'Wind' }
+];
+
+export const levelGroupVariables = [
+	'geopotential_height',
+	'relative_humidity',
+	'soil_moisture',
+	'soil_temperature',
+	'temperature',
+	'wind'
 ];
 
 for (const pl of pressureLevels) {

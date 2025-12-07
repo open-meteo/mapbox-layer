@@ -11,8 +11,7 @@ import type {
 	DataIdentityOptions,
 	OmProtocolInstance,
 	OmProtocolSettings,
-	OmUrlState,
-	Variable
+	OmUrlState
 } from './types';
 
 // Configuration constants - could be made configurable via OmProtocolSettings
@@ -85,7 +84,7 @@ export const ensureData = async (
 		try {
 			await omFileReader.setToOmFile(state.omFileUrl);
 			const data = await omFileReader.readVariable(
-				state.dataOptions.variable.value,
+				state.dataOptions.variable,
 				state.dataOptions.ranges
 			);
 
@@ -107,7 +106,7 @@ export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
 	omUrl: string,
-	variable: Variable
+	variable: string
 ): { value: number; direction?: number } => {
 	if (!omProtocolInstance) {
 		throw new Error('OmProtocolInstance is not initialized');
@@ -128,7 +127,7 @@ export const getValueFromLatLong = (
 	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
 	let value = grid.getLinearInterpolatedValue(state.data.values, lat, ((lon + 180) % 360) - 180);
 
-	if (variable.value.includes('wind')) {
+	if (variable.includes('wind')) {
 		value = value * MS_TO_KMH;
 	}
 

@@ -34,9 +34,9 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 
-		const isWind = variable.value.includes('wind');
-		const isHideZero = hideZero.includes(variable.value);
-		const isWeatherCode = variable.value === 'weather_code';
+		const isWind = variable.includes('wind');
+		const isHideZero = hideZero.includes(variable);
+		const isWeatherCode = variable === 'weather_code';
 
 		for (let i = 0; i < tileSize; i++) {
 			const lat = tile2lat(y + i / tileSize, z);
@@ -67,7 +67,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 						rgba[4 * ind] = color[0];
 						rgba[4 * ind + 1] = color[1];
 						rgba[4 * ind + 2] = color[2];
-						rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
+						rgba[4 * ind + 3] = getOpacity(variable, px, dark, colorScale);
 					}
 				}
 			}
