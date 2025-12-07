@@ -105,8 +105,7 @@ export const ensureData = async (
 export const getValueFromLatLong = (
 	lat: number,
 	lon: number,
-	omUrl: string,
-	variable: string
+	omUrl: string
 ): { value: number; direction?: number } => {
 	if (!omProtocolInstance) {
 		throw new Error('OmProtocolInstance is not initialized');
@@ -125,11 +124,7 @@ export const getValueFromLatLong = (
 	}
 
 	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
-	let value = grid.getLinearInterpolatedValue(state.data.values, lat, ((lon + 180) % 360) - 180);
-
-	if (variable.includes('wind')) {
-		value = value * MS_TO_KMH;
-	}
+	const value = grid.getLinearInterpolatedValue(state.data.values, lat, ((lon + 180) % 360) - 180);
 
 	return { value };
 };
