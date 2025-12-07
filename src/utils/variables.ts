@@ -47,16 +47,20 @@ export const variableOptions = [
 
 	{ value: 'precipitation', label: 'Precipitation' },
 	{ value: 'precipitation_probability', label: 'Precipitation Probability' },
+	{ value: 'precipitation_type', label: 'Precipitation Type' },
 
 	{ value: 'pressure_msl', label: 'Pressure Mean Sea Level' },
 
 	{ value: 'rain', label: 'Rain' },
 	{ value: 'rain_probability', label: 'Rain Probability' },
 
+	{ value: 'runoff', label: 'Runoff' },
+
 	{ value: 'showers', label: 'Showers' },
 
 	{ value: 'snow', label: 'Snow' },
 	{ value: 'snow_depth', label: 'Snow Depth' },
+	{ value: 'snow_depth_water_equivalent', label: 'Snow Depth Water Equivalent' },
 
 	{ value: 'snowfall', label: 'Snowfall' },
 	{ value: 'snowfall_probability', label: 'Snowfall Probability' },
@@ -87,6 +91,7 @@ export const variableOptions = [
 
 	{ value: 'wave_height', label: 'Wave Height & Direction' },
 	{ value: 'wave_period', label: 'Wave Period' },
+	{ value: 'wave_direction', label: 'Wave Direction' },
 
 	{ value: 'weather_code', label: 'Weather Codes' },
 
@@ -94,6 +99,7 @@ export const variableOptions = [
 
 	{ value: 'wind_wave_height', label: 'Wind Wave Height' },
 	{ value: 'wind_wave_period', label: 'Wind Wave Period' },
+	{ value: 'wind_wave_peak_period', label: 'Wind Wave Peak Period' },
 
 	{ value: 'updraft', label: 'Updraft' },
 

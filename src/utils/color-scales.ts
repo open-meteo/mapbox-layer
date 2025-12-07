@@ -1085,9 +1085,9 @@ export const colorScales: ColorScales = {
 	},
 	wind: {
 		min: 0,
-		max: 70,
+		max: 20,
 		steps: 40,
-		scalefactor: 0.5714285714285714,
+		scalefactor: 2,
 		colors: [
 			[0, 0, 255],
 			[0, 54, 241],
