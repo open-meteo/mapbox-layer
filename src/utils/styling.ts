@@ -20,26 +20,26 @@ export const getOpacity = (
 	colorScale: ColorScale
 ): number => {
 	if (colorScale.opacity) {
-		return 255 * (colorScale.opacity / 100);
+		return 100 * (colorScale.opacity / 100);
 	} else if (v == 'cloud_cover' || v == 'thunderstorm_probability') {
 		// scale opacity with percentage
-		return 255 * (px ** 1.5 / 1000) * (OPACITY / 100);
+		return (px ** 1.5 / 1000) * 100 * (OPACITY / 100);
 	} else if (v.startsWith('cloud_base')) {
 		// scale cloud base to 20900m
-		return Math.min(1 - px / 20900, 1) * 255 * (OPACITY / 100);
+		return Math.min(1 - px / 20900, 1) * 100 * (OPACITY / 100);
 	} else if (v.startsWith('precipitation')) {
 		// scale opacity with precip values below 1.5mm
-		return Math.min(px / 1.5, 1) * 255 * (OPACITY / 100);
+		return Math.min(px / 1.5, 1) * 100 * (OPACITY / 100);
 	} else if (v.startsWith('wind')) {
-		// scale opacity with wind values below 10kmh
-		if (px < 10) {
-			return Math.min(Math.pow(px - 2, 3) / 1000, 1) * 255 * (OPACITY / 100);
+		// scale opacity with wind values below 5m/s
+		if (px < 5) {
+			return Math.min(Math.pow(px + 3, 5) / 5000, 1) * 100 * (OPACITY / 100);
 		} else {
-			return 255 * (OPACITY / 100);
+			return 100 * (OPACITY / 100);
 		}
 	} else {
 		// else set the opacity with env variable and deduct 20% for darkmode
-		return 255 * (dark ? OPACITY / 100 - 0.2 : OPACITY / 100);
+		return 100 * (dark ? OPACITY / 100 - 0.2 : OPACITY / 100);
 	}
 };
 
