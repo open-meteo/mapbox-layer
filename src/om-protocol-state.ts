@@ -1,6 +1,5 @@
 import { setupGlobalCache } from '@openmeteo/file-reader';
 
-import { MS_TO_KMH } from './utils/constants';
 import { parseUrlComponents } from './utils/parse-url';
 
 import { GridFactory } from './grids';
