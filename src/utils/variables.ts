@@ -11,6 +11,8 @@ const heights = [
 ];
 
 export const variableOptions = [
+	{ value: 'albedo', label: 'Albedo' },
+
 	{ value: 'boundary_layer_height', label: 'Boundary Layer Height' },
 
 	{ value: 'cape', label: 'CAPE' },
@@ -19,15 +21,21 @@ export const variableOptions = [
 
 	{ value: 'cloud_base', label: 'Cloud Base' },
 	{ value: 'cloud_cover', label: 'Cloud Cover' },
-	{ value: 'cloud_cover_2m', label: 'Cloud Cover 2m' },
+	{ value: 'cloud_cover_2m', label: 'Cloud Cover (2m)' },
+	{ value: 'cloud_cover_anomaly', label: 'Cloud Cover Anomaly' },
 	{ value: 'cloud_cover_high', label: 'Cloud Cover High' },
-	{ value: 'cloud_cover_mid', label: 'Cloud Cover Mid' },
 	{ value: 'cloud_cover_low', label: 'Cloud Cover Low' },
+	{ value: 'cloud_cover_mean', label: 'Cloud Cover Mean' },
+	{ value: 'cloud_cover_mid', label: 'Cloud Cover Mid' },
 	{ value: 'cloud_top', label: 'Cloud Top' },
 
 	{ value: 'convective_cloud_base', label: 'Convective Cloud Base' },
 	{ value: 'convective_cloud_top', label: 'Convective Cloud Top' },
 	{ value: 'convective_inhibition', label: 'Convective Inhibition' },
+
+	{ value: 'dew_point_2m', label: 'Dew Point (2m)' },
+	{ value: 'dew_point_2m_anomaly', label: 'Dew Point (2m) Anomaly' },
+	{ value: 'dew_point_2m_mean', label: 'Dew Point (2m) Mean' },
 
 	{ value: 'diffuse_radiation', label: 'Diffuse Radiation' },
 	{ value: 'direct_radiation', label: 'Direct Radiation' },
@@ -35,15 +43,18 @@ export const variableOptions = [
 	{ value: 'freezing_level_height', label: 'Freezing Level Height' },
 	{ value: 'freezing_rain_probability', label: 'Freezing Rain Probability' },
 
-	{ value: 'latent_heat_flux', label: 'Latent Heat Flux' },
-	{ value: 'sensible_heat_flux', label: 'Sensible Heat Flux' },
-
 	{ value: 'ice_pellets_probability', label: 'Ice Pellets Probability' },
+
+	{ value: 'k_index', label: 'k Index' },
+
+	{ value: 'latent_heat_flux', label: 'Latent Heat Flux' },
 
 	{ value: 'lifted_index', label: 'Lifted Index' },
 	{ value: 'lightning_potential', label: 'Lightning Potential' },
 
 	{ value: 'mass_density_8m', label: 'Mass Density (8m)' },
+
+	{ value: 'potential_evapotranspiration', label: 'Potential Evapotranspiration' },
 
 	{ value: 'precipitation', label: 'Precipitation' },
 	{ value: 'precipitation_probability', label: 'Precipitation Probability' },
@@ -56,11 +67,14 @@ export const variableOptions = [
 
 	{ value: 'runoff', label: 'Runoff' },
 
+	{ value: 'roughness_length', label: 'Roughness Length' },
+
 	{ value: 'showers', label: 'Showers' },
 
 	{ value: 'snow', label: 'Snow' },
 	{ value: 'snow_depth', label: 'Snow Depth' },
 	{ value: 'snow_depth_water_equivalent', label: 'Snow Depth Water Equivalent' },
+	{ value: 'snow_density', label: 'Snow Density' },
 
 	{ value: 'snowfall', label: 'Snowfall' },
 	{ value: 'snowfall_probability', label: 'Snowfall Probability' },
@@ -77,8 +91,23 @@ export const variableOptions = [
 	{ value: 'swell_wave_peak_period', label: 'Swell Wave Peak Period' },
 	{ value: 'swell_wave_period', label: 'Swell Wave Period' },
 
-	{ value: 'secondary_swell_wave_height', label: 'Secondary Swell Wave Height' },
+	{ value: 'sensible_heat_flux', label: 'Sensible Heat Flux' },
+
+	{ value: 'secondary_swell_wave_height', label: 'Secondary Swell Wave Height & Direction' },
 	{ value: 'secondary_swell_wave_period', label: 'Secondary Swell Wave Period' },
+	{ value: 'secondary_swell_wave_direction', label: 'Secondary Swell Wave Direction' },
+
+	{ value: 'temperature_2m_anomaly', label: 'Temperature (2m) Anomaly' },
+	{ value: 'temperature_2m_anomaly_gt0', label: 'Temperature (2m) Anomaly GT0' },
+	{ value: 'temperature_2m_anomaly_gt1', label: 'Temperature (2m) Anomaly GT1' },
+	{ value: 'temperature_2m_anomaly_gt2', label: 'Temperature (2m) Anomaly GT2' },
+	{ value: 'temperature_2m_anomaly_ltm0', label: 'Temperature (2m) Anomaly LTM0' },
+	{ value: 'temperature_2m_anomaly_ltm1', label: 'Temperature (2m) Anomaly LTM1' },
+	{ value: 'temperature_2m_anomaly_ltm2', label: 'Temperature (2m) Anomaly LTM2' },
+	{ value: 'temperature_2m_mean', label: 'Temperature (2m) Mean' },
+
+	{ value: 'tertiary_swell_wave_height', label: 'Tertiary Swell Wave Height & Direction' },
+	{ value: 'tertiary_swell_wave_period', label: 'Tertiary Swell Wave Period' },
 
 	{ value: 'thunderstorm_probability', label: 'Thunderstorm Probability' },
 
@@ -92,10 +121,11 @@ export const variableOptions = [
 	{ value: 'wave_height', label: 'Wave Height & Direction' },
 	{ value: 'wave_period', label: 'Wave Period' },
 	{ value: 'wave_direction', label: 'Wave Direction' },
+	{ value: 'wave_peak_period', label: 'Wave Peak Period' },
 
 	{ value: 'weather_code', label: 'Weather Codes' },
 
-	{ value: 'wind_gusts_10m', label: 'Wind Gusts 10m' },
+	{ value: 'wind_gusts_10m', label: 'Wind Gusts (10m)' },
 
 	{ value: 'wind_wave_height', label: 'Wind Wave Height' },
 	{ value: 'wind_wave_period', label: 'Wind Wave Period' },
@@ -130,8 +160,6 @@ export const variableOptions = [
 	{ value: 'soil_moisture_40_to_100cm', label: 'Soil Moisture (40-100 cm)' },
 	{ value: 'soil_moisture_100_to_200cm', label: 'Soil Moisture (100-200 cm)' },
 
-	{ value: 'temperature_2m_anomaly', label: 'Temperature (2m) Anomaly' },
-
 	// level groups
 	{ value: 'geopotential_height', label: 'Geopotential Height' },
 	{ value: 'relative_humidity', label: 'Relative Humidity' },
@@ -139,11 +167,11 @@ export const variableOptions = [
 	{ value: 'soil_temperature', label: 'Soil Temperature' },
 	{ value: 'temperature', label: 'Temperature' },
 	{ value: 'vertical_velocity', label: 'Vertical Velocity' },
-
 	{ value: 'wind', label: 'Wind' }
 ];
 
 export const levelGroupVariables = [
+	'cloud_cover',
 	'geopotential_height',
 	'relative_humidity',
 	'soil_moisture',
@@ -153,33 +181,33 @@ export const levelGroupVariables = [
 ];
 
 for (const pl of pressureLevels) {
-	variableOptions.push({ value: `cloud_cover_${pl}hPa`, label: `Cloud Cover ${pl}hPa` });
+	variableOptions.push({ value: `cloud_cover_${pl}hPa`, label: `Cloud Cover (${pl}hPa)` });
 	variableOptions.push({
 		value: `geopotential_height_${pl}hPa`,
-		label: `Geopotential Height ${pl}hPa`
+		label: `Geopotential Height (${pl}hPa)`
 	});
 	variableOptions.push({
 		value: `relative_humidity_${pl}hPa`,
-		label: `Relative Humidity ${pl}hPa`
+		label: `Relative Humidity (${pl}hPa)`
 	});
-	variableOptions.push({ value: `temperature_${pl}hPa`, label: `Temperature ${pl}hPa` });
+	variableOptions.push({ value: `temperature_${pl}hPa`, label: `Temperature (${pl}hPa)` });
 	variableOptions.push({
 		value: `vertical_velocity_${pl}hPa`,
-		label: `Vertical Velocity ${pl}hPa`
+		label: `Vertical Velocity (${pl}hPa)`
 	});
-	variableOptions.push({ value: `wind_${pl}hPa`, label: `Wind ${pl}hPa` });
-	variableOptions.push({ value: `wind_u_component_${pl}hPa`, label: `Wind ${pl}hPa` });
-	variableOptions.push({ value: `wind_speed_${pl}hPa`, label: `Wind ${pl}hPa` });
+	variableOptions.push({ value: `wind_${pl}hPa`, label: `Wind (${pl}hPa)` });
+	variableOptions.push({ value: `wind_u_component_${pl}hPa`, label: `Wind (${pl}hPa)` });
+	variableOptions.push({ value: `wind_speed_${pl}hPa`, label: `Wind (${pl}hPa)` });
 }
 for (const height of heights) {
 	variableOptions.push({
 		value: `relative_humidity_${height}m`,
-		label: `Relative Humidity ${height}m`
+		label: `Relative Humidity (${height}m)`
 	});
-	variableOptions.push({ value: `temperature_${height}m`, label: `Temperature ${height}m` });
-	variableOptions.push({ value: `wind_${height}m`, label: `Wind ${height}m` });
-	variableOptions.push({ value: `wind_u_component_${height}m`, label: `Wind ${height}m` });
-	variableOptions.push({ value: `wind_speed_${height}m`, label: `Wind ${height}m` });
+	variableOptions.push({ value: `temperature_${height}m`, label: `Temperature (${height}m)` });
+	variableOptions.push({ value: `wind_${height}m`, label: `Wind (${height}m)` });
+	variableOptions.push({ value: `wind_u_component_${height}m`, label: `Wind (${height}m)` });
+	variableOptions.push({ value: `wind_speed_${height}m`, label: `Wind (${height}m)` });
 }
 
 export const hideZero = [
