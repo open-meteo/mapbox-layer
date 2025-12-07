@@ -194,7 +194,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['orange', 'red'], steps: 20 } // 20 to 40kn
 		],
 		interpolationMethod: 'linear',
-		unit: 'km/h'
+		unit: 'm/s'
 	}
 };
 

@@ -1131,7 +1131,7 @@ export const colorScales: ColorScales = {
 			[255, 0, 0]
 		],
 		interpolationMethod: 'linear',
-		unit: 'km/h'
+		unit: 'm/s'
 	},
 	rain: {
 		min: 0,
