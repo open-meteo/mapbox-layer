@@ -177,6 +177,7 @@ export const levelGroupVariables = [
 	'soil_moisture',
 	'soil_temperature',
 	'temperature',
+	'vertical_velocity',
 	'wind'
 ];
 
