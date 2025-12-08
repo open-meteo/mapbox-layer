@@ -1,6 +1,6 @@
 import { colorScales } from './color-scales';
 
-import type { ColorScale, ColorScales, OpacityDefinition, Variable } from '../types';
+import type { ColorScale, ColorScales, OpacityDefinition } from '../types';
 
 export const getColor = (colorScale: ColorScale, px: number): [number, number, number] => {
 	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
@@ -167,7 +167,7 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	tertiary_swell_wave_period: colorScales['swell_period']
 };
 
-const getOptionalColorScale = (variable: Variable['value']): ColorScale | undefined => {
+const getOptionalColorScale = (variable: string): ColorScale | undefined => {
 	const exactMatch = COLOR_SCALES_WITH_ALIASES[variable];
 	if (exactMatch) return exactMatch;
 	const parts = variable.split('_');
@@ -187,7 +187,7 @@ const getOptionalColorScale = (variable: Variable['value']): ColorScale | undefi
 	);
 };
 
-export const getColorScale = (variable: Variable['value']): ColorScale => {
+export const getColorScale = (variable: string): ColorScale => {
 	return getOptionalColorScale(variable) ?? COLOR_SCALES_WITH_ALIASES['temperature'];
 };
 
@@ -260,7 +260,7 @@ const scaleTemperatureMinMax = (
 	};
 };
 
-export const getColorScaleMinMaxScaled = (variable: Variable['value']) => {
+export const getColorScaleMinMaxScaled = (variable: string) => {
 	const scale = getColorScale(variable);
 
 	// try to parse level from the variable string, e.g. geopotential_height_500hPa

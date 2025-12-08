@@ -83,7 +83,7 @@ export const ensureData = async (
 		try {
 			await omFileReader.setToOmFile(state.omFileUrl);
 			const data = await omFileReader.readVariable(
-				state.dataOptions.variable.value,
+				state.dataOptions.variable,
 				state.dataOptions.ranges
 			);
 

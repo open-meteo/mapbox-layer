@@ -45,7 +45,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					rgba[4 * ind] = color[0];
 					rgba[4 * ind + 1] = color[1];
 					rgba[4 * ind + 2] = color[2];
-					rgba[4 * ind + 3] = getOpacity(variable.value, px, dark, colorScale);
+					rgba[4 * ind + 3] = getOpacity(variable, px, dark, colorScale);
 				}
 			}
 		}
