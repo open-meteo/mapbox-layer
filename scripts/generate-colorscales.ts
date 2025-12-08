@@ -301,7 +301,7 @@ function generateTypeScript(): void {
 
 	let content = `import type { ColorScales } from '../types';
 
-export const colorScales: ColorScales = {`;
+export const COLOR_SCALES: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
 		const { min, max, colors, unit, opacity } = colorScale;
 

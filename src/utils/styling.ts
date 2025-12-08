@@ -1,4 +1,5 @@
-import { colorScales } from './color-scales';
+import { COLOR_SCALES } from './color-scales';
+import { pressureHpaToIsaHeight } from './isa-height';
 
 import type { ColorScale, ColorScales, OpacityDefinition } from '../types';
 
@@ -118,53 +119,53 @@ export const getOpacity = (
 };
 
 const COLOR_SCALES_WITH_ALIASES: ColorScales = {
-	...colorScales,
-	albedo: colorScales['cloud_cover'],
-	boundary_layer_height: { ...colorScales['convective_cloud_top'], min: 0, max: 2000 },
-	cloud_base: colorScales['convective_cloud_top'],
-	cloud_top: colorScales['convective_cloud_top'],
-	convective_cloud_base: colorScales['convective_cloud_top'],
-	dew_point: colorScales['temperature'],
-	diffuse_radiation: colorScales['shortwave'],
-	direct_radiation: colorScales['shortwave'],
-	freezing_level_height: { ...colorScales['temperature'], unit: 'm', min: 0, max: 4000 },
+	...COLOR_SCALES,
+	albedo: COLOR_SCALES['cloud_cover'],
+	boundary_layer_height: { ...COLOR_SCALES['convective_cloud_top'], min: 0, max: 2000 },
+	cloud_base: COLOR_SCALES['convective_cloud_top'],
+	cloud_top: COLOR_SCALES['convective_cloud_top'],
+	convective_cloud_base: COLOR_SCALES['convective_cloud_top'],
+	dew_point: COLOR_SCALES['temperature'],
+	diffuse_radiation: COLOR_SCALES['shortwave'],
+	direct_radiation: COLOR_SCALES['shortwave'],
+	freezing_level_height: { ...COLOR_SCALES['temperature'], unit: 'm', min: 0, max: 4000 },
 	latent_heat_flux: {
-		...colorScales['temperature'],
+		...COLOR_SCALES['temperature'],
 		unit: 'W/m²',
 		min: -50,
 		max: 20
 	},
 	sea_surface_temperature: {
-		...colorScales['temperature'],
+		...COLOR_SCALES['temperature'],
 		min: -2,
 		max: 35
 	},
 	sensible_heat_flux: {
-		...colorScales['temperature'],
+		...COLOR_SCALES['temperature'],
 		unit: 'W/m²',
 		min: -50,
 		max: 50
 	},
-	rain: colorScales['precipitation'],
-	showers: colorScales['precipitation'],
-	snow_depth_water_equivalent: { ...colorScales['precipitation'], unit: 'mm', min: 0, max: 3200 },
-	snowfall_water_equivalent: colorScales['precipitation'],
+	rain: COLOR_SCALES['precipitation'],
+	showers: COLOR_SCALES['precipitation'],
+	snow_depth_water_equivalent: { ...COLOR_SCALES['precipitation'], unit: 'mm', min: 0, max: 3200 },
+	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
 	visibility: {
-		...colorScales['geopotential_height'],
-		colors: colorScales['geopotential_height'].colors.reverse(),
+		...COLOR_SCALES['geopotential_height'],
+		colors: COLOR_SCALES['geopotential_height'].colors.reverse(),
 		min: 0,
 		max: 20000
 	},
-	wave: colorScales['swell'],
-	wind_wave_height: colorScales['swell'],
-	swell_wave_height: colorScales['swell'],
-	secondary_swell_wave_height: colorScales['swell'],
-	tertiary_swell_wave_height: colorScales['swell'],
-	wave_peak_period: colorScales['swell_period'],
-	wave_period: colorScales['swell_period'],
-	swell_wave_period: colorScales['swell_period'],
-	secondary_swell_wave_period: colorScales['swell_period'],
-	tertiary_swell_wave_period: colorScales['swell_period']
+	wave: COLOR_SCALES['swell'],
+	wind_wave_height: COLOR_SCALES['swell'],
+	swell_wave_height: COLOR_SCALES['swell'],
+	secondary_swell_wave_height: COLOR_SCALES['swell'],
+	tertiary_swell_wave_height: COLOR_SCALES['swell'],
+	wave_peak_period: COLOR_SCALES['swell_period'],
+	wave_period: COLOR_SCALES['swell_period'],
+	swell_wave_period: COLOR_SCALES['swell_period'],
+	secondary_swell_wave_period: COLOR_SCALES['swell_period'],
+	tertiary_swell_wave_period: COLOR_SCALES['swell_period']
 };
 
 const getOptionalColorScale = (variable: string): ColorScale | undefined => {
@@ -172,6 +173,29 @@ const getOptionalColorScale = (variable: string): ColorScale | undefined => {
 	if (exactMatch) return exactMatch;
 	const parts = variable.split('_');
 	const lastIndex = parts.length - 1;
+
+	const scale =
+		COLOR_SCALES_WITH_ALIASES[parts[0] + '_' + parts[1]] ?? COLOR_SCALES_WITH_ALIASES[parts[0]];
+
+	// geopotential height variables -> derive typical height from ISA
+	if (variable.includes('geopotential_height')) {
+		// try to parse level from the variable string, e.g. geopotential_height_500hPa
+		const m = variable.match(LEVEL_REGEX);
+		if (!m) {
+			return scale;
+		}
+
+		const levelNum = Number(m[1]);
+		// Compute ISA height (meters) for the pressure level
+		const computedMax = pressureHpaToIsaHeight(Math.floor(0.9 * levelNum));
+		const computedMin = pressureHpaToIsaHeight(Math.ceil(1.1 * levelNum));
+
+		return {
+			...scale,
+			min: computedMin,
+			max: computedMax
+		};
+	}
 
 	if (['mean', 'max', 'min'].includes(parts[lastIndex])) {
 		return getOptionalColorScale(parts.slice(0, -1).join('_'));
@@ -192,66 +216,3 @@ export const getColorScale = (variable: string): ColorScale => {
 };
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;
-
-// ISA / barometric constants
-const ISA = {
-	p0_hPa: 1013.25, // reference pressure in hPa
-	t0: 288.15, // sea-level standard temperature (K)
-	lapse: 0.0065, // temperature lapse rate (K/m)
-	gasConstant: 287.05, // specific gas constant for dry air (J/(kg·K))
-	g0: 9.80665 // gravity (m/s^2)
-};
-
-/* Tropopause / lower stratosphere constants (ISA standard) */
-const P_TROPOPAUSE = 226.32; // hPa (pressure at ~11 km)
-const H_TROPOPAUSE = 11000; // m  (height of tropopause ~11 km)
-const T_TROPOPAUSE = 216.65; // K  (temperature in lower stratosphere)
-
-const pressureHpaToIsaHeight = (hpa: number): number => {
-	if (!isFinite(hpa) || hpa <= 0) return NaN;
-
-	// Use troposphere formula for pressures >= tropopause pressure; otherwise use isothermal stratosphere formula.
-	return hpa >= P_TROPOPAUSE
-		? troposphereHeightFromPressure(hpa)
-		: stratosphereHeightFromPressure(hpa);
-};
-
-const troposphereHeightFromPressure = (hpa: number): number => {
-	const { p0_hPa, t0, lapse, gasConstant, g0 } = ISA;
-	const r = hpa / p0_hPa;
-	const exponent = (gasConstant * lapse) / g0; // dimensionless (~0.1903)
-	// H = (T0 / L) * (1 - r^exponent)
-	return (t0 / lapse) * (1 - Math.pow(r, exponent));
-};
-
-const stratosphereHeightFromPressure = (hpa: number): number => {
-	// H = H_tropopause + (R * T_tropopause / g0) * ln(P_tropopause / P)
-	return H_TROPOPAUSE + ((ISA.gasConstant * T_TROPOPAUSE) / ISA.g0) * Math.log(P_TROPOPAUSE / hpa);
-};
-
-export const getColorScaleMinMaxScaled = (variable: string) => {
-	const scale = getColorScale(variable);
-
-	// try to parse level from the variable string, e.g. geopotential_height_500hPa
-	const m = variable.match(LEVEL_REGEX);
-	if (!m) {
-		return scale;
-	}
-
-	const levelNum = Number(m[1]);
-
-	// geopotential height variables -> derive typical height from ISA
-	if (variable.includes('geopotential_height')) {
-		// Compute ISA height (meters) for the pressure level
-		const computedMax = pressureHpaToIsaHeight(Math.floor(0.9 * levelNum));
-		const computedMin = pressureHpaToIsaHeight(Math.ceil(1.1 * levelNum));
-
-		return {
-			...scale,
-			min: computedMin,
-			max: computedMax
-		};
-	}
-
-	return scale;
-};

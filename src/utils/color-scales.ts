@@ -1,6 +1,6 @@
 import type { ColorScales } from '../types';
 
-export const colorScales: ColorScales = {
+export const COLOR_SCALES: ColorScales = {
 	cape: {
 		unit: 'J/kg',
 		min: 0,
