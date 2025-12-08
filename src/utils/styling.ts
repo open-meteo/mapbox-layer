@@ -229,37 +229,6 @@ const stratosphereHeightFromPressure = (hpa: number): number => {
 	return H_TROPOPAUSE + ((ISA.gasConstant * T_TROPOPAUSE) / ISA.g0) * Math.log(P_TROPOPAUSE / hpa);
 };
 
-/**
- * ISA temperature at geopotential height (meters).
- * Returns temperature difference from ISA.t0
- */
-const isaTemperatureAtHeight = (heightM: number): number => {
-	if (!isFinite(heightM)) return NaN;
-	if (heightM <= 0) return ISA.t0;
-	if (heightM <= H_TROPOPAUSE) {
-		// Troposphere: linear lapse
-		return -ISA.lapse * heightM;
-	}
-	// Lower stratosphere (isothermal approximation)
-	// For simplicity we keep it constant at T_tropopause.
-	return T_TROPOPAUSE - ISA.t0;
-};
-
-/** Compute ISA temperature (°C) at geopotential height (meters) within troposphere:
- *  T(K) = T0 - L * z */
-const scaleTemperatureMinMax = (
-	min: number,
-	max: number,
-	pressureLevel: number
-): { min: number; max: number } => {
-	const height = pressureHpaToIsaHeight(pressureLevel);
-	const isaAtHeight = isaTemperatureAtHeight(height);
-	return {
-		min: min + isaAtHeight,
-		max: max + isaAtHeight
-	};
-};
-
 export const getColorScaleMinMaxScaled = (variable: string) => {
 	const scale = getColorScale(variable);
 
@@ -276,21 +245,6 @@ export const getColorScaleMinMaxScaled = (variable: string) => {
 		// Compute ISA height (meters) for the pressure level
 		const computedMax = pressureHpaToIsaHeight(Math.floor(0.9 * levelNum));
 		const computedMin = pressureHpaToIsaHeight(Math.ceil(1.1 * levelNum));
-
-		return {
-			...scale,
-			min: computedMin,
-			max: computedMax
-		};
-	}
-
-	// temperature variables -> scale min and max
-	if (variable.includes('temperature')) {
-		const { min: computedMin, max: computedMax } = scaleTemperatureMinMax(
-			scale.min,
-			scale.max,
-			levelNum
-		);
 
 		return {
 			...scale,

@@ -168,17 +168,19 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		colors: ['#a0614b', '#dfcd8c', '#34ad4a', '#2679be']
 	},
 	temperature: {
-		unit: 'C°',
-		min: -40,
-		max: 60,
-		steps: 100,
+		unit: '°C',
+		min: -80,
+		max: 50,
+		steps: 65,
 		colors: [
-			{ colors: ['white', 'purple'], steps: 20 },
-			{ colors: ['purple', 'navy'], steps: 20 },
-			{ colors: ['mediumblue', 'green'], steps: 16 },
-			{ colors: ['green', 'orange'], steps: 12 },
-			{ colors: ['orange', 'red'], steps: 14 },
-			{ colors: ['red', 'purple'], steps: 18 }
+			{ colors: ['#1af2dd', '#17658f'], steps: 15 }, // -80 to -50
+			{ colors: ['#17658f', '#af0aaf'], steps: 10 }, // -50 to -30
+			{ colors: ['#af0aaf', '#0034ff'], steps: 10 }, // -30 to -10
+			{ colors: ['#0034ff', '#a4eef5'], steps: 5 }, // -10 to 0
+			{ colors: ['#7cf57c', 'green'], steps: 7 }, // 0 to 14
+			{ colors: ['green', 'orange'], steps: 7 }, // 14 to 28
+			{ colors: ['orange', 'red'], steps: 7 }, // 28 to 42
+			{ colors: ['red', '#93001a'], steps: 4 } // 42 to 50
 		]
 	},
 	temperature_2m_anomaly: {
