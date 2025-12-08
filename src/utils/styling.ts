@@ -1,129 +1,38 @@
 import { COLOR_SCALES } from './color-scales';
 import { pressureHpaToIsaHeight } from './isa-height';
 
-import type { ColorScale, ColorScales, OpacityDefinition } from '../types';
+import type {
+	ColorScale,
+	ColorScales,
+	OpacityFunction,
+	RGB,
+	RGBA,
+	RGBAColorScale,
+	ResolvableColorScale
+} from '../types';
 
 export const getColor = (
-	colorScale: ColorScale,
-	px: number,
-	dark = false
-): [number, number, number] => {
-	const colors: [number, number, number][] = Array.isArray(colorScale.colors)
-		? colorScale.colors
-		: dark
-			? colorScale.colors.dark
-			: colorScale.colors.light;
-
-	const deltaPerIndex = (colorScale.max - colorScale.min) / colors.length;
+	colorScale: RGBAColorScale,
+	px: number
+): [number, number, number, number] => {
+	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
 	const index = Math.min(
-		colors.length - 1,
+		colorScale.colors.length - 1,
 		Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
 	);
 
-	return colors[index];
+	return colorScale.colors[index];
 };
 
-export const defaultPowerScaleOpacity: OpacityDefinition = {
-	mode: 'power',
-	params: {
-		exponent: 1.5,
-		denom: 1000,
-		opacityDark: 75,
-		opacityLight: 75
-	}
+const centeredPowerOpacity = (scale: number, exponent = 1.5, opacity = 75): OpacityFunction => {
+	return (px: number) => {
+		const frac = Math.min(Math.pow(Math.abs(px) / scale, exponent), 1);
+		return Math.max(0, Math.min(100, frac * opacity));
+	};
 };
 
-export const centeredPowerOpacity = (scale: number): OpacityDefinition => ({
-	mode: 'centered-power',
-	params: {
-		// 'scale' is the absolute value at which opacity reaches full
-		scale: scale,
-		exponent: 1.5,
-		opacityDark: 75,
-		opacityLight: 75
-	}
-});
-
-export const defaultConstantOpacity: OpacityDefinition = {
-	mode: 'constant',
-	params: {
-		opacityDark: 55,
-		opacityLight: 75
-	}
-};
-
-export const linearThenConstantWithThreshold = (threshold: number): OpacityDefinition => ({
-	mode: 'linear-then-constant',
-	params: {
-		threshold,
-		opacityDark: 50,
-		opacityLight: 100
-	}
-});
-
-export const defaultLinearThenConstantOpacity: OpacityDefinition = {
-	mode: 'linear-then-constant',
-	params: {
-		threshold: 1.5,
-		opacityDark: 50,
-		opacityLight: 100
-	}
-};
-
-/** Returns opacity between 0 and 100 */
-export const getOpacity = (
-	v: string,
-	px: number,
-	dark: boolean,
-	colorScale: ColorScale
-): number => {
-	const opacityConfig = colorScale.opacity ?? defaultConstantOpacity;
-	switch (opacityConfig.mode) {
-		case 'constant': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return scalePct;
-		}
-		case 'power': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return Math.min(
-				Math.max((Math.pow(Math.max(px, 0), params.exponent) / params.denom) * scalePct, 0),
-				100
-			);
-		}
-		case 'centered-power': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			const scaleVal = params.scale;
-			// fraction goes from 0 (px==0) to 1 (|px| >= scaleVal)
-			const frac = Math.min(Math.pow(Math.abs(px) / scaleVal, params.exponent), 1);
-			return frac * scalePct;
-		}
-		case 'power-then-constant': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			if (px < params.threshold) {
-				return Math.min(Math.pow(px, params.exponent) / params.denom, 1) * scalePct;
-			} else {
-				return scalePct;
-			}
-		}
-		case 'linear-then-constant': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return Math.min(px / params.threshold, 1) * scalePct;
-		}
-		case 'zero-then-constant': {
-			const params = opacityConfig.params;
-			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			if (px <= params.threshold) {
-				return 0;
-			} else {
-				return scalePct;
-			}
-		}
-	}
+const constantOpacity = (opacity: number = 75): OpacityFunction => {
+	return (_px: number) => opacity;
 };
 
 const COLOR_SCALES_WITH_ALIASES: ColorScales = {
@@ -160,7 +69,6 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
 	visibility: {
 		...COLOR_SCALES['geopotential_height'],
-		colors: COLOR_SCALES['geopotential_height'].colors,
 		min: 0,
 		max: 20000
 	},
@@ -176,14 +84,16 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	tertiary_swell_wave_period: COLOR_SCALES['swell_period']
 };
 
-const getOptionalColorScale = (variable: string): ColorScale | undefined => {
-	const exactMatch = COLOR_SCALES_WITH_ALIASES[variable];
+const getOptionalColorScale = (
+	variable: string,
+	colorScalesSource: ColorScales = COLOR_SCALES_WITH_ALIASES
+): ColorScale | undefined => {
+	const exactMatch = colorScalesSource[variable];
 	if (exactMatch) return exactMatch;
 	const parts = variable.split('_');
 	const lastIndex = parts.length - 1;
 
-	const scale =
-		COLOR_SCALES_WITH_ALIASES[parts[0] + '_' + parts[1]] ?? COLOR_SCALES_WITH_ALIASES[parts[0]];
+	const scale = colorScalesSource[parts[0] + '_' + parts[1]] ?? colorScalesSource[parts[0]];
 
 	// geopotential height variables -> derive typical height from ISA
 	if (variable.includes('geopotential_height')) {
@@ -209,18 +119,75 @@ const getOptionalColorScale = (variable: string): ColorScale | undefined => {
 		return getOptionalColorScale(parts.slice(0, -1).join('_'));
 	} else if (parts[lastIndex] == 'anomaly') {
 		const match = getOptionalColorScale(parts.slice(0, -1).join('_'));
-		if (match) {
+		if (match && match.type === 'resolvable') {
 			const delta = (match.max - match.min) / 5;
-			return { ...match, max: delta, min: -delta, opacity: centeredPowerOpacity(delta * 0.5) };
+			return { ...match, max: delta, min: -delta, opacityLight: centeredPowerOpacity(delta * 0.5) };
 		}
 	}
-	return (
-		COLOR_SCALES_WITH_ALIASES[parts[0] + '_' + parts[1]] ?? COLOR_SCALES_WITH_ALIASES[parts[0]]
-	);
+	return colorScalesSource[parts[0] + '_' + parts[1]] ?? colorScalesSource[parts[0]];
 };
 
-export const getColorScale = (variable: string): ColorScale => {
-	return getOptionalColorScale(variable) ?? COLOR_SCALES_WITH_ALIASES['temperature'];
+export const getColorScale = (
+	variable: string,
+	dark: boolean,
+	colorScalesSource: ColorScales = COLOR_SCALES_WITH_ALIASES
+): RGBAColorScale => {
+	const anyColorScale = getOptionalColorScale(variable) ?? colorScalesSource['temperature'];
+	return resolveColorScale(anyColorScale, dark);
+};
+
+export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RGBAColorScale => {
+	switch (colorScale.type) {
+		case 'resolvable':
+			return resolveResolvableColorScale(colorScale, dark);
+		case 'rgba':
+			return colorScale;
+		default: {
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = colorScale;
+			throw new Error(`Unknown color scale: ${_exhaustive}`);
+		}
+	}
+};
+
+const resolveResolvableColorScale = (
+	colorScale: ResolvableColorScale,
+	dark: boolean
+): RGBAColorScale => {
+	const colors: [number, number, number][] = Array.isArray(colorScale.colors)
+		? colorScale.colors
+		: dark
+			? colorScale.colors.dark
+			: colorScale.colors.light;
+
+	const opacity = dark ? colorScale.opacityDark : colorScale.opacityLight;
+	const opacityFn = opacity ?? constantOpacity(dark ? 55 : 75);
+	const rgbaColors = applyOpacityToColors(colors, colorScale, opacityFn);
+
+	return {
+		type: 'rgba',
+		min: colorScale.min,
+		max: colorScale.max,
+		unit: colorScale.unit,
+		colors: rgbaColors
+	};
+};
+
+const applyOpacityToColors = (
+	colors: RGB[],
+	colorScale: ResolvableColorScale,
+	opacityFn: OpacityFunction
+): RGBA[] => {
+	if (colors.length === 0) return [];
+
+	const steps = Math.max(1, colors.length - 1);
+	const delta = (colorScale.max - colorScale.min) / steps;
+
+	return colors.map((rgb, i) => {
+		const px = colorScale.min + delta * i;
+		const alpha = opacityFn(px);
+		return [...rgb, alpha] as RGBA;
+	});
 };
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;

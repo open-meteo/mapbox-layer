@@ -2,6 +2,7 @@ import type { ColorScales } from '../types';
 
 export const COLOR_SCALES: ColorScales = {
 	cape: {
+		type: 'resolvable',
 		unit: 'J/kg',
 		min: 0,
 		max: 4000,
@@ -107,17 +108,11 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 3, 0],
 			[255, 0, 0]
 		],
-		opacity: {
-			mode: 'power',
-			params: {
-				exponent: 1.5,
-				denom: 1000,
-				opacityDark: 75,
-				opacityLight: 75
-			}
-		}
+		opacityLight: (px: number) =>
+			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 75, 0), 100)
 	},
 	cloud_cover: {
+		type: 'resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -167,16 +162,10 @@ export const COLOR_SCALES: ColorScales = {
 				[57, 65, 74]
 			]
 		},
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 33,
-				opacityDark: 85,
-				opacityLight: 75
-			}
-		}
+		opacityLight: (px: number) => Math.min(px / 600, 1) * 75
 	},
 	convective_inhibition: {
+		type: 'resolvable',
 		unit: 'J/kg',
 		min: 0,
 		max: 500,
@@ -204,6 +193,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	convective_cloud_top: {
+		type: 'resolvable',
 		unit: 'm',
 		min: 0,
 		max: 6200,
@@ -309,16 +299,10 @@ export const COLOR_SCALES: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 600,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacityLight: (px: number) => Math.min(px / 600, 1) * 75
 	},
 	geopotential_height: {
+		type: 'resolvable',
 		unit: 'm',
 		min: 4600,
 		max: 6000,
@@ -366,6 +350,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	precipitation: {
+		type: 'resolvable',
 		unit: 'mm',
 		min: 0,
 		max: 20,
@@ -391,16 +376,10 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 1.5,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacityLight: (px: number) => Math.min(px / 1.5, 1) * 75
 	},
 	pressure: {
+		type: 'resolvable',
 		unit: 'hPa',
 		min: 950,
 		max: 1050,
@@ -458,6 +437,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	relative: {
+		type: 'resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -565,6 +545,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	shortwave: {
+		type: 'resolvable',
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
@@ -672,6 +653,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	snow_depth: {
+		type: 'resolvable',
 		unit: 'm',
 		min: 0,
 		max: 5,
@@ -697,16 +679,10 @@ export const COLOR_SCALES: ColorScales = {
 			[153, 0, 123],
 			[128, 0, 128]
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 0.15,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacityLight: (px: number) => Math.min(px / 0.15, 1) * 75
 	},
 	soil_moisture: {
+		type: 'resolvable',
 		unit: 'vol. %',
 		min: 0,
 		max: 0.5,
@@ -731,16 +707,10 @@ export const COLOR_SCALES: ColorScales = {
 			[89, 136, 206],
 			[81, 114, 190]
 		],
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 0.0001,
-				opacityDark: 50,
-				opacityLight: 100
-			}
-		}
+		opacityLight: (px: number) => Math.min(px / 0.0001, 1) * 75
 	},
 	swell: {
+		type: 'resolvable',
 		unit: 'm',
 		min: 0,
 		max: 10,
@@ -798,6 +768,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	swell_period: {
+		type: 'resolvable',
 		unit: 's',
 		min: 0,
 		max: 20,
@@ -825,6 +796,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	temperature: {
+		type: 'resolvable',
 		unit: '°C',
 		min: -80,
 		max: 50,
@@ -897,6 +869,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	temperature_2m_anomaly: {
+		type: 'resolvable',
 		unit: 'K',
 		min: -5,
 		max: 5,
@@ -924,6 +897,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	thunderstorm: {
+		type: 'resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -1029,17 +1003,11 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 5, 0],
 			[255, 0, 0]
 		],
-		opacity: {
-			mode: 'power',
-			params: {
-				exponent: 1.5,
-				denom: 1000,
-				opacityDark: 75,
-				opacityLight: 75
-			}
-		}
+		opacityLight: (px: number) =>
+			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 75, 0), 100)
 	},
 	uv: {
+		type: 'resolvable',
 		unit: '',
 		min: 0,
 		max: 12,
@@ -1059,6 +1027,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	vertical_velocity: {
+		type: 'resolvable',
 		unit: 'm/s',
 		min: -0.75,
 		max: 0.75,
@@ -1086,6 +1055,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	wind: {
+		type: 'resolvable',
 		unit: 'm/s',
 		min: 0,
 		max: 60,
@@ -1131,15 +1101,11 @@ export const COLOR_SCALES: ColorScales = {
 			[117, 4, 17],
 			[116, 5, 5]
 		],
-		opacity: {
-			mode: 'power-then-constant',
-			params: {
-				exponent: 4,
-				denom: 20,
-				opacityDark: 50,
-				opacityLight: 100,
-				threshold: 2.7777777777777777
+		opacityLight: (px: number) => {
+			if (px < 2.7777777777777777) {
+				return Math.min(Math.pow(px, 4) / 20, 1) * 100;
 			}
+			return 100;
 		}
 	}
 };

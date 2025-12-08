@@ -14,14 +14,13 @@ export interface DataIdentityOptions {
 }
 
 export interface RenderOptions {
-	dark: boolean;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
 	resolutionFactor: 0.5 | 1 | 2;
 	drawGrid: boolean;
 	drawArrows: boolean;
 	drawContours: boolean;
 	interval: number;
-	colorScale: ColorScale;
+	colorScale: RGBAColorScale;
 }
 
 export interface ParsedUrlComponents {
@@ -142,90 +141,40 @@ export type TilePixel = {
 	tileIndex: TileIndex;
 };
 
-type ColorWay = [number, number, number][];
-
-export type ColorsDefinition = ColorWay | { light: ColorWay; dark: ColorWay };
-
-export type ColorScale = {
+interface ColorScaleBase {
 	min: number;
 	max: number;
 	unit: string;
-	colors: ColorsDefinition;
-	opacity?: OpacityDefinition;
-};
+}
 
-type ConstantOpacity = {
-	mode: 'constant';
-	params: {
-		// Percentage 0..100
-		opacityDark: number;
-		opacityLight: number;
-	};
-};
+// Simple RGB color
+export type RGB = [number, number, number];
+export type RGBA = [number, number, number, number];
 
-type PowerOpacity = {
-	mode: 'power';
-	params: {
-		// px ** exponent / denom * {opacityDark|opacityLight}
-		exponent: number;
-		denom: number;
-		opacityDark: number;
-		opacityLight: number;
-	};
-};
+// Color definitions can be single or themed
+export type ColorDefinition = RGB[] | { light: RGB[]; dark: RGB[] };
 
-type CenteredPowerOpacity = {
-	mode: 'centered-power';
-	params: {
-		exponent: number;
-		// Percentage 0..100
-		opacityDark: number;
-		opacityLight: number;
-		scale: number;
-	};
-};
+// Opacity function type
+export type OpacityFunction = (px: number) => number;
 
-type LinearThenConstantOpacity = {
-	mode: 'linear-then-constant';
-	params: {
-		threshold: number;
-		opacityDark: number;
-		opacityLight: number;
-	};
-};
+// The two color scale variants
+export interface RGBAColorScale extends ColorScaleBase {
+	type: 'rgba';
+	colors: RGBA[];
+}
 
-type ZeroThenConstantOpacity = {
-	mode: 'zero-then-constant';
-	params: {
-		opacityDark: number;
-		opacityLight: number;
-		threshold: number;
-	};
-};
+export interface ResolvableColorScale extends ColorScaleBase {
+	type: 'resolvable';
+	colors: ColorDefinition;
+	opacityLight?: OpacityFunction;
+	opacityDark?: OpacityFunction;
+}
 
-type PowerThenConstantOpacity = {
-	mode: 'power-then-constant';
-	params: {
-		// px ** exponent / denom * {opacityDark|opacityLight}
-		exponent: number;
-		denom: number;
-		opacityDark: number;
-		opacityLight: number;
-		threshold: number;
-	};
-};
+// Union type with discriminant
+export type ColorScale = RGBAColorScale | ResolvableColorScale;
 
-export type OpacityDefinition =
-	| ConstantOpacity
-	| PowerOpacity
-	| CenteredPowerOpacity
-	| LinearThenConstantOpacity
-	| ZeroThenConstantOpacity
-	| PowerThenConstantOpacity;
-
-export type ColorScales = {
-	[key: string]: ColorScale;
-};
+// Dictionary of color scales
+export type ColorScales = Record<string, ColorScale>;
 
 export type InterpolationMethod = 'none' | 'linear' | 'hermite2d';
 

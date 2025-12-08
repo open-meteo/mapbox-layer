@@ -99,10 +99,9 @@ const defaultResolveRenderOptions = (
 	const drawContours = params.get('contours') === 'true';
 	const interval = Number(params.get('interval')) || 0;
 
-	const colorScale = colorScales[dataOptions.variable] ?? getColorScale(dataOptions.variable);
+	const colorScale = getColorScale(dataOptions.variable, dark, colorScales);
 
 	return {
-		dark,
 		tileSize,
 		resolutionFactor,
 		drawGrid,

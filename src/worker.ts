@@ -4,7 +4,7 @@ import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { tile2lat, tile2lon } from './utils/math';
-import { getColor, getOpacity } from './utils/styling';
+import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
 
@@ -22,10 +22,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	}
 
 	if (message.data.type == 'getImage') {
-		const dark = message.data.renderOptions.dark;
 		const tileSize = message.data.renderOptions.tileSize;
 		const colorScale = message.data.renderOptions.colorScale;
-		const variable = message.data.dataOptions.variable;
 
 		const pixels = tileSize * tileSize;
 		// Initialized with zeros
@@ -41,11 +39,11 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				const px = grid.getLinearInterpolatedValue(values, lat, lon);
 
 				if (isFinite(px)) {
-					const color = getColor(colorScale, px, dark);
+					const color = getColor(colorScale, px);
 					rgba[4 * ind] = color[0];
 					rgba[4 * ind + 1] = color[1];
 					rgba[4 * ind + 2] = color[2];
-					rgba[4 * ind + 3] = 2.55 * getOpacity(variable, px, dark, colorScale);
+					rgba[4 * ind + 3] = 2.55 * color[3];
 				}
 			}
 		}

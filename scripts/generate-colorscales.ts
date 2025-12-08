@@ -1,15 +1,11 @@
-import {
-	defaultLinearThenConstantOpacity,
-	defaultPowerScaleOpacity,
-	linearThenConstantWithThreshold
-} from '../src/utils/styling';
+import '../src/utils/styling';
 import { color } from 'd3-color';
 import { interpolateHsl, interpolateRgb } from 'd3-interpolate';
 import { writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-import type { ColorScale, ColorsDefinition, OpacityDefinition } from '../src/types';
+import type { RGB } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,6 +41,28 @@ function interpolateColorScale(
 	return rgbArray;
 }
 
+const linearThenConstantWithThreshold = (threshold: number = 1.5, opacity: number = 75): string => {
+	return `(px: number) => Math.min(px / ${threshold}, 1) * ${opacity}`;
+};
+
+const powerScaleOpacity = (exponent = 1.5, denom = 1000, opacity = 75): string => {
+	return `(px: number) => Math.min(Math.max((Math.pow(Math.max(px, 0), ${exponent}) / ${denom}) * ${opacity}, 0), 100)`;
+};
+
+const powerThenConstant = (
+	threshold: number = 1.5,
+	exponent = 1.5,
+	denom = 1000,
+	opacity = 75
+): string => {
+	return `(px: number) => {
+		if (px < ${threshold}) {
+			return Math.min(Math.pow(px, ${exponent}) / ${denom}, 1) * ${opacity};
+		}
+		return ${opacity};
+	}`;
+};
+
 const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	cape: {
 		unit: 'J/kg',
@@ -52,7 +70,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 4000,
 		steps: 100,
 		colors: ['green', 'orange', 'red'],
-		opacity: defaultPowerScaleOpacity
+		opacityLight: powerScaleOpacity()
 	},
 	cloud_cover: {
 		unit: '%',
@@ -63,14 +81,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			light: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
 			dark: ['#0b1220', '#131827', '#1b2431', '#27303a', '#39414a']
 		},
-		opacity: {
-			mode: 'linear-then-constant',
-			params: {
-				threshold: 33,
-				opacityDark: 85,
-				opacityLight: 75
-			}
-		}
+		opacityLight: linearThenConstantWithThreshold(600)
 	},
 	convective_inhibition: {
 		unit: 'J/kg',
@@ -85,7 +96,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 6200,
 		steps: 100,
 		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
-		opacity: linearThenConstantWithThreshold(600)
+		opacityLight: linearThenConstantWithThreshold(600)
 	},
 	geopotential_height: {
 		unit: 'm',
@@ -104,7 +115,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 5 },
 			{ colors: ['orange', 'red'], steps: 10 }
 		],
-		opacity: defaultLinearThenConstantOpacity
+		opacityLight: linearThenConstantWithThreshold(1.5)
 	},
 	pressure: {
 		unit: 'hPa',
@@ -137,7 +148,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['yellow', 'red'], steps: 7 },
 			{ colors: ['red', 'purple'], steps: 6 }
 		],
-		opacity: linearThenConstantWithThreshold(0.15)
+		opacityLight: linearThenConstantWithThreshold(0.15)
 	},
 	soil_moisture: {
 		unit: 'vol. %',
@@ -150,7 +161,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			// { colors: ['#c4ffad', '#a4f5ff'], steps: 2 },
 			{ colors: ['#a4f5ff', '#5172be'], steps: 7 }
 		],
-		opacity: linearThenConstantWithThreshold(0.0001)
+		opacityLight: linearThenConstantWithThreshold(0.0001)
 	},
 	swell: {
 		unit: 'm',
@@ -207,7 +218,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['green', 'orange'], steps: 33 },
 			{ colors: ['orange', 'red'], steps: 34 }
 		],
-		opacity: defaultPowerScaleOpacity
+		opacityLight: powerScaleOpacity()
 	},
 	uv: {
 		unit: '',
@@ -235,16 +246,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['red', 'purple'], steps: 10 }, // 30 to 45 m/s
 			{ colors: ['purple', '#740505'], steps: 10 } // 45 to 60 m/s
 		],
-		opacity: {
-			mode: 'power-then-constant',
-			params: {
-				exponent: 4,
-				denom: 20,
-				opacityDark: 50,
-				opacityLight: 100,
-				threshold: 10 / 3.6
-			}
-		}
+		opacityLight: powerThenConstant(10 / 3.6, 4, 20, 100)
 	}
 };
 
@@ -264,18 +266,17 @@ function generateFromColorsInput(colorsInput: string[] | ColorSegment[], default
 	return interpolateColorScale(colorStrings, defaultSteps, 'hsl');
 }
 
-function generateColorScales(): Record<string, ColorsDefinition> {
-	const colorScales: Record<string, ColorScale> = {};
+function generateColorScales(): Record<string, GeneratedColorScale> {
+	const colorScales: Record<string, GeneratedColorScale> = {};
 
 	// Helper function to generate a single color scale (supports dual/light-dark inputs)
-	function generateSingleColorScale(definition: ColorScaleDefinition) {
-		const { steps, colors, opacity } = definition;
+	const generateSingleColorScale = (definition: ColorScaleDefinition): GeneratedColorScale => {
+		const { steps, colors, opacityLight, opacityDark } = definition;
 
 		// Dual (light/dark) input case
 		if (colors && !Array.isArray(colors) && 'light' in colors && 'dark' in colors) {
-			const dual = colors as DualColorInput;
-			const lightGenerated = generateFromColorsInput(dual.light, steps);
-			const darkGenerated = generateFromColorsInput(dual.dark, steps);
+			const lightGenerated = generateFromColorsInput(colors.light, steps);
+			const darkGenerated = generateFromColorsInput(colors.dark, steps);
 
 			return {
 				...definition,
@@ -283,15 +284,16 @@ function generateColorScales(): Record<string, ColorsDefinition> {
 					light: lightGenerated,
 					dark: darkGenerated
 				},
-				opacity
+				opacityLight,
+				opacityDark
 			};
 		}
 
 		// Single input case (string[] or ColorSegment[])
 		const generated = generateFromColorsInput(colors as string[] | ColorSegment[], steps);
 
-		return { ...definition, colors: generated, opacity };
-	}
+		return { ...definition, colors: generated, opacityLight, opacityDark };
+	};
 
 	// Generate base color scales
 	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
@@ -301,15 +303,9 @@ function generateColorScales(): Record<string, ColorsDefinition> {
 	return colorScales;
 }
 
-function serializeOpacity(opacity: OpacityDefinition): string {
+function serializeOpacity(opacity: string): string {
 	if (!opacity) return '';
-	const mode = opacity.mode;
-	const params = opacity.params || {};
-	let paramsLines = '';
-	for (const [k, v] of Object.entries(params)) {
-		paramsLines += `\n\t\t\t${k}: ${JSON.stringify(v)},`;
-	}
-	return `\n\t\topacity: {\n\t\t\tmode: '${mode}',\n\t\t\tparams: {${paramsLines}\n\t\t\t}\n\t\t},`;
+	return `\n\t\topacityLight: (${opacity}),`;
 }
 
 function generateTypeScript(): void {
@@ -319,10 +315,11 @@ function generateTypeScript(): void {
 
 export const COLOR_SCALES: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
-		const { min, max, colors, unit, opacity } = colorScale;
+		const { min, max, colors, unit, opacityLight } = colorScale;
 
 		content += `
 		'${key}': {
+		type: 'resolvable',
 		unit: '${unit}',
 		min: ${min},
 		max: ${max},
@@ -348,8 +345,8 @@ export const COLOR_SCALES: ColorScales = {`;
 			content += `],},`;
 		}
 
-		if (opacity) {
-			content += serializeOpacity(opacity);
+		if (opacityLight) {
+			content += serializeOpacity(opacityLight);
 		}
 		content += `
 		},`;
@@ -368,18 +365,27 @@ interface ColorSegment {
 	steps: number;
 }
 
-type DualColorInput = {
-	light: string[] | ColorSegment[];
-	dark: string[] | ColorSegment[];
-};
-
-type ColorInput = string[] | ColorSegment[] | DualColorInput;
+type ColorInput =
+	| string[]
+	| ColorSegment[]
+	| { light: string[] | ColorSegment[]; dark: string[] | ColorSegment[] };
 
 interface ColorScaleDefinition {
 	min: number;
 	max: number;
 	steps: number;
 	colors: ColorInput;
-	opacity?: OpacityDefinition;
+	opacityLight?: string;
+	opacityDark?: string;
 	unit: string;
+}
+
+// This represents the intermediate generated structure (before final serialization)
+interface GeneratedColorScale {
+	min: number;
+	max: number;
+	unit: string;
+	colors: RGB[] | { light: RGB[]; dark: RGB[] };
+	opacityLight?: string;
+	opacityDark?: string;
 }
