@@ -70,6 +70,7 @@ export const defaultLinearThenConstantOpacity: OpacityDefinition = {
 	}
 };
 
+/** Returns opacity between 0 and 100 */
 export const getOpacity = (
 	v: string,
 	px: number,
@@ -81,18 +82,14 @@ export const getOpacity = (
 		case 'constant': {
 			const params = opacityConfig.params;
 			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return 255 * (scalePct / 100);
+			return scalePct;
 		}
 		case 'power': {
 			const params = opacityConfig.params;
 			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return (
-				255 *
-				(Math.min(
-					Math.max((Math.pow(Math.max(px, 0), params.exponent) / params.denom) * scalePct, 0),
-					100
-				) /
-					100)
+			return Math.min(
+				Math.max((Math.pow(Math.max(px, 0), params.exponent) / params.denom) * scalePct, 0),
+				100
 			);
 		}
 		case 'centered-power': {
@@ -101,21 +98,21 @@ export const getOpacity = (
 			const scaleVal = params.scale;
 			// fraction goes from 0 (px==0) to 1 (|px| >= scaleVal)
 			const frac = Math.min(Math.pow(Math.abs(px) / scaleVal, params.exponent), 1);
-			return 255 * (frac * (scalePct / 100));
+			return frac * scalePct;
 		}
 		case 'power-then-constant': {
 			const params = opacityConfig.params;
 			const scalePct = dark ? params.opacityDark : params.opacityLight;
 			if (px < params.threshold) {
-				return (255 * Math.min(Math.pow(px, params.exponent) / params.denom, 1) * scalePct) / 100;
+				return Math.min(Math.pow(px, params.exponent) / params.denom, 1) * scalePct;
 			} else {
-				return 255 * (scalePct / 100);
+				return scalePct;
 			}
 		}
 		case 'linear-then-constant': {
 			const params = opacityConfig.params;
 			const scalePct = dark ? params.opacityDark : params.opacityLight;
-			return (255 * Math.min(px / params.threshold, 1) * scalePct) / 100;
+			return Math.min(px / params.threshold, 1) * scalePct;
 		}
 		case 'zero-then-constant': {
 			const params = opacityConfig.params;
@@ -123,7 +120,7 @@ export const getOpacity = (
 			if (px <= params.threshold) {
 				return 0;
 			} else {
-				return 255 * (scalePct / 100);
+				return scalePct;
 			}
 		}
 	}
