@@ -86,7 +86,7 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 
 const getOptionalColorScale = (
 	variable: string,
-	colorScalesSource: ColorScales = COLOR_SCALES_WITH_ALIASES
+	colorScalesSource: ColorScales
 ): ColorScale | undefined => {
 	const exactMatch = colorScalesSource[variable];
 	if (exactMatch) return exactMatch;
@@ -116,9 +116,9 @@ const getOptionalColorScale = (
 	}
 
 	if (['mean', 'max', 'min'].includes(parts[lastIndex])) {
-		return getOptionalColorScale(parts.slice(0, -1).join('_'));
+		return getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
 	} else if (parts[lastIndex] == 'anomaly') {
-		const match = getOptionalColorScale(parts.slice(0, -1).join('_'));
+		const match = getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
 		if (match && match.type === 'resolvable') {
 			const delta = (match.max - match.min) / 5;
 			return { ...match, max: delta, min: -delta, opacityLight: centeredPowerOpacity(delta * 0.5) };
@@ -132,12 +132,14 @@ export const getColorScale = (
 	dark: boolean,
 	colorScalesSource: ColorScales = COLOR_SCALES_WITH_ALIASES
 ): RGBAColorScale => {
-	const anyColorScale = getOptionalColorScale(variable) ?? colorScalesSource['temperature'];
+	const anyColorScale =
+		getOptionalColorScale(variable, colorScalesSource) ?? colorScalesSource['temperature'];
 	return resolveColorScale(anyColorScale, dark);
 };
 
 export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RGBAColorScale => {
 	switch (colorScale.type) {
+		case undefined:
 		case 'resolvable':
 			return resolveResolvableColorScale(colorScale, dark);
 		case 'rgba':
