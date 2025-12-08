@@ -178,7 +178,8 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['#af0aaf', '#0034ff'], steps: 10 }, // -30 to -10
 			{ colors: ['#0034ff', '#a4eef5'], steps: 5 }, // -10 to 0
 			{ colors: ['#7cf57c', 'green'], steps: 7 }, // 0 to 14
-			{ colors: ['green', 'orange'], steps: 7 }, // 14 to 28
+			{ colors: ['green', 'yellow'], steps: 4 }, // 14 to 20
+			{ colors: ['yellow', 'orange'], steps: 3 }, // 14 to 28
 			{ colors: ['orange', 'red'], steps: 7 }, // 28 to 42
 			{ colors: ['red', '#93001a'], steps: 4 } // 42 to 50
 		]
