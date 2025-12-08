@@ -253,53 +253,5 @@ export const getColorScaleMinMaxScaled = (variable: string) => {
 		};
 	}
 
-	// Custom wind-speed breakpoints (m/s) by pressure level (hPa).
-	// These are chosen to reflect typical magnitude ranges at different levels
-	// (surface / boundary layer -> mid-troposphere -> upper-level jet regions).
-	// If an exact level isn't present, we'll pick the nearest defined breakpoint.
-	const windBreakpoints: Record<number, { min: number; max: number }> = {
-		1000: { min: 0, max: 30 },
-		850: { min: 0, max: 35 },
-		700: { min: 0, max: 40 },
-		500: { min: 0, max: 50 },
-		400: { min: 0, max: 60 },
-		300: { min: 0, max: 70 },
-		250: { min: 0, max: 75 },
-		200: { min: 0, max: 80 },
-		150: { min: 0, max: 80 },
-		100: { min: 0, max: 60 }
-	};
-
-	if (variable.includes('wind')) {
-		// find exact or nearest breakpoint
-		const keys = Object.keys(windBreakpoints).map((k) => Number(k));
-		// prefer exact match
-		if (windBreakpoints[levelNum]) {
-			const bp = windBreakpoints[levelNum];
-			return {
-				...scale,
-				min: bp.min,
-				max: bp.max
-			};
-		}
-		// otherwise choose nearest breakpoint level
-		let nearest = keys[0];
-		let bestDelta = Math.abs(levelNum - nearest);
-		for (let i = 1; i < keys.length; i++) {
-			const k = keys[i];
-			const d = Math.abs(levelNum - k);
-			if (d < bestDelta) {
-				bestDelta = d;
-				nearest = k;
-			}
-		}
-		const bp = windBreakpoints[nearest];
-		return {
-			...scale,
-			min: bp.min,
-			max: bp.max
-		};
-	}
-
 	return scale;
 };
