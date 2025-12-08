@@ -57,10 +57,20 @@ export const variableOptions = [
 	{ value: 'potential_evapotranspiration', label: 'Potential Evapotranspiration' },
 
 	{ value: 'precipitation', label: 'Precipitation' },
+	{ value: 'precipitation_anomaly', label: 'Precipitation Anomaly' },
+	{ value: 'precipitation_anomaly_gt0', label: 'Precipitation Anomaly GT0' },
+	{ value: 'precipitation_anomaly_gt10', label: 'Precipitation Anomaly GT10' },
+	{ value: 'precipitation_anomaly_gt20', label: 'Precipitation EFI' },
+	{ value: 'precipitation_efi', label: 'Precipitation Probability' },
+	{ value: 'precipitation_mean', label: 'Precipitation Mean' },
 	{ value: 'precipitation_probability', label: 'Precipitation Probability' },
+	{ value: 'precipitation_sot90', label: 'Precipitation SOT90' },
 	{ value: 'precipitation_type', label: 'Precipitation Type' },
 
 	{ value: 'pressure_msl', label: 'Pressure Mean Sea Level' },
+	{ value: 'pressure_msl_anomaly', label: 'Pressure Mean Sea Level Anomaly' },
+	{ value: 'pressure_msl_anomaly_gt0', label: 'Pressure Mean Sea Level Anomaly GT0' },
+	{ value: 'pressure_msl_mean', label: 'Pressure Mean Sea Level Mean' },
 
 	{ value: 'rain', label: 'Rain' },
 	{ value: 'rain_probability', label: 'Rain Probability' },
@@ -69,33 +79,46 @@ export const variableOptions = [
 
 	{ value: 'roughness_length', label: 'Roughness Length' },
 
-	{ value: 'showers', label: 'Showers' },
-
-	{ value: 'snow', label: 'Snow' },
-	{ value: 'snow_depth', label: 'Snow Depth' },
-	{ value: 'snow_depth_water_equivalent', label: 'Snow Depth Water Equivalent' },
-	{ value: 'snow_density', label: 'Snow Density' },
-
-	{ value: 'snowfall', label: 'Snowfall' },
-	{ value: 'snowfall_probability', label: 'Snowfall Probability' },
-	{ value: 'snowfall_height', label: 'Snowfall Height' },
-	{ value: 'snowfall_water_equivalent', label: 'Snow Water Equivalent' },
-
-	{ value: 'shortwave_radiation', label: 'Shortwave Solar Radiation' },
-
-	{ value: 'sunshine_duration', label: 'Sunshine Duration' },
-
-	{ value: 'surface_temperature', label: 'Surface Temperature' },
-
-	{ value: 'swell_wave_height', label: 'Swell Wave Height' },
-	{ value: 'swell_wave_peak_period', label: 'Swell Wave Peak Period' },
-	{ value: 'swell_wave_period', label: 'Swell Wave Period' },
+	{ value: 'sea_surface_temperature_anomaly', label: 'Sea Surface Temperature Anomaly' },
+	{ value: 'sea_surface_temperature_mean', label: 'Sea Surface Temperature Mean' },
 
 	{ value: 'sensible_heat_flux', label: 'Sensible Heat Flux' },
 
 	{ value: 'secondary_swell_wave_height', label: 'Secondary Swell Wave Height & Direction' },
 	{ value: 'secondary_swell_wave_period', label: 'Secondary Swell Wave Period' },
 	{ value: 'secondary_swell_wave_direction', label: 'Secondary Swell Wave Direction' },
+
+	{ value: 'showers', label: 'Showers' },
+	{ value: 'showers_mean', label: 'Showers Mean' },
+
+	{ value: 'shortwave_radiation', label: 'Shortwave Solar Radiation' },
+
+	{ value: 'snow', label: 'Snow' },
+	{ value: 'snow_depth', label: 'Snow Depth' },
+	{ value: 'snow_depth_water_equivalent', label: 'Snow Depth Water Equivalent' },
+	{ value: 'snow_depth_water_equivalent_anomaly', label: 'Snow Depth Water Equivalent Anomaly' },
+	{ value: 'snow_depth_water_equivalent_mean', label: 'Snow Depth Water Equivalent Mean' },
+	{ value: 'snow_density', label: 'Snow Density' },
+	{ value: 'snow_density_anomaly', label: 'Snow Density Anomaly' },
+	{ value: 'snow_density_mean', label: 'Snow Density Mean' },
+
+	{ value: 'snowfall', label: 'Snowfall' },
+	{ value: 'snowfall_probability', label: 'Snowfall Probability' },
+	{ value: 'snowfall_height', label: 'Snowfall Height' },
+	{ value: 'snowfall_water_equivalent', label: 'Snow Water Equivalent' },
+	{ value: 'snowfall_water_equivalent_anomaly', label: 'Snow Water Equivalent Anomaly' },
+	{ value: 'snowfall_water_equivalent_mean', label: 'Snow Water Equivalent Mean' },
+
+	{ value: 'sunshine_duration', label: 'Sunshine Duration' },
+	{ value: 'sunshine_duration_anomaly', label: 'Sunshine Duration Anomaly' },
+	{ value: 'sunshine_duration_mean', label: 'Sunshine Duration Mean' },
+
+	{ value: 'surface_temperature', label: 'Surface Temperature' },
+	{ value: 'surface_temperature_anomaly_gt0', label: 'Surface Temperature Anomaly GT0' },
+
+	{ value: 'swell_wave_height', label: 'Swell Wave Height' },
+	{ value: 'swell_wave_peak_period', label: 'Swell Wave Peak Period' },
+	{ value: 'swell_wave_period', label: 'Swell Wave Period' },
 
 	{ value: 'temperature_2m_anomaly', label: 'Temperature (2m) Anomaly' },
 	{ value: 'temperature_2m_anomaly_gt0', label: 'Temperature (2m) Anomaly GT0' },
@@ -104,7 +127,14 @@ export const variableOptions = [
 	{ value: 'temperature_2m_anomaly_ltm0', label: 'Temperature (2m) Anomaly LTM0' },
 	{ value: 'temperature_2m_anomaly_ltm1', label: 'Temperature (2m) Anomaly LTM1' },
 	{ value: 'temperature_2m_anomaly_ltm2', label: 'Temperature (2m) Anomaly LTM2' },
+	{ value: 'temperature_2m_efi', label: 'Temperature (2m) EFI' },
 	{ value: 'temperature_2m_mean', label: 'Temperature (2m) Mean' },
+	{ value: 'temperature_2m_sot10', label: 'Temperature (2m) SOT10' },
+	{ value: 'temperature_2m_sot90', label: 'Temperature (2m) SOT90' },
+	{ value: 'temperature_max6h_2m_anomaly', label: 'Temperature Max 6h (2m) Anomaly' },
+	{ value: 'temperature_max6h_2m_mean', label: 'Temperature Max 6h (2m) Mean' },
+	{ value: 'temperature_min6h_2m_anomaly', label: 'Temperature Min 6h (2m) Anomaly' },
+	{ value: 'temperature_min6h_2m_mean', label: 'Temperature Min 6h (2m) Mean' },
 
 	{ value: 'tertiary_swell_wave_height', label: 'Tertiary Swell Wave Height & Direction' },
 	{ value: 'tertiary_swell_wave_period', label: 'Tertiary Swell Wave Period' },
@@ -112,6 +142,14 @@ export const variableOptions = [
 	{ value: 'thunderstorm_probability', label: 'Thunderstorm Probability' },
 
 	{ value: 'total_column_integrated_water_vapour', label: 'Total Column Integrated Water Vapour' },
+	{
+		value: 'total_column_integrated_water_vapour_anomaly',
+		label: 'Total Column Integrated Water Vapour Anomaly'
+	},
+	{
+		value: 'total_column_integrated_water_vapour_mean',
+		label: 'Total Column Integrated Water Vapour Mean'
+	},
 
 	{ value: 'uv_index', label: 'UV Index' },
 	{ value: 'uv_index_clear_sky', label: 'UV Index Clear Sky' },
@@ -130,6 +168,10 @@ export const variableOptions = [
 	{ value: 'wind_wave_height', label: 'Wind Wave Height' },
 	{ value: 'wind_wave_period', label: 'Wind Wave Period' },
 	{ value: 'wind_wave_peak_period', label: 'Wind Wave Peak Period' },
+	{ value: 'wind_u_component_10m_anomaly', label: 'Wind (10m) Anomaly' },
+	{ value: 'wind_u_component_10m_mean', label: 'Wind (10m) Mean' },
+	{ value: 'wind_u_component_100m_anomaly', label: 'Wind (100m) Anomaly' },
+	{ value: 'wind_u_component_100m_mean', label: 'Wind (100m) Mean' },
 
 	{ value: 'updraft', label: 'Updraft' },
 
