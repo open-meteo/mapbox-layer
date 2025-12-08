@@ -142,11 +142,15 @@ export type TilePixel = {
 	tileIndex: TileIndex;
 };
 
+type ColorWay = [number, number, number][];
+
+export type ColorsDefinition = ColorWay | { light: ColorWay; dark: ColorWay };
+
 export type ColorScale = {
 	min: number;
 	max: number;
 	unit: string;
-	colors: [number, number, number][];
+	colors: ColorsDefinition;
 	opacity?: OpacityDefinition;
 };
 

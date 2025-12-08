@@ -9,7 +9,7 @@ import { writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-import type { ColorScale, OpacityDefinition } from '../src/types';
+import type { ColorScale, ColorsDefinition, OpacityDefinition } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -59,7 +59,10 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		min: 0,
 		max: 100,
 		steps: 20,
-		colors: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
+		colors: {
+			light: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
+			dark: ['#0b1220', '#131827', '#1b2431', '#27303a', '#39414a']
+		},
 		opacity: {
 			mode: 'linear-then-constant',
 			params: {
@@ -245,41 +248,54 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	}
 };
 
-function generateColorScales(): Record<string, ColorScale> {
+function generateFromColorsInput(colorsInput: string[] | ColorSegment[], defaultSteps: number) {
+	// If it's an array of ColorSegment objects (multi segment), build them
+	if (Array.isArray(colorsInput) && colorsInput.length > 0 && typeof colorsInput[0] === 'object') {
+		const segments = colorsInput as ColorSegment[];
+		const out: [number, number, number][] = [];
+		for (const seg of segments) {
+			out.push(...interpolateColorScale(seg.colors, seg.steps, 'hsl'));
+		}
+		return out;
+	}
+
+	// Otherwise assume it's a simple string[] list of colors
+	const colorStrings = colorsInput as string[];
+	return interpolateColorScale(colorStrings, defaultSteps, 'hsl');
+}
+
+function generateColorScales(): Record<string, ColorsDefinition> {
 	const colorScales: Record<string, ColorScale> = {};
 
-	// Helper function to generate a single color scale
-	function generateSingleColorScale(definition: ColorScaleDefinition): ColorScale {
+	// Helper function to generate a single color scale (supports dual/light-dark inputs)
+	function generateSingleColorScale(definition: ColorScaleDefinition) {
 		const { steps, colors, opacity } = definition;
 
-		let generatedColors: [number, number, number][];
+		// Dual (light/dark) input case
+		if (colors && !Array.isArray(colors) && 'light' in colors && 'dark' in colors) {
+			const dual = colors as DualColorInput;
+			const lightGenerated = generateFromColorsInput(dual.light, steps);
+			const darkGenerated = generateFromColorsInput(dual.dark, steps);
 
-		if (
-			Array.isArray(colors) &&
-			colors.length > 0 &&
-			typeof colors[0] === 'object' &&
-			'colors' in colors[0]
-		) {
-			// Handle ColorSegment[] - multi-segment color scales
-			const segments = colors as ColorSegment[];
-			generatedColors = [];
-
-			for (const segment of segments) {
-				const segmentColors = interpolateColorScale(segment.colors, segment.steps, 'hsl');
-				generatedColors.push(...segmentColors);
-			}
-		} else {
-			// Handle string[] - simple color array
-			const colorStrings = colors as string[];
-			generatedColors = interpolateColorScale(colorStrings, steps, 'hsl');
+			return {
+				...definition,
+				colors: {
+					light: lightGenerated,
+					dark: darkGenerated
+				},
+				opacity
+			};
 		}
 
-		return { ...definition, colors: generatedColors, opacity };
+		// Single input case (string[] or ColorSegment[])
+		const generated = generateFromColorsInput(colors as string[] | ColorSegment[], steps);
+
+		return { ...definition, colors: generated, opacity };
 	}
 
 	// Generate base color scales
 	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
-		colorScales[key] = generateSingleColorScale(definition);
+		colorScales[key] = generateSingleColorScale(definition as ColorScaleDefinition);
 	}
 
 	return colorScales;
@@ -306,20 +322,37 @@ export const COLOR_SCALES: ColorScales = {`;
 		const { min, max, colors, unit, opacity } = colorScale;
 
 		content += `
-	'${key}': {
+		'${key}': {
 		unit: '${unit}',
 		min: ${min},
 		max: ${max},
-		colors: [`;
-		for (const color of colors) {
-			content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
+		`;
+
+		// Colors can be either an array or an object with light/dark
+		if (Array.isArray(colors)) {
+			content += `colors: [`;
+			for (const color of colors) {
+				content += `\n			[${color[0]}, ${color[1]}, ${color[2]}],`;
+			}
+			content += `],`;
+		} else {
+			// object form
+			content += `colors: { light: [`;
+			for (const color of colors.light) {
+				content += `[${color[0]}, ${color[1]}, ${color[2]}],`;
+			}
+			content += `], dark: [`;
+			for (const color of colors.dark) {
+				content += `[${color[0]}, ${color[1]}, ${color[2]}],`;
+			}
+			content += `],},`;
 		}
-		content += `],`;
+
 		if (opacity) {
 			content += serializeOpacity(opacity);
 		}
 		content += `
-	},`;
+		},`;
 	}
 	content += `}`;
 
@@ -335,11 +368,18 @@ interface ColorSegment {
 	steps: number;
 }
 
+type DualColorInput = {
+	light: string[] | ColorSegment[];
+	dark: string[] | ColorSegment[];
+};
+
+type ColorInput = string[] | ColorSegment[] | DualColorInput;
+
 interface ColorScaleDefinition {
 	min: number;
 	max: number;
 	steps: number;
-	colors: string[] | ColorSegment[];
+	colors: ColorInput;
 	opacity?: OpacityDefinition;
 	unit: string;
 }

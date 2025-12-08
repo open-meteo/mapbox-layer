@@ -3,13 +3,24 @@ import { pressureHpaToIsaHeight } from './isa-height';
 
 import type { ColorScale, ColorScales, OpacityDefinition } from '../types';
 
-export const getColor = (colorScale: ColorScale, px: number): [number, number, number] => {
-	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
+export const getColor = (
+	colorScale: ColorScale,
+	px: number,
+	dark = false
+): [number, number, number] => {
+	const colors: [number, number, number][] = Array.isArray(colorScale.colors)
+		? colorScale.colors
+		: dark
+			? colorScale.colors.dark
+			: colorScale.colors.light;
+
+	const deltaPerIndex = (colorScale.max - colorScale.min) / colors.length;
 	const index = Math.min(
-		colorScale.colors.length - 1,
+		colors.length - 1,
 		Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
 	);
-	return colorScale.colors[index];
+
+	return colors[index];
 };
 
 export const defaultPowerScaleOpacity: OpacityDefinition = {
@@ -152,7 +163,7 @@ const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
 	visibility: {
 		...COLOR_SCALES['geopotential_height'],
-		colors: COLOR_SCALES['geopotential_height'].colors.reverse(),
+		colors: COLOR_SCALES['geopotential_height'].colors,
 		min: 0,
 		max: 20000
 	},
