@@ -35,7 +35,8 @@ export interface ParsedRequest {
 	stateKey: string;
 	tileIndex: TileIndex | null;
 	renderOptions: RenderOptions; // Only rendering-related params
-	dataOptions: DataIdentityOptions; // Only data-identity params
+	dataOptions: DataIdentityOptions; // Only data-identity params,
+	clippingOptions: ClippingOptions;
 }
 
 export interface OmUrlState {
@@ -62,6 +63,7 @@ export interface OmProtocolSettings {
 	// dynamic
 	colorScales: ColorScales;
 	domainOptions: Domain[];
+	clippingOptions: ClippingOptions;
 
 	/**
 	 * Optional custom resolver for URL settings.
@@ -111,6 +113,7 @@ export interface TileRequest {
 	tileIndex: TileIndex;
 	renderOptions: RenderOptions;
 	dataOptions: DataIdentityOptions;
+	clippingOptions: ClippingOptions;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;
@@ -334,3 +337,7 @@ export interface DomainMetaData {
 	valid_times: string[];
 	variables: string[];
 }
+
+export type ZoomLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+
+export type ClippingOptions = { polygons: [number, number][][]; bounds: Bounds } | undefined;

@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { tile2lat, tile2lon } from './utils/math';
+import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
@@ -24,6 +24,57 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const tileSize = message.data.renderOptions.tileSize;
 		const colorScale = message.data.renderOptions.colorScale;
+
+		const clippingOptions = message.data.clippingOptions;
+
+		// let tileLiesInBoundaries = true;
+		// let tileLiesWithinBoundaries = true;
+		// let boundaries, polygons;
+		// if (clippingOptions) {
+		// 	try {
+		// 		// optional dependancy
+		// 		// const turf = await import('@turf/turf');
+
+		// 		tileLiesInBoundaries = false;
+		// 		tileLiesWithinBoundaries = false;
+		// 		const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
+
+		// 		// zoomlevel 0 should be 0.25 zoomlevel 12 should be 0.00025 (works for both example sources)
+		// 		const tolerance = 0.00025 * 10 ** ((12 - z) / 3);
+
+		// 		boundaries = [];
+		// 		polygons = [];
+		// 		for (const feature of clippingOptions.geojson.features) {
+		// 			const boundary = turf.polygon(feature.geometry.coordinates[0]);
+		// 			// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
+		// 			const simplifiedBoundary = turf.simplify(boundary, {
+		// 				tolerance: tolerance,
+		// 				highQuality: true
+		// 			});
+		// 			if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
+		// 				tileLiesInBoundaries = true;
+		// 			}
+		// 			if (!tileLiesWithinBoundaries && turf.booleanWithin(tileBbox, simplifiedBoundary)) {
+		// 				tileLiesWithinBoundaries = true;
+		// 			}
+
+		// 			boundaries.push(simplifiedBoundary);
+
+		// 			for (const coordinates of simplifiedBoundary.geometry.coordinates) {
+		// 				polygons.push(
+		// 					coordinates.map((coordinate) => {
+		// 						const polyX = lon2tile(coordinate[0], z);
+		// 						const polyY = lat2tile(coordinate[1], z);
+		// 						return [(polyX - x) * tileSize, (polyY - y) * tileSize];
+		// 					})
+		// 				);
+		// 			}
+		// 		}
+		// 	} catch (e) {
+		// 		console.log(e);
+		// 		throw new Error('Could not load @turf/turf');
+		// 	}
+		// }
 
 		const pixels = tileSize * tileSize;
 		// Initialized with zeros
@@ -48,10 +99,51 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			}
 		}
 
-		const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
-			premultiplyAlpha: 'premultiply'
-		});
-		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
+		const imageData = new ImageData(rgba, tileSize, tileSize);
+
+		const canvas = new OffscreenCanvas(tileSize, tileSize);
+		const context = canvas.getContext('2d');
+
+		if (!context) {
+			throw new Error('Could not initialise canvas context');
+		}
+
+		context.putImageData(imageData, 0, 0);
+
+		let blob;
+		if (clippingOptions && clippingOptions.polygons) {
+			// create 2nd OffscreenCanvas to handle clipping
+			const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
+			const clipContext = clipCanvas.getContext('2d');
+
+			if (!clipContext) {
+				throw new Error('Could not initialise canvas context');
+			}
+
+			clipContext.beginPath();
+			for (const polygon of clippingOptions.polygons) {
+				for (const [index, [polyX, polyY]] of polygon.entries()) {
+					const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
+					const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+					if (index === 0) {
+						clipContext.moveTo(polyXtile, polyYtile);
+					} else {
+						clipContext.lineTo(polyXtile, polyYtile);
+					}
+				}
+			}
+			clipContext.closePath();
+
+			clipContext.clip('nonzero');
+			clipContext.drawImage(canvas, 0, 0);
+
+			blob = await clipCanvas.convertToBlob({ type: 'image/png' });
+		} else {
+			blob = await canvas.convertToBlob({ type: 'image/png' });
+		}
+
+		const arrayBuffer = await blob.arrayBuffer();
+		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const directions = message.data.data.directions;
 
