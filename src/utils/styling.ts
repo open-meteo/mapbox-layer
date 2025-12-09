@@ -164,7 +164,6 @@ const resolveResolvableColorScale = (
 
 	const opacityFn = normalizeOpacity(colorScale.opacity, dark);
 	const rgbaColors = applyOpacityToColors(colors, colorScale, opacityFn);
-	console.log(rgbaColors);
 
 	return {
 		type: 'rgba',
