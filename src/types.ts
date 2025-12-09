@@ -154,8 +154,10 @@ export type RGBA = [number, number, number, number];
 // Color definitions can be single or themed
 export type ColorDefinition = RGB[] | { light: RGB[]; dark: RGB[] };
 
-// Opacity function type
-export type OpacityFunction = (px: number) => number;
+// function of pixel value and theme
+export type OpacityFn = (px: number, dark?: boolean) => number;
+// Opacity definition can a simple constant or a function
+export type OpacityDefinition = number | OpacityFn;
 
 // The two color scale variants
 export interface RGBAColorScale extends ColorScaleBase {
@@ -166,8 +168,7 @@ export interface RGBAColorScale extends ColorScaleBase {
 export interface ResolvableColorScale extends ColorScaleBase {
 	type: 'resolvable';
 	colors: ColorDefinition;
-	opacityLight?: OpacityFunction;
-	opacityDark?: OpacityFunction;
+	opacity?: OpacityDefinition;
 }
 
 // Union type with discriminant

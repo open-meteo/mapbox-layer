@@ -4,7 +4,8 @@ import { pressureHpaToIsaHeight } from './isa-height';
 import type {
 	ColorScale,
 	ColorScales,
-	OpacityFunction,
+	OpacityDefinition,
+	OpacityFn,
 	RGB,
 	RGBA,
 	RGBAColorScale,
@@ -24,14 +25,14 @@ export const getColor = (
 	return colorScale.colors[index];
 };
 
-const centeredPowerOpacity = (scale: number, exponent = 1.5, opacity = 75): OpacityFunction => {
+const centeredPowerOpacity = (scale: number, exponent = 1.5, opacity = 75): OpacityFn => {
 	return (px: number) => {
 		const frac = Math.min(Math.pow(Math.abs(px) / scale, exponent), 1);
 		return Math.max(0, Math.min(100, frac * opacity));
 	};
 };
 
-const constantOpacity = (opacity: number = 75): OpacityFunction => {
+const constantOpacity = (opacity: number = 75): OpacityFn => {
 	return (_px: number) => opacity;
 };
 
@@ -121,7 +122,7 @@ const getOptionalColorScale = (
 		const match = getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
 		if (match && match.type === 'resolvable') {
 			const delta = (match.max - match.min) / 5;
-			return { ...match, max: delta, min: -delta, opacityLight: centeredPowerOpacity(delta * 0.5) };
+			return { ...match, max: delta, min: -delta, opacity: centeredPowerOpacity(delta * 0.5) };
 		}
 	}
 	return colorScalesSource[parts[0] + '_' + parts[1]] ?? colorScalesSource[parts[0]];
@@ -162,8 +163,7 @@ const resolveResolvableColorScale = (
 			? colorScale.colors.dark
 			: colorScale.colors.light;
 
-	const opacity = dark ? colorScale.opacityDark : colorScale.opacityLight;
-	const opacityFn = opacity ?? constantOpacity(dark ? 55 : 75);
+	const opacityFn = normalizeOpacity(colorScale.opacity, dark);
 	const rgbaColors = applyOpacityToColors(colors, colorScale, opacityFn);
 
 	return {
@@ -178,7 +178,7 @@ const resolveResolvableColorScale = (
 const applyOpacityToColors = (
 	colors: RGB[],
 	colorScale: ResolvableColorScale,
-	opacityFn: OpacityFunction
+	opacityFn: OpacityFn
 ): RGBA[] => {
 	if (colors.length === 0) return [];
 
@@ -191,5 +191,30 @@ const applyOpacityToColors = (
 		return [...rgb, alpha] as RGBA;
 	});
 };
+
+type NormalizedOpacityFn = (px: number) => number;
+
+const normalizeOpacity = (
+	def: OpacityDefinition | undefined,
+	dark: boolean
+): NormalizedOpacityFn => {
+	if (def == null || def === undefined) {
+		return constantOpacity(dark ? 55 : 75);
+	}
+
+	if (typeof def === 'number') {
+		return constantOpacity(def);
+	}
+	// def is a function matching OpacityFn (px, dark?)
+	const fn = def as OpacityFn;
+	return (px: number) => {
+		const result = fn(px, dark);
+		const n = Number(result);
+		if (!Number.isFinite(n)) return clampOpacity(dark ? 55 : 75);
+		return clampOpacity(n);
+	};
+};
+
+const clampOpacity = (v: number) => Math.max(0, Math.min(100, v));
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;

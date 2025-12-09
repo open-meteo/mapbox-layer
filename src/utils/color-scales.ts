@@ -108,7 +108,7 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 3, 0],
 			[255, 0, 0]
 		],
-		opacityLight: (px: number) =>
+		opacity: (px: number) =>
 			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 75, 0), 100)
 	},
 	cloud_cover: {
@@ -162,7 +162,7 @@ export const COLOR_SCALES: ColorScales = {
 				[57, 65, 74]
 			]
 		},
-		opacityLight: (px: number) => Math.min(px / 600, 1) * 75
+		opacity: (px: number) => Math.min(px / 600, 1) * 75
 	},
 	convective_inhibition: {
 		type: 'resolvable',
@@ -299,7 +299,7 @@ export const COLOR_SCALES: ColorScales = {
 			[40, 131, 184],
 			[41, 128, 185]
 		],
-		opacityLight: (px: number) => Math.min(px / 600, 1) * 75
+		opacity: (px: number) => Math.min(px / 600, 1) * 75
 	},
 	geopotential_height: {
 		type: 'resolvable',
@@ -376,7 +376,7 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 18, 0],
 			[255, 0, 0]
 		],
-		opacityLight: (px: number) => Math.min(px / 1.5, 1) * 75
+		opacity: (px: number) => Math.min(px / 1.5, 1) * 75
 	},
 	pressure: {
 		type: 'resolvable',
@@ -679,7 +679,7 @@ export const COLOR_SCALES: ColorScales = {
 			[153, 0, 123],
 			[128, 0, 128]
 		],
-		opacityLight: (px: number) => Math.min(px / 0.15, 1) * 75
+		opacity: (px: number) => Math.min(px / 0.15, 1) * 75
 	},
 	soil_moisture: {
 		type: 'resolvable',
@@ -707,7 +707,7 @@ export const COLOR_SCALES: ColorScales = {
 			[89, 136, 206],
 			[81, 114, 190]
 		],
-		opacityLight: (px: number) => Math.min(px / 0.0001, 1) * 75
+		opacity: (px: number) => Math.min(px / 0.0001, 1) * 75
 	},
 	swell: {
 		type: 'resolvable',
@@ -1003,7 +1003,7 @@ export const COLOR_SCALES: ColorScales = {
 			[255, 5, 0],
 			[255, 0, 0]
 		],
-		opacityLight: (px: number) =>
+		opacity: (px: number) =>
 			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 75, 0), 100)
 	},
 	uv: {
@@ -1101,7 +1101,7 @@ export const COLOR_SCALES: ColorScales = {
 			[117, 4, 17],
 			[116, 5, 5]
 		],
-		opacityLight: (px: number) => {
+		opacity: (px: number) => {
 			if (px < 2.7777777777777777) {
 				return Math.min(Math.pow(px, 4) / 20, 1) * 100;
 			}

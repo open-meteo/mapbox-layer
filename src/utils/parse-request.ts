@@ -90,6 +90,7 @@ const defaultResolveRenderOptions = (
 	const { params } = urlComponents;
 
 	const dark = params.get('dark') === 'true';
+	const colorScale = getColorScale(dataOptions.variable, dark, colorScales);
 
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
@@ -98,10 +99,6 @@ const defaultResolveRenderOptions = (
 	const drawArrows = params.get('arrows') === 'true';
 	const drawContours = params.get('contours') === 'true';
 	const interval = Number(params.get('interval')) || 0;
-
-	console.log(colorScales);
-	const colorScale = getColorScale(dataOptions.variable, dark, colorScales);
-	console.log(colorScale);
 
 	return {
 		tileSize,
