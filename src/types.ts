@@ -9,19 +9,18 @@ export interface OmProtocolInstance {
 
 export interface DataIdentityOptions {
 	domain: Domain;
-	variable: Variable;
+	variable: string;
 	ranges: DimensionRange[] | null;
 }
 
 export interface RenderOptions {
-	dark: boolean;
 	tileSize: 64 | 128 | 256 | 512 | 1024;
 	resolutionFactor: 0.5 | 1 | 2;
 	drawGrid: boolean;
 	drawArrows: boolean;
 	drawContours: boolean;
 	interval: number;
-	colorScale: ColorScale;
+	colorScale: RGBAColorScale;
 }
 
 export interface ParsedUrlComponents {
@@ -64,7 +63,6 @@ export interface OmProtocolSettings {
 	// dynamic
 	colorScales: ColorScales;
 	domainOptions: Domain[];
-	variableOptions: Variable[];
 	clippingOptions: ClippingOptions;
 
 	/**
@@ -146,27 +144,41 @@ export type TilePixel = {
 	tileIndex: TileIndex;
 };
 
-export type Variable = {
-	value: string;
-	label?: string;
-};
-
-export type Variables = Variable[];
-
-export type ColorScale = {
+interface ColorScaleBase {
 	min: number;
 	max: number;
 	unit: string;
-	steps: number;
-	colors: [number, number, number][];
-	opacity?: number;
-	scalefactor: number;
-	interpolationMethod: InterpolationMethod;
-};
+}
 
-export type ColorScales = {
-	[key: string]: ColorScale;
-};
+// Simple RGB color
+export type RGB = [number, number, number];
+export type RGBA = [number, number, number, number];
+
+// Color definitions can be single or themed
+export type ColorDefinition = RGB[] | { light: RGB[]; dark: RGB[] };
+
+// function of pixel value and theme, needs to return a number between 0 and 1
+export type OpacityFn = (px: number, dark?: boolean) => number;
+// Opacity definition can a simple constant or a function
+export type OpacityDefinition = number | OpacityFn;
+
+// The two color scale variants
+export interface RGBAColorScale extends ColorScaleBase {
+	type: 'rgba';
+	colors: RGBA[];
+}
+
+export interface ResolvableColorScale extends ColorScaleBase {
+	type: 'alpha_resolvable';
+	colors: ColorDefinition;
+	opacity?: OpacityDefinition;
+}
+
+// Union type with discriminant
+export type ColorScale = RGBAColorScale | ResolvableColorScale;
+
+// Dictionary of color scales
+export type ColorScales = Record<string, ColorScale>;
 
 export type InterpolationMethod = 'none' | 'linear' | 'hermite2d';
 
@@ -275,10 +287,27 @@ export interface Domain {
 	value: string;
 	label?: string;
 	grid: GridData;
-	time_interval: number;
-	model_interval: number;
-	windUVComponents: boolean;
+	time_interval: ModelDt;
+	model_interval: ModelUpdateInterval;
 }
+
+export type ModelDt =
+	| '15_minute'
+	| 'hourly'
+	| '3_hourly'
+	| '6_hourly'
+	| '12_hourly'
+	| 'daily'
+	| 'weekly_on_monday'
+	| 'monthly';
+
+export type ModelUpdateInterval =
+	| 'hourly'
+	| '3_hourly'
+	| '6_hourly'
+	| '12_hourly'
+	| 'daily'
+	| 'monthly';
 
 export interface DomainGroups {
 	[key: string]: Domain[];
