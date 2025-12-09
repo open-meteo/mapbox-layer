@@ -135,6 +135,9 @@ export const getColorScale = (
 ): RGBAColorScale => {
 	const anyColorScale =
 		getOptionalColorScale(variable, colorScalesSource) ?? colorScalesSource['temperature'];
+	if (!anyColorScale) {
+		throw new Error(`Unknown color scale for variable: ${variable}`);
+	}
 	return resolveColorScale(anyColorScale, dark);
 };
 
