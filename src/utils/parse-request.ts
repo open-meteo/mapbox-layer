@@ -1,7 +1,7 @@
 import { GridFactory } from '../grids/index';
 
 import { parseUrlComponents } from './parse-url';
-import { getColorScale } from './styling';
+import { getColorScale, resolveColorScale } from './styling';
 
 import type {
 	ColorScales,
@@ -11,6 +11,7 @@ import type {
 	OmProtocolSettings,
 	ParsedRequest,
 	ParsedUrlComponents,
+	RGBAColorScale,
 	RenderOptions
 } from '../types';
 
@@ -90,7 +91,12 @@ const defaultResolveRenderOptions = (
 	const { params } = urlComponents;
 
 	const dark = params.get('dark') === 'true';
-	const colorScale = getColorScale(dataOptions.variable, dark, colorScales);
+	let colorScale: RGBAColorScale;
+	if (colorScales.custom) {
+		colorScale = resolveColorScale(colorScales.custom, dark);
+	} else {
+		colorScale = getColorScale(dataOptions.variable, dark, colorScales);
+	}
 
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
