@@ -101,9 +101,10 @@ The repository contains an `examples` directory with ready-to-run demos:
 - `examples/temperature.html` – shows temperature data from an OM file.
 - `examples/precipitation.html` – displays precipitation using a similar setup.
 - `examples/wind.html` – displays wind values, for arrows overlay see [Vector sources](#vector-sources).
-- `examples/custom-colorscale.html` – shows how to use your own color definition.
 - `examples/combined-variables.html` – shows multiple data sources on the same map.
 - `examples/darkmode.html` – uses the `dark=true` url flag for dark background basemaps.
+- `examples/colorscales/custom-rgba.html` – shows how to use your own RGBA color definition.
+- `examples/colorscales/custom-alpha.html` – shows how to use a function to scale opacity values and a custom RGB color definition.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
