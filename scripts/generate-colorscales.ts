@@ -48,7 +48,7 @@ const linearThenConstantWithThreshold = (
 	return `(px: number) => Math.min(px / ${threshold}, 1) * ${opacity}`;
 };
 
-const powerScaleOpacity = (exponent = 1.5, denom = 1000, opacity = 0.75): string => {
+const powerScaleOpacity = (exponent = 1.5, denom = 100, opacity = 0.75): string => {
 	return `(px: number) => Math.min(Math.max((Math.pow(Math.max(px, 0), ${exponent}) / ${denom}) * ${opacity}, 0), 1)`;
 };
 
@@ -73,7 +73,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 4000,
 		steps: 100,
 		colors: ['green', 'orange', 'red'],
-		opacity: powerScaleOpacity()
+		opacity: powerScaleOpacity(1.5, 1000, 0.75)
 	},
 	cloud_cover: {
 		unit: '%',
@@ -84,7 +84,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			light: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
 			dark: ['#0b1220', '#131827', '#1b2431', '#27303a', '#39414a']
 		},
-		opacity: powerScaleOpacity(1.5, 100, 0.75)
+		opacity: powerScaleOpacity()
 	},
 	convective_inhibition: {
 		unit: 'J/kg',
@@ -99,7 +99,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		max: 6200,
 		steps: 100,
 		colors: ['#c0392b', '#d35400', '#f1c40f', '#16a085', '#2980b9'],
-		opacity: linearThenConstantWithThreshold(600)
+		opacity: powerScaleOpacity(1.5, 5000, 0.75)
 	},
 	geopotential_height: {
 		unit: 'm',
@@ -112,13 +112,13 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		unit: 'mm',
 		min: 0,
 		max: 20,
-		steps: 20,
+		steps: 40,
 		colors: [
-			{ colors: ['blue', 'green'], steps: 5 },
-			{ colors: ['green', 'orange'], steps: 5 },
-			{ colors: ['orange', 'red'], steps: 10 }
+			{ colors: ['blue', 'green'], steps: 10 },
+			{ colors: ['green', 'orange'], steps: 10 },
+			{ colors: ['orange', 'red'], steps: 20 }
 		],
-		opacity: linearThenConstantWithThreshold(1.5)
+		opacity: powerScaleOpacity(5, 0.01, 0.75)
 	},
 	pressure: {
 		unit: 'hPa',
@@ -145,13 +145,13 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		unit: 'm',
 		min: 0,
 		max: 5,
-		steps: 20,
+		steps: 40,
 		colors: [
-			{ colors: ['green', 'yellow'], steps: 7 },
-			{ colors: ['yellow', 'red'], steps: 7 },
-			{ colors: ['red', 'purple'], steps: 6 }
+			{ colors: ['green', 'yellow'], steps: 14 },
+			{ colors: ['yellow', 'red'], steps: 14 },
+			{ colors: ['red', 'purple'], steps: 12 }
 		],
-		opacity: linearThenConstantWithThreshold(0.15)
+		opacity: linearThenConstantWithThreshold(0.01)
 	},
 	soil_moisture: {
 		unit: 'vol. %',
