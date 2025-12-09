@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Custom Colorscales</title>
+		<title>Open-Meteo Mapbox Layer - Custom Alpha Resolvable Colorscale</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
@@ -10,7 +10,7 @@
 		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>-->
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<script src="../dist/index.js"></script>
+		<script src="../../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -27,12 +27,11 @@
 			const customColorScales = {
 				// use same key as variable name
 				ffmc: {
+					type: 'alpha_resolvable',
+					unit: '',
 					min: 0,
 					max: 100,
-					steps: 100,
-					scalefactor: 1, // (steps / (max - min))
-					interpolationMethod: 'linear', // linear or none
-
+					opacity: 75,
 					// colors as rgb array
 					colors: [
 						[0, 128, 0],
@@ -135,10 +134,7 @@
 						[255, 14, 0],
 						[255, 7, 0],
 						[255, 0, 0]
-					],
-
-					unit: 'F°', // optional
-					opacity: 65 // optional
+					]
 				}
 			};
 
