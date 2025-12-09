@@ -33,12 +33,14 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
+export const defaultAbortController = new AbortController();
+
 export const omProtocol = async (
 	params: RequestParameters,
-	abortController?: AbortController,
+	abortController = defaultAbortController,
 	settings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
-	const instance = getProtocolInstance(settings);
+	const instance = getProtocolInstance(abortController, settings);
 
 	const url = await resolveJSONUrl(params.url);
 	const request = parseRequest(url, settings);
