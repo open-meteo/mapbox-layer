@@ -1,7 +1,7 @@
 import { GridFactory } from '../grids/index';
 
 import { parseUrlComponents } from './parse-url';
-import { getColorScale } from './styling';
+import { getColorScale, resolveColorScale } from './styling';
 
 import type {
 	ColorScales,
@@ -11,8 +11,8 @@ import type {
 	OmProtocolSettings,
 	ParsedRequest,
 	ParsedUrlComponents,
-	RenderOptions,
-	Variable
+	RGBAColorScale,
+	RenderOptions
 } from '../types';
 
 const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
@@ -38,11 +38,7 @@ export const defaultResolveRequest = (
 	urlComponents: ParsedUrlComponents,
 	settings: OmProtocolSettings
 ): { dataOptions: DataIdentityOptions; renderOptions: RenderOptions } => {
-	const dataOptions = defaultResolveDataIdentity(
-		urlComponents,
-		settings.domainOptions,
-		settings.variableOptions
-	);
+	const dataOptions = defaultResolveDataIdentity(urlComponents, settings.domainOptions);
 
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
@@ -55,8 +51,7 @@ export const defaultResolveRequest = (
 
 const defaultResolveDataIdentity = (
 	urlComponents: ParsedUrlComponents,
-	domainOptions: Domain[],
-	variableOptions: Variable[]
+	domainOptions: Domain[]
 ): DataIdentityOptions => {
 	const { baseUrl, params } = urlComponents;
 
@@ -66,16 +61,10 @@ const defaultResolveDataIdentity = (
 		throw new Error(`Invalid domain: ${domainValue}`);
 	}
 
-	const variableValue = params.get('variable');
-	if (!variableValue) {
+	const variable = params.get('variable');
+	if (!variable) {
 		throw new Error(`Variable is required but not defined`);
 	}
-	const variable = variableOptions.find((v) => v.value === variableValue) ?? {
-		value: variableValue
-	};
-	// if (!variable) {
-	// 	throw new Error(`Invalid variable: ${variableValue}`);
-	// }
 
 	const partial = params.get('partial') === 'true';
 	const mapBounds = params.get('bounds')?.split(',').map(Number) as number[] | undefined;
@@ -102,6 +91,12 @@ const defaultResolveRenderOptions = (
 	const { params } = urlComponents;
 
 	const dark = params.get('dark') === 'true';
+	let colorScale: RGBAColorScale;
+	if (colorScales.custom) {
+		colorScale = resolveColorScale(colorScales.custom, dark);
+	} else {
+		colorScale = getColorScale(dataOptions.variable, dark, colorScales);
+	}
 
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
@@ -111,13 +106,7 @@ const defaultResolveRenderOptions = (
 	const drawContours = params.get('contours') === 'true';
 	const interval = Number(params.get('interval')) || 0;
 
-	const colorScale =
-		colorScales?.custom ??
-		colorScales[dataOptions.variable.value] ??
-		getColorScale(dataOptions.variable.value);
-
 	return {
-		dark,
 		tileSize,
 		resolutionFactor,
 		drawGrid,
