@@ -34,7 +34,7 @@ import { omProtocol } from '@openmeteo/mapbox-layer';
 
 maplibregl.addProtocol('om', omProtocol);
 
-const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/15/1200Z/2025-10-15T1400.om?variable=temperature_2m`;
+const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m`;
 
 map.on('load', () => {
 	map.addSource('omFileSource', {
@@ -73,7 +73,7 @@ For a standalone example, see `examples/temperature.html`.
 
 	maplibregl.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
 
-	const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m`;
+	const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m`;
 
 	map.on('load', () => {
 		map.addSource('omFileSource', {
@@ -99,7 +99,9 @@ The repository contains an `examples` directory with ready-to-run demos:
 - `examples/temperature.html` – shows temperature data from an OM file.
 - `examples/precipitation.html` – displays precipitation using a similar setup.
 - `examples/wind.html` – displays wind values with directional arrows.
-- `examples/custom-colorscale.html` – shows how to use your own color definition.
+- `examples/combined-variables.html` – shows multiple data sources on the same map.
+- `examples/colorscales/custom-rgba.html` – shows how to use your own RGBA color definition.
+- `examples/colorscales/custom-alpha.html` – shows how to use a function to scale opacity values and a custom RGB color definition.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
