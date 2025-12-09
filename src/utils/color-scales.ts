@@ -2,7 +2,7 @@ import type { ColorScales } from '../types';
 
 export const COLOR_SCALES: ColorScales = {
 	cape: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'J/kg',
 		min: 0,
 		max: 4000,
@@ -112,7 +112,7 @@ export const COLOR_SCALES: ColorScales = {
 			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 0.75, 0), 1)
 	},
 	cloud_cover: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -165,7 +165,7 @@ export const COLOR_SCALES: ColorScales = {
 		opacity: (px: number) => Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 100) * 0.75, 0), 1)
 	},
 	convective_inhibition: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'J/kg',
 		min: 0,
 		max: 500,
@@ -193,7 +193,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	convective_cloud_top: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm',
 		min: 0,
 		max: 6200,
@@ -302,7 +302,7 @@ export const COLOR_SCALES: ColorScales = {
 		opacity: (px: number) => Math.min(px / 600, 1) * 0.75
 	},
 	geopotential_height: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm',
 		min: 4600,
 		max: 6000,
@@ -350,7 +350,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	precipitation: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'mm',
 		min: 0,
 		max: 20,
@@ -379,7 +379,7 @@ export const COLOR_SCALES: ColorScales = {
 		opacity: (px: number) => Math.min(px / 1.5, 1) * 0.75
 	},
 	pressure: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'hPa',
 		min: 950,
 		max: 1050,
@@ -437,7 +437,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	relative: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -545,7 +545,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	shortwave: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'W/m^2',
 		min: 0,
 		max: 1000,
@@ -653,7 +653,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	snow_depth: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm',
 		min: 0,
 		max: 5,
@@ -682,7 +682,7 @@ export const COLOR_SCALES: ColorScales = {
 		opacity: (px: number) => Math.min(px / 0.15, 1) * 0.75
 	},
 	soil_moisture: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'vol. %',
 		min: 0,
 		max: 0.5,
@@ -710,7 +710,7 @@ export const COLOR_SCALES: ColorScales = {
 		opacity: (px: number) => Math.min(px / 0.0001, 1) * 0.75
 	},
 	swell: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm',
 		min: 0,
 		max: 10,
@@ -768,7 +768,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	swell_period: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 's',
 		min: 0,
 		max: 20,
@@ -796,7 +796,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	temperature: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '°C',
 		min: -80,
 		max: 50,
@@ -869,7 +869,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	temperature_2m_anomaly: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'K',
 		min: -5,
 		max: 5,
@@ -897,7 +897,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	thunderstorm: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '%',
 		min: 0,
 		max: 100,
@@ -1007,7 +1007,7 @@ export const COLOR_SCALES: ColorScales = {
 			Math.min(Math.max((Math.pow(Math.max(px, 0), 1.5) / 1000) * 0.75, 0), 1)
 	},
 	uv: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '',
 		min: 0,
 		max: 12,
@@ -1027,7 +1027,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	vertical_velocity: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm/s',
 		min: -0.75,
 		max: 0.75,
@@ -1055,7 +1055,7 @@ export const COLOR_SCALES: ColorScales = {
 		]
 	},
 	wind: {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: 'm/s',
 		min: 0,
 		max: 60,

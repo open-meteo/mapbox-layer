@@ -166,7 +166,7 @@ export interface RGBAColorScale extends ColorScaleBase {
 }
 
 export interface ResolvableColorScale extends ColorScaleBase {
-	type: 'resolvable';
+	type: 'alpha_resolvable';
 	colors: ColorDefinition;
 	opacity?: OpacityDefinition;
 }

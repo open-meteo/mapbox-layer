@@ -120,7 +120,7 @@ const getOptionalColorScale = (
 		return getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
 	} else if (parts[lastIndex] == 'anomaly') {
 		const match = getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
-		if (match && match.type === 'resolvable') {
+		if (match && match.type === 'alpha_resolvable') {
 			const delta = (match.max - match.min) / 5;
 			return { ...match, max: delta, min: -delta, opacity: centeredPowerOpacity(delta * 0.5) };
 		}
@@ -140,8 +140,7 @@ export const getColorScale = (
 
 export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RGBAColorScale => {
 	switch (colorScale.type) {
-		case undefined:
-		case 'resolvable':
+		case 'alpha_resolvable':
 			return resolveResolvableColorScale(colorScale, dark);
 		case 'rgba':
 			return colorScale;

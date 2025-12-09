@@ -321,7 +321,7 @@ export const COLOR_SCALES: ColorScales = {`;
 
 		content += `
 		'${key}': {
-		type: 'resolvable',
+		type: 'alpha_resolvable',
 		unit: '${unit}',
 		min: ${min},
 		max: ${max},

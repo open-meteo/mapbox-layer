@@ -15,6 +15,7 @@
 		"examples/temperature.html",
 		"examples/precipitation.html",
 		"examples/colorscales/custom-rgba.html",
+		"examples/colorscales/custom-alpha.html",
 		"examples/vector/grid-points.html",
 		"examples/vector/wind-arrows.html",
 		"examples/vector/temperature-labels.html",
