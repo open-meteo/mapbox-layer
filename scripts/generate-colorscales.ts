@@ -41,19 +41,22 @@ function interpolateColorScale(
 	return rgbArray;
 }
 
-const linearThenConstantWithThreshold = (threshold: number = 1.5, opacity: number = 75): string => {
+const linearThenConstantWithThreshold = (
+	threshold: number = 1.5,
+	opacity: number = 0.75
+): string => {
 	return `(px: number) => Math.min(px / ${threshold}, 1) * ${opacity}`;
 };
 
-const powerScaleOpacity = (exponent = 1.5, denom = 1000, opacity = 75): string => {
-	return `(px: number) => Math.min(Math.max((Math.pow(Math.max(px, 0), ${exponent}) / ${denom}) * ${opacity}, 0), 100)`;
+const powerScaleOpacity = (exponent = 1.5, denom = 1000, opacity = 0.75): string => {
+	return `(px: number) => Math.min(Math.max((Math.pow(Math.max(px, 0), ${exponent}) / ${denom}) * ${opacity}, 0), 1)`;
 };
 
 const powerThenConstant = (
 	threshold: number = 1.5,
 	exponent = 1.5,
 	denom = 1000,
-	opacity = 75
+	opacity = 0.75
 ): string => {
 	return `(px: number) => {
 		if (px < ${threshold}) {
@@ -81,7 +84,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			light: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'],
 			dark: ['#0b1220', '#131827', '#1b2431', '#27303a', '#39414a']
 		},
-		opacity: linearThenConstantWithThreshold(600)
+		opacity: powerScaleOpacity(1.5, 100, 0.75)
 	},
 	convective_inhibition: {
 		unit: 'J/kg',
@@ -246,7 +249,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ colors: ['red', 'purple'], steps: 10 }, // 30 to 45 m/s
 			{ colors: ['purple', '#740505'], steps: 10 } // 45 to 60 m/s
 		],
-		opacity: powerThenConstant(10 / 3.6, 4, 20, 100)
+		opacity: powerThenConstant(10 / 3.6, 4, 20, 1)
 	}
 };
 

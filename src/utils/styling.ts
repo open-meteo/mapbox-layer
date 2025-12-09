@@ -165,6 +165,7 @@ const resolveResolvableColorScale = (
 
 	const opacityFn = normalizeOpacity(colorScale.opacity, dark);
 	const rgbaColors = applyOpacityToColors(colors, colorScale, opacityFn);
+	console.log(rgbaColors);
 
 	return {
 		type: 'rgba',
@@ -199,7 +200,7 @@ const normalizeOpacity = (
 	dark: boolean
 ): NormalizedOpacityFn => {
 	if (def == null || def === undefined) {
-		return constantOpacity(dark ? 55 : 75);
+		return constantOpacity(dark ? 0.55 : 0.75);
 	}
 
 	if (typeof def === 'number') {
@@ -210,11 +211,11 @@ const normalizeOpacity = (
 	return (px: number) => {
 		const result = fn(px, dark);
 		const n = Number(result);
-		if (!Number.isFinite(n)) return clampOpacity(dark ? 55 : 75);
+		if (!Number.isFinite(n)) return clampOpacity(dark ? 0.55 : 0.75);
 		return clampOpacity(n);
 	};
 };
 
-const clampOpacity = (v: number) => Math.max(0, Math.min(100, v));
+const clampOpacity = (v: number) => Math.max(0, Math.min(1, v));
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;

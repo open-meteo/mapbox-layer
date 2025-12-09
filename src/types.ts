@@ -154,7 +154,7 @@ export type RGBA = [number, number, number, number];
 // Color definitions can be single or themed
 export type ColorDefinition = RGB[] | { light: RGB[]; dark: RGB[] };
 
-// function of pixel value and theme
+// function of pixel value and theme, needs to return a number between 0 and 1
 export type OpacityFn = (px: number, dark?: boolean) => number;
 // Opacity definition can a simple constant or a function
 export type OpacityDefinition = number | OpacityFn;

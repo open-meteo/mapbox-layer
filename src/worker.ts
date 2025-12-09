@@ -43,7 +43,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 					rgba[4 * ind] = color[0];
 					rgba[4 * ind + 1] = color[1];
 					rgba[4 * ind + 2] = color[2];
-					rgba[4 * ind + 3] = 2.55 * color[3];
+					rgba[4 * ind + 3] = 255 * color[3];
 				}
 			}
 		}
