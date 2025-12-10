@@ -20,7 +20,7 @@ export interface RenderOptions {
 	drawArrows: boolean;
 	drawContours: boolean;
 	interval: number;
-	colorScale: RGBAColorScale;
+	colorScale: RenderableColorScale;
 }
 
 export interface ParsedUrlComponents {
@@ -159,7 +159,14 @@ export type OpacityFn = (px: number, dark?: boolean) => number;
 // Opacity definition can a simple constant or a function
 export type OpacityDefinition = number | OpacityFn;
 
-// The two color scale variants
+export interface BreakPointColorScale extends ColorScaleBase {
+	type: 'breakpoint';
+	// Must be sorted, e.g. [0, 10, 20, 30, 50, 100]
+	breakpoints: number[];
+	// Needs to have same length as breakpoints
+	colors: RGBA[];
+}
+
 export interface RGBAColorScale extends ColorScaleBase {
 	type: 'rgba';
 	colors: RGBA[];
@@ -172,7 +179,9 @@ export interface ResolvableColorScale extends ColorScaleBase {
 }
 
 // Union type with discriminant
-export type ColorScale = RGBAColorScale | ResolvableColorScale;
+export type ColorScale = RGBAColorScale | ResolvableColorScale | BreakPointColorScale;
+
+export type RenderableColorScale = RGBAColorScale | BreakPointColorScale;
 
 // Dictionary of color scales
 export type ColorScales = Record<string, ColorScale>;

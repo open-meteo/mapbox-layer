@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Open-Meteo Mapbox Layer - Custom Alpha Resolvable Colorscale</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+		<!-- x-release-please-start-version -->
+		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>-->
+		<!-- x-release-please-end -->
+		<!-- Local development -->
+		<script src="../../dist/index.js"></script>
+		<style>
+			html,
+			body,
+			#map {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+		<script>
+			const customColorScales = {
+				// use same key as variable name
+				temperature_2m: {
+					type: 'breakpoint',
+					unit: '°C',
+					min: -20,
+					max: 45,
+					breakpoints: [-20, -10, -5, 0, 5, 10, 15, 20, 30, 40, 45],
+					colors: [
+						// purple -> blue -> cyan -> green -> yellow -> orange -> red -> dark red
+						[75, 0, 130, 0.75], // -20 : purple
+						[0, 0, 255, 0.75], // -10 : blue
+						[0, 100, 255, 0.75], // -5  : blue-cyan
+						[0, 180, 255, 0.75], //  0  : cyan
+						[0, 220, 150, 0.75], //  5  : turquoise
+						[0, 200, 0, 0.75], // 10  : green
+						[170, 220, 0, 0.75], // 15  : yellow-green
+						[255, 220, 0, 0.75], // 20  : yellow
+						[255, 140, 0, 0.75], // 30 : orange
+						[255, 0, 0, 0.75], // 40 : red
+						[139, 0, 0, 0.75] // 45 : dark red
+					]
+				}
+			};
+
+			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+			omProtocolOptions.colorScales = customColorScales;
+
+			// use the settings as argument for the protocol
+			maplibregl.addProtocol('om', (params) =>
+				OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+			);
+
+			const map = new maplibregl.Map({
+				container: 'map',
+				style: {
+					version: 8,
+					sources: {
+						osm: {
+							type: 'raster',
+							tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+							tileSize: 256,
+							attribution: '&copy; OpenStreetMap Contributors'
+						}
+					},
+					layers: [
+						{
+							id: 'osm',
+							type: 'raster',
+							source: 'osm'
+						}
+					]
+				},
+				hash: true
+			});
+
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+
+			map.on('load', () => {
+				map.addSource('omFileSource', {
+					url: 'om://' + omUrl,
+					type: 'raster',
+					tileSize: 256,
+					maxzoom: 12
+				});
+
+				map.addLayer({
+					id: 'omFileLayer',
+					type: 'raster',
+					source: 'omFileSource'
+				});
+			});
+		</script>
+	</body>
+</html>

@@ -9,20 +9,33 @@ import type {
 	RGB,
 	RGBA,
 	RGBAColorScale,
+	RenderableColorScale,
 	ResolvableColorScale
 } from '../types';
 
 export const getColor = (
-	colorScale: RGBAColorScale,
+	colorScale: RenderableColorScale,
 	px: number
 ): [number, number, number, number] => {
-	const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
-	const index = Math.min(
-		colorScale.colors.length - 1,
-		Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
-	);
-
-	return colorScale.colors[index];
+	switch (colorScale.type) {
+		case 'rgba': {
+			const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
+			const index = Math.min(
+				colorScale.colors.length - 1,
+				Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
+			);
+			return colorScale.colors[index];
+		}
+		case 'breakpoint': {
+			const index = colorScale.breakpoints.findIndex((breakpoint) => breakpoint > px);
+			return colorScale.colors[index];
+		}
+		default: {
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = colorScale;
+			throw new Error(`Unknown color scale: ${_exhaustive}`);
+		}
+	}
 };
 
 const centeredPowerOpacity = (scale: number, exponent = 1.5, opacity = 75): OpacityFn => {
@@ -132,7 +145,7 @@ export const getColorScale = (
 	variable: string,
 	dark: boolean,
 	colorScalesSource: ColorScales = COLOR_SCALES_WITH_ALIASES
-): RGBAColorScale => {
+): RenderableColorScale => {
 	const anyColorScale =
 		getOptionalColorScale(variable, colorScalesSource) ?? colorScalesSource['temperature'];
 	if (!anyColorScale) {
@@ -141,11 +154,12 @@ export const getColorScale = (
 	return resolveColorScale(anyColorScale, dark);
 };
 
-export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RGBAColorScale => {
+export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RenderableColorScale => {
 	switch (colorScale.type) {
 		case 'alpha_resolvable':
 			return resolveResolvableColorScale(colorScale, dark);
 		case 'rgba':
+		case 'breakpoint':
 			return colorScale;
 		default: {
 			// This ensures exhaustiveness checking
