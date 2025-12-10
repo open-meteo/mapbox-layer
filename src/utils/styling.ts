@@ -27,8 +27,11 @@ export const getColor = (
 			return colorScale.colors[index];
 		}
 		case 'breakpoint': {
-			const index = colorScale.breakpoints.findIndex((breakpoint) => breakpoint > px);
-			return colorScale.colors[index];
+			const index = Math.max(
+				0,
+				colorScale.breakpoints.findLastIndex((breakpoint) => px >= breakpoint)
+			);
+			return colorScale.colors[index % colorScale.colors.length];
 		}
 		default: {
 			// This ensures exhaustiveness checking
