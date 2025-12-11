@@ -31,7 +31,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 
-		console.time('rendering');
 		for (let i = 0; i < tileSize; i++) {
 			const lat = tile2lat(y + i / tileSize, z);
 			for (let j = 0; j < tileSize; j++) {
@@ -48,8 +47,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				}
 			}
 		}
-
-		console.timeEnd('rendering');
 
 		const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
 			premultiplyAlpha: 'premultiply'
