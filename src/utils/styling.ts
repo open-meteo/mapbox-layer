@@ -2,15 +2,11 @@ import { COLOR_SCALES } from './color-scales';
 import { pressureHpaToIsaHeight } from './isa-height';
 
 import type {
+	BreakpointColorScale,
 	ColorScale,
 	ColorScales,
-	OpacityDefinition,
-	OpacityFn,
-	RGB,
-	RGBA,
-	RGBAColorScale,
 	RenderableColorScale,
-	ResolvableColorScale
+	ResolvedBreakpointColorScale
 } from '../types';
 
 function findLastIndexLE(arr: number[], value: number): number {
@@ -43,14 +39,7 @@ export const getColor = (
 			return colorScale.colors[index];
 		}
 		case 'breakpoint': {
-			// const index = Math.max(
-			// 	0,
-			// 	colorScale.breakpoints.findIndex((breakpoint) => breakpoint >= px)
-			// );
-			const index = Math.max(
-				0,
-				colorScale.breakpoints.findLastIndex((breakpoint) => px >= breakpoint)
-			);
+			const index = Math.max(0, findLastIndexLE(colorScale.breakpoints, px));
 			return colorScale.colors[index % colorScale.colors.length];
 		}
 		default: {
@@ -59,17 +48,6 @@ export const getColor = (
 			throw new Error(`Unknown color scale: ${_exhaustive}`);
 		}
 	}
-};
-
-const centeredPowerOpacity = (scale: number, exponent = 1.5, opacity = 75): OpacityFn => {
-	return (px: number) => {
-		const frac = Math.min(Math.pow(Math.abs(px) / scale, exponent), 1);
-		return Math.max(0, Math.min(100, frac * opacity));
-	};
-};
-
-const constantOpacity = (opacity: number = 75): OpacityFn => {
-	return (_px: number) => opacity;
 };
 
 export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
@@ -155,11 +133,7 @@ const getOptionalColorScale = (
 	if (['mean', 'max', 'min'].includes(parts[lastIndex])) {
 		return getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
 	} else if (parts[lastIndex] == 'anomaly') {
-		const match = getOptionalColorScale(parts.slice(0, -1).join('_'), colorScalesSource);
-		if (match && match.type === 'alpha_resolvable') {
-			const delta = (match.max - match.min) / 5;
-			return { ...match, max: delta, min: -delta, opacity: centeredPowerOpacity(delta * 0.5) };
-		}
+		return colorScalesSource['temperature_anomaly'];
 	}
 	return colorScalesSource[parts[0] + '_' + parts[1]] ?? colorScalesSource[parts[0]];
 };
@@ -177,13 +151,29 @@ export const getColorScale = (
 	return resolveColorScale(anyColorScale, dark);
 };
 
+// Helper to check if colors have light/dark variants
+const hasColorVariants = (
+	colors: BreakpointColorScale['colors']
+): colors is {
+	light: [number, number, number, number][];
+	dark: [number, number, number, number][];
+} => {
+	return !Array.isArray(colors) && 'light' in colors && 'dark' in colors;
+};
+
 export const resolveColorScale = (colorScale: ColorScale, dark: boolean): RenderableColorScale => {
 	switch (colorScale.type) {
-		case 'alpha_resolvable':
-			return resolveResolvableColorScale(colorScale, dark);
 		case 'rgba':
-		case 'breakpoint':
 			return colorScale;
+		case 'breakpoint': {
+			if (hasColorVariants(colorScale.colors)) {
+				return {
+					...colorScale,
+					colors: dark ? colorScale.colors.dark : colorScale.colors.light
+				} as ResolvedBreakpointColorScale;
+			}
+			return colorScale as ResolvedBreakpointColorScale;
+		}
 		default: {
 			// This ensures exhaustiveness checking
 			const _exhaustive: never = colorScale;
@@ -191,69 +181,5 @@ export const resolveColorScale = (colorScale: ColorScale, dark: boolean): Render
 		}
 	}
 };
-
-const resolveResolvableColorScale = (
-	colorScale: ResolvableColorScale,
-	dark: boolean
-): RGBAColorScale => {
-	const colors: [number, number, number][] = Array.isArray(colorScale.colors)
-		? colorScale.colors
-		: dark
-			? colorScale.colors.dark
-			: colorScale.colors.light;
-
-	const opacityFn = normalizeOpacity(colorScale.opacity, dark);
-	const rgbaColors = applyOpacityToColors(colors, colorScale, opacityFn);
-
-	return {
-		type: 'rgba',
-		min: colorScale.min,
-		max: colorScale.max,
-		unit: colorScale.unit,
-		colors: rgbaColors
-	};
-};
-
-const applyOpacityToColors = (
-	colors: RGB[],
-	colorScale: ResolvableColorScale,
-	opacityFn: OpacityFn
-): RGBA[] => {
-	if (colors.length === 0) return [];
-
-	const steps = Math.max(1, colors.length - 1);
-	const delta = (colorScale.max - colorScale.min) / steps;
-
-	return colors.map((rgb, i) => {
-		const px = colorScale.min + delta * i;
-		const alpha = opacityFn(px);
-		return [...rgb, alpha] as RGBA;
-	});
-};
-
-type NormalizedOpacityFn = (px: number) => number;
-
-const normalizeOpacity = (
-	def: OpacityDefinition | undefined,
-	dark: boolean
-): NormalizedOpacityFn => {
-	if (def == null || def === undefined) {
-		return constantOpacity(dark ? 0.55 : 0.75);
-	}
-
-	if (typeof def === 'number') {
-		return constantOpacity(def);
-	}
-	// def is a function matching OpacityFn (px, dark?)
-	const fn = def as OpacityFn;
-	return (px: number) => {
-		const result = fn(px, dark);
-		const n = Number(result);
-		if (!Number.isFinite(n)) return clampOpacity(dark ? 0.55 : 0.75);
-		return clampOpacity(n);
-	};
-};
-
-const clampOpacity = (v: number) => Math.max(0, Math.min(1, v));
 
 const LEVEL_REGEX = /_(\d+)(hPa)?$/i;

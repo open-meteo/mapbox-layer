@@ -16,6 +16,9 @@ interface ColorSegment {
 	colors: string[]; // colors to interpolate between
 }
 
+// Color segments can be a single array (same for both modes) or separate light/dark
+type ColorSegmentsDefinition = ColorSegment[] | { light: ColorSegment[]; dark: ColorSegment[] };
+
 // An opacity segment defines opacity over a value range
 interface OpacitySegment {
 	range: [number, number];
@@ -24,11 +27,16 @@ interface OpacitySegment {
 	exponent?: number; // for power easing
 }
 
+// Opacity segments can also be mode-specific
+type OpacitySegmentsDefinition =
+	| OpacitySegment[]
+	| { light: OpacitySegment[]; dark: OpacitySegment[] };
+
 interface ColorScaleDefinition {
 	unit: string;
 	breakpoints: number[];
-	colorSegments: ColorSegment[];
-	opacitySegments: OpacitySegment[];
+	colorSegments: ColorSegmentsDefinition;
+	opacitySegments: OpacitySegmentsDefinition;
 }
 
 // Interpolate a color at a specific position within a segment
@@ -109,15 +117,63 @@ function getOpacityAt(opacitySegments: OpacitySegment[], value: number): number 
 	return lastSegment.opacity[1];
 }
 
-// Generate RGBA colors at each breakpoint
-function generateColorsAtBreakpoints(definition: ColorScaleDefinition): RGBA[] {
+// Check if color segments have light/dark variants
+function hasColorVariants(
+	segments: ColorSegmentsDefinition
+): segments is { light: ColorSegment[]; dark: ColorSegment[] } {
+	return !Array.isArray(segments) && 'light' in segments && 'dark' in segments;
+}
+
+// Check if opacity segments have light/dark variants
+function hasOpacityVariants(
+	segments: OpacitySegmentsDefinition
+): segments is { light: OpacitySegment[]; dark: OpacitySegment[] } {
+	return !Array.isArray(segments) && 'light' in segments && 'dark' in segments;
+}
+
+// Get color segments for a specific mode
+function getColorSegments(
+	segments: ColorSegmentsDefinition,
+	mode: 'light' | 'dark'
+): ColorSegment[] {
+	if (hasColorVariants(segments)) {
+		return segments[mode];
+	}
+	return segments;
+}
+
+// Get opacity segments for a specific mode
+function getOpacitySegments(
+	segments: OpacitySegmentsDefinition,
+	mode: 'light' | 'dark'
+): OpacitySegment[] {
+	if (hasOpacityVariants(segments)) {
+		return segments[mode];
+	}
+	return segments;
+}
+
+// Generate RGBA colors at each breakpoint for a specific mode
+function generateColorsAtBreakpoints(
+	definition: ColorScaleDefinition,
+	mode: 'light' | 'dark'
+): RGBA[] {
 	const { breakpoints, colorSegments, opacitySegments } = definition;
+	const colorSegs = getColorSegments(colorSegments, mode);
+	const opacitySegs = getOpacitySegments(opacitySegments, mode);
 
 	return breakpoints.map((value) => {
-		const rgb = getColorAt(colorSegments, value);
-		const opacity = getOpacityAt(opacitySegments, value);
+		const rgb = getColorAt(colorSegs, value);
+		const opacity = getOpacityAt(opacitySegs, value);
 		return [rgb[0], rgb[1], rgb[2], Number(opacity.toFixed(3))];
 	});
+}
+
+// Check if a definition needs separate light/dark outputs
+function needsVariants(definition: ColorScaleDefinition): boolean {
+	return (
+		hasColorVariants(definition.colorSegments) || hasOpacityVariants(definition.opacitySegments)
+	);
 }
 
 // Color scale definitions
@@ -134,7 +190,10 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	cloud_cover: {
 		unit: '%',
 		breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
-		colorSegments: [{ range: [0, 100], colors: ['#ffffff', '#4b5563'] }],
+		colorSegments: {
+			light: [{ range: [0, 100], colors: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'] }],
+			dark: [{ range: [0, 100], colors: ['#0b1220', '#4b5563', '#9ca3af', '#d1d5db', '#f1f5f9'] }]
+		},
 		opacitySegments: [
 			{ range: [0, 20], opacity: [0, 0.4], easing: 'power', exponent: 1.5 },
 			{ range: [20, 100], opacity: [0.4, 0.75], easing: 'linear' }
@@ -353,28 +412,56 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		]
 	}
 };
+interface GeneratedColorScale {
+	unit: string;
+	min: number;
+	max: number;
+	breakpoints: number[];
+	colors: RGBA[] | { light: RGBA[]; dark: RGBA[] };
+}
 
-function generateColorScales(): Record<
-	string,
-	{ unit: string; min: number; max: number; breakpoints: number[]; colors: RGBA[] }
-> {
-	const colorScales: Record<
-		string,
-		{ unit: string; min: number; max: number; breakpoints: number[]; colors: RGBA[] }
-	> = {};
+function generateColorScales(): Record<string, GeneratedColorScale> {
+	const colorScales: Record<string, GeneratedColorScale> = {};
 
 	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
-		const colors = generateColorsAtBreakpoints(definition);
-		colorScales[key] = {
-			unit: definition.unit,
-			min: definition.breakpoints[0],
-			max: definition.breakpoints[definition.breakpoints.length - 1],
-			breakpoints: definition.breakpoints,
-			colors
-		};
+		const { unit, breakpoints } = definition;
+		const min = breakpoints[0];
+		const max = breakpoints[breakpoints.length - 1];
+
+		if (needsVariants(definition)) {
+			// Generate separate light and dark colors
+			const lightColors = generateColorsAtBreakpoints(definition, 'light');
+			const darkColors = generateColorsAtBreakpoints(definition, 'dark');
+			colorScales[key] = {
+				unit,
+				min,
+				max,
+				breakpoints,
+				colors: { light: lightColors, dark: darkColors }
+			};
+		} else {
+			// Single color array for both modes
+			const colors = generateColorsAtBreakpoints(definition, 'light');
+			colorScales[key] = {
+				unit,
+				min,
+				max,
+				breakpoints,
+				colors
+			};
+		}
 	}
 
 	return colorScales;
+}
+
+function serializeRGBAArray(colors: RGBA[], indent: string): string {
+	let content = '[';
+	for (const c of colors) {
+		content += `\n${indent}[${c[0]}, ${c[1]}, ${c[2]}, ${c[3]}],`;
+	}
+	content += `\n${indent.slice(0, -1)}]`;
+	return content;
 }
 
 function generateTypeScript(): void {
@@ -387,20 +474,28 @@ export const COLOR_SCALES: ColorScales = {`;
 	for (const [key, colorScale] of Object.entries(colorScales)) {
 		const { min, max, unit, breakpoints, colors } = colorScale;
 
+		const hasVariants = !Array.isArray(colors);
+
 		content += `
 	'${key}': {
 		type: 'breakpoint',
 		unit: '${unit}',
 		min: ${min},
 		max: ${max},
-		breakpoints: [${breakpoints.join(', ')}],
-		colors: [`;
+		breakpoints: [${breakpoints.join(', ')}],`;
 
-		for (const c of colors) {
-			content += `\n			[${c[0]}, ${c[1]}, ${c[2]}, ${c[3]}],`;
+		if (hasVariants) {
+			content += `
+		colors: {
+			light: ${serializeRGBAArray(colors.light, '\t\t\t\t')},
+			dark: ${serializeRGBAArray(colors.dark, '\t\t\t\t')},
+		},`;
+		} else {
+			content += `
+		colors: ${serializeRGBAArray(colors, '\t\t\t')},`;
 		}
+
 		content += `
-		],
 	},`;
 	}
 
