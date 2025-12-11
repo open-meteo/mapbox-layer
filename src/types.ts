@@ -56,12 +56,7 @@ export type RequestResolver = (
 ) => { dataOptions: DataIdentityOptions; renderOptions: RenderOptions };
 
 export type PostReadCallback =
-	| ((
-			omFileReader: OMapsFileReader,
-			omUrl: string,
-			data: Data,
-			dataOptions: DataIdentityOptions
-	  ) => void)
+	| ((omFileReader: OMapsFileReader, data: Data, dataOptions: DataIdentityOptions) => void)
 	| undefined;
 
 export interface OmProtocolSettings {

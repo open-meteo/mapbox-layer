@@ -183,6 +183,14 @@ export class OMapsFileReader {
 		}
 	}
 
+	hasFileOpen(omUrl: string) {
+		if (true) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	dispose() {
 		if (this.reader) {
 			this.reader.dispose();

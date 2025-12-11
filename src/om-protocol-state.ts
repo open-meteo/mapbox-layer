@@ -90,7 +90,7 @@ export const ensureData = async (
 			);
 
 			if (postReadCallback) {
-				postReadCallback(omFileReader, state.omFileUrl, data, state.dataOptions);
+				postReadCallback(omFileReader, data, state.dataOptions);
 			}
 
 			state.data = data;
