@@ -313,7 +313,7 @@ describe('omProtocol', () => {
 			expect(postReadCallback).toHaveBeenCalledWith(
 				expect.anything(), // omFileReader
 				expect.stringContaining('map-tiles.open-meteo.com'), // baseUrl
-				expect.objectContaining({ values: expect.any(Float32Array) }) // data
+				expect.objectContaining({ values: Float32Array }) // data
 			);
 		});
 	});
