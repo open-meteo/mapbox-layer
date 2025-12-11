@@ -183,8 +183,8 @@ export class OMapsFileReader {
 		}
 	}
 
-	hasFileOpen(omUrl: string) {
-		if (true) {
+	hasFileOpen(omFileUrl: string) {
+		if (OMapsFileReader.s3BackendCache.get(omFileUrl)) {
 			return true;
 		} else {
 			return false;
