@@ -216,8 +216,7 @@ describe('Request Resolution', () => {
 						min: 0,
 						max: 100,
 						colors: [],
-						unit: 'C',
-						interpolationMethod: 'linear'
+						unit: 'C'
 					}
 				}
 			});

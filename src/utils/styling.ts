@@ -13,6 +13,22 @@ import type {
 	ResolvableColorScale
 } from '../types';
 
+function findLastIndexLE(arr: number[], value: number): number {
+	let lo = 0,
+		hi = arr.length - 1,
+		res = -1;
+	while (lo <= hi) {
+		const mid = (lo + hi) >>> 1;
+		if (arr[mid] <= value) {
+			res = mid;
+			lo = mid + 1;
+		} else {
+			hi = mid - 1;
+		}
+	}
+	return res;
+}
+
 export const getColor = (
 	colorScale: RenderableColorScale,
 	px: number
@@ -27,10 +43,7 @@ export const getColor = (
 			return colorScale.colors[index];
 		}
 		case 'breakpoint': {
-			const index = Math.max(
-				0,
-				colorScale.breakpoints.findLastIndex((breakpoint) => px >= breakpoint)
-			);
+			const index = Math.max(0, findLastIndexLE(colorScale.breakpoints, px));
 			return colorScale.colors[index % colorScale.colors.length];
 		}
 		default: {

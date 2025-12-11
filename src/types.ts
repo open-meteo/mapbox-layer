@@ -186,8 +186,6 @@ export type RenderableColorScale = RGBAColorScale | BreakPointColorScale;
 // Dictionary of color scales
 export type ColorScales = Record<string, ColorScale>;
 
-export type InterpolationMethod = 'none' | 'linear' | 'hermite2d';
-
 export type Interpolator = (
 	values: Float32Array<ArrayBufferLike>,
 	index: number,
