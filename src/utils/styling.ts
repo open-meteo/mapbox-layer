@@ -43,7 +43,14 @@ export const getColor = (
 			return colorScale.colors[index];
 		}
 		case 'breakpoint': {
-			const index = Math.max(0, findLastIndexLE(colorScale.breakpoints, px));
+			// const index = Math.max(
+			// 	0,
+			// 	colorScale.breakpoints.findIndex((breakpoint) => breakpoint >= px)
+			// );
+			const index = Math.max(
+				0,
+				colorScale.breakpoints.findLastIndex((breakpoint) => px >= breakpoint)
+			);
 			return colorScale.colors[index % colorScale.colors.length];
 		}
 		default: {
@@ -65,7 +72,7 @@ const constantOpacity = (opacity: number = 75): OpacityFn => {
 	return (_px: number) => opacity;
 };
 
-const COLOR_SCALES_WITH_ALIASES: ColorScales = {
+export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...COLOR_SCALES,
 	albedo: COLOR_SCALES['cloud_cover'],
 	boundary_layer_height: { ...COLOR_SCALES['convective_cloud_top'], min: 0, max: 2000 },
