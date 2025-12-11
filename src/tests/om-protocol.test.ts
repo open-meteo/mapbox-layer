@@ -147,7 +147,7 @@ describe('Request Resolution', () => {
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
 			expect(renderOptions.interval).toBe(0);
-			expect(renderOptions.colorScale.colors.length).toBe(65);
+			expect(renderOptions.colorScale.colors.length).toBe(46);
 		});
 
 		it('parses custom render options', async () => {
