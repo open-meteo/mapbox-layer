@@ -189,7 +189,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	},
 	cloud_cover: {
 		unit: '%',
-		breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+		breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
 		colorSegments: {
 			light: [{ range: [0, 100], colors: ['#ffffff', '#f1f5f9', '#d1d5db', '#9ca3af', '#4b5563'] }],
 			dark: [{ range: [0, 100], colors: ['#0b1220', '#4b5563', '#9ca3af', '#d1d5db', '#f1f5f9'] }]
@@ -262,9 +262,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	},
 	relative: {
 		unit: '%',
-		breakpoints: [
-			0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
-		],
+		breakpoints: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95],
 		colorSegments: [
 			{
 				range: [0, 100],
@@ -360,7 +358,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	},
 	thunderstorm: {
 		unit: '%',
-		breakpoints: [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+		breakpoints: [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90],
 		colorSegments: [
 			{ range: [0, 33], colors: ['#0000ff', '#008000'] },
 			{ range: [33, 66], colors: ['#008000', '#ffa500'] },

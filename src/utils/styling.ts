@@ -40,7 +40,7 @@ export const getColor = (
 		}
 		case 'breakpoint': {
 			const index = Math.max(0, findLastIndexLE(colorScale.breakpoints, px));
-			return colorScale.colors[index % colorScale.colors.length];
+			return colorScale.colors[index];
 		}
 		default: {
 			// This ensures exhaustiveness checking
@@ -50,42 +50,63 @@ export const getColor = (
 	}
 };
 
+function transformScale<T extends BreakpointColorScale>(
+	scale: T,
+	transform: (breakpoint: number) => number,
+	maybeUnit?: string
+): T {
+	const breakpoints = scale.breakpoints.map(transform);
+	const min = breakpoints[0];
+	const max = breakpoints[breakpoints.length - 1];
+	const unit = maybeUnit || scale.unit;
+	return {
+		...scale,
+		breakpoints,
+		min,
+		max,
+		unit
+	} as T;
+}
+
 export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...COLOR_SCALES,
 	albedo: COLOR_SCALES['cloud_cover'],
-	boundary_layer_height: { ...COLOR_SCALES['convective_cloud_top'], min: 0, max: 2000 },
+	boundary_layer_height: transformScale(
+		COLOR_SCALES['convective_cloud_top'] as BreakpointColorScale,
+		(b) => b / 2
+	),
 	cloud_base: COLOR_SCALES['convective_cloud_top'],
 	cloud_top: COLOR_SCALES['convective_cloud_top'],
 	convective_cloud_base: COLOR_SCALES['convective_cloud_top'],
 	dew_point: COLOR_SCALES['temperature'],
 	diffuse_radiation: COLOR_SCALES['shortwave'],
 	direct_radiation: COLOR_SCALES['shortwave'],
-	freezing_level_height: { ...COLOR_SCALES['temperature'], unit: 'm', min: 0, max: 4000 },
+	freezing_level_height: transformScale(
+		COLOR_SCALES['temperature'] as BreakpointColorScale,
+		(b) => (b + 20) * 80,
+		'm'
+	),
 	latent_heat_flux: {
 		...COLOR_SCALES['temperature'],
-		unit: 'W/m²',
-		min: -50,
-		max: 20
+		unit: 'W/m²'
 	},
 	sea_surface_temperature: {
-		...COLOR_SCALES['temperature'],
-		min: -2,
-		max: 35
+		...COLOR_SCALES['temperature']
 	},
 	sensible_heat_flux: {
 		...COLOR_SCALES['temperature'],
-		unit: 'W/m²',
-		min: -50,
-		max: 50
+		unit: 'W/m²'
 	},
 	rain: COLOR_SCALES['precipitation'],
 	showers: COLOR_SCALES['precipitation'],
-	snow_depth_water_equivalent: { ...COLOR_SCALES['precipitation'], unit: 'mm', min: 0, max: 3200 },
+	snow_depth_water_equivalent: transformScale(
+		COLOR_SCALES['precipitation'] as BreakpointColorScale,
+		(b) => b * 200
+	),
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
 	visibility: {
 		...COLOR_SCALES['geopotential_height'],
-		min: 0,
-		max: 20000
+		unit: 'W/m²'
 	},
 	wave: COLOR_SCALES['swell'],
 	wind_wave_height: COLOR_SCALES['swell'],
