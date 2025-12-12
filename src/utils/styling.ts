@@ -86,9 +86,7 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 		...COLOR_SCALES['temperature'],
 		unit: 'W/m²'
 	},
-	sea_surface_temperature: {
-		...COLOR_SCALES['temperature']
-	},
+	sea_surface_temperature: COLOR_SCALES['temperature'],
 	sensible_heat_flux: {
 		...COLOR_SCALES['temperature'],
 		unit: 'W/m²'
@@ -141,6 +139,7 @@ const getOptionalColorScale = (
 
 		const levelNum = Number(m[1]);
 
+		// geopotential_height color scale is defined on 500hPa -> scale it accordingly to other heights
 		const h500 = pressureHpaToIsaHeight(500);
 		const hLevel = pressureHpaToIsaHeight(levelNum);
 
