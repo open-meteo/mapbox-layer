@@ -392,21 +392,21 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	wind: {
 		unit: 'm/s',
 		breakpoints: [
-			0, 0.3, 0.6, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12.5, 15, 17.5, 20, 25, 30, 40, 50, 60, 80
+			0, 0.3, 0.6, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12.5, 15, 17.5, 20, 25, 30, 40, 50, 60
 		],
 		colorSegments: [
-			{ range: [0, 2.5], colors: ['#0000ff', '#0000ff'] },
-			{ range: [2.5, 10], colors: ['#0000ff', '#008000'] },
-			{ range: [10, 15], colors: ['#008000', '#ffa500'] },
-			{ range: [15, 30], colors: ['#ffa500', '#ff0000'] },
-			{ range: [30, 45], colors: ['#ff0000', '#800080'] },
-			{ range: [45, 80], colors: ['#800080', '#740505'] }
+			{ range: [0, 5], colors: ['steelblue', 'green'] }, // 0 to 5m/s
+			{ range: [5, 14], colors: ['green', 'orange'] }, // 5 to 15m/s
+			{ range: [14, 28], colors: ['orange', '#ff0000'] }, // 14 to 28m/s
+			{ range: [28, 45], colors: ['#ff0000', '#800080'] },
+			{ range: [45, 60], colors: ['#800080', '#740505'] }
 		],
 		opacitySegments: [
-			{ range: [0, 0.3], opacity: [0, 0.25], easing: 'linear' },
-			{ range: [0.3, 2], opacity: [0.25, 0.55], easing: 'linear' },
-			{ range: [2, 5], opacity: [0.55, 0.75], easing: 'linear' },
-			{ range: [5, 80], opacity: [0.75, 0.75], easing: 'linear' }
+			{ range: [0, 0.3], opacity: [0, 0.1], easing: 'linear' },
+			{ range: [0.3, 1], opacity: [0.1, 0.2], easing: 'linear' },
+
+			{ range: [1, 7], opacity: [0.2, 1], easing: 'linear' },
+			{ range: [7, 60], opacity: [1, 1], easing: 'linear' }
 		]
 	}
 };
