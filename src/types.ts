@@ -156,8 +156,6 @@ export type OpacityDefinition = number | OpacityFn;
 export interface BreakpointColorScale {
 	type: 'breakpoint';
 	unit: string;
-	min: number;
-	max: number;
 	// Must be sorted, e.g. [0, 10, 20, 30, 50, 100]
 	breakpoints: number[];
 	// Needs to have same length as breakpoints
@@ -167,8 +165,6 @@ export interface BreakpointColorScale {
 export interface ResolvedBreakpointColorScale {
 	type: 'breakpoint';
 	unit: string;
-	min: number;
-	max: number;
 	breakpoints: number[];
 	colors: RGBA[];
 }

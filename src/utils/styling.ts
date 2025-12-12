@@ -56,14 +56,10 @@ const transformScale = (
 	maybeUnit?: string
 ): BreakpointColorScale => {
 	const breakpoints = scale.breakpoints.map(transform);
-	const min = breakpoints[0];
-	const max = breakpoints[breakpoints.length - 1];
 	const unit = maybeUnit || scale.unit;
 	return {
 		...scale,
 		breakpoints,
-		min,
-		max,
 		unit
 	};
 };
@@ -139,15 +135,22 @@ const getOptionalColorScale = (
 			return scale;
 		}
 
+		if (scale.type !== 'breakpoint') {
+			return scale;
+		}
+
 		const levelNum = Number(m[1]);
-		// Compute ISA height (meters) for the pressure level
-		const computedMax = pressureHpaToIsaHeight(Math.floor(0.9 * levelNum));
-		const computedMin = pressureHpaToIsaHeight(Math.ceil(1.1 * levelNum));
+
+		const h500 = pressureHpaToIsaHeight(500);
+		const hLevel = pressureHpaToIsaHeight(levelNum);
+
+		const breakpoints = scale.breakpoints.map((breakpoint) => {
+			return (breakpoint * hLevel) / h500;
+		});
 
 		return {
 			...scale,
-			min: computedMin,
-			max: computedMax
+			breakpoints
 		};
 	}
 

@@ -223,7 +223,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	},
 	geopotential_height: {
 		unit: 'm',
-		breakpoints: [4600, 4800, 5000, 5200, 5400, 5600, 5800, 6000],
+		breakpoints: [4600, 4800, 5000, 5100, 5200, 5300, 5400, 5500, 5600, 5800, 6000],
 		colorSegments: [
 			{
 				range: [4600, 6000],
@@ -412,8 +412,6 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 };
 interface GeneratedColorScale {
 	unit: string;
-	min: number;
-	max: number;
 	breakpoints: number[];
 	colors: RGBA[] | { light: RGBA[]; dark: RGBA[] };
 }
@@ -423,8 +421,6 @@ function generateColorScales(): Record<string, GeneratedColorScale> {
 
 	for (const [key, definition] of Object.entries(colorScaleDefinitions)) {
 		const { unit, breakpoints } = definition;
-		const min = breakpoints[0];
-		const max = breakpoints[breakpoints.length - 1];
 
 		if (needsVariants(definition)) {
 			// Generate separate light and dark colors
@@ -432,8 +428,6 @@ function generateColorScales(): Record<string, GeneratedColorScale> {
 			const darkColors = generateColorsAtBreakpoints(definition, 'dark');
 			colorScales[key] = {
 				unit,
-				min,
-				max,
 				breakpoints,
 				colors: { light: lightColors, dark: darkColors }
 			};
@@ -442,8 +436,6 @@ function generateColorScales(): Record<string, GeneratedColorScale> {
 			const colors = generateColorsAtBreakpoints(definition, 'light');
 			colorScales[key] = {
 				unit,
-				min,
-				max,
 				breakpoints,
 				colors
 			};
@@ -470,7 +462,7 @@ function generateTypeScript(): void {
 export const COLOR_SCALES: ColorScales = {`;
 
 	for (const [key, colorScale] of Object.entries(colorScales)) {
-		const { min, max, unit, breakpoints, colors } = colorScale;
+		const { unit, breakpoints, colors } = colorScale;
 
 		const hasVariants = !Array.isArray(colors);
 
@@ -478,8 +470,6 @@ export const COLOR_SCALES: ColorScales = {`;
 	'${key}': {
 		type: 'breakpoint',
 		unit: '${unit}',
-		min: ${min},
-		max: ${max},
 		breakpoints: [${breakpoints.join(', ')}],`;
 
 		if (hasVariants) {

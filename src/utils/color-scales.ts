@@ -4,8 +4,6 @@ export const COLOR_SCALES: ColorScales = {
 	cape: {
 		type: 'breakpoint',
 		unit: 'J/kg',
-		min: 0,
-		max: 4000,
 		breakpoints: [0, 50, 150, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000],
 		colors: [
 			[0, 128, 0, 0],
@@ -26,8 +24,6 @@ export const COLOR_SCALES: ColorScales = {
 	cloud_cover: {
 		type: 'breakpoint',
 		unit: '%',
-		min: 0,
-		max: 90,
 		breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
 		colors: {
 			light: [
@@ -59,8 +55,6 @@ export const COLOR_SCALES: ColorScales = {
 	convective_inhibition: {
 		type: 'breakpoint',
 		unit: 'J/kg',
-		min: 0,
-		max: 500,
 		breakpoints: [0, 25, 50, 100, 150, 200, 300, 400, 500],
 		colors: [
 			[255, 255, 255, 0.5],
@@ -77,8 +71,6 @@ export const COLOR_SCALES: ColorScales = {
 	convective_cloud_top: {
 		type: 'breakpoint',
 		unit: 'm',
-		min: 0,
-		max: 6200,
 		breakpoints: [0, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6200],
 		colors: [
 			[192, 57, 43, 0],
@@ -96,15 +88,16 @@ export const COLOR_SCALES: ColorScales = {
 	geopotential_height: {
 		type: 'breakpoint',
 		unit: 'm',
-		min: 4600,
-		max: 6000,
-		breakpoints: [4600, 4800, 5000, 5200, 5400, 5600, 5800, 6000],
+		breakpoints: [4600, 4800, 5000, 5100, 5200, 5300, 5400, 5500, 5600, 5800, 6000],
 		colors: [
 			[46, 139, 122, 0.7],
 			[57, 63, 138, 0.7],
 			[28, 28, 130, 0.7],
+			[8, 42, 115, 0.7],
 			[0, 73, 102, 0.7],
+			[0, 101, 76, 0.7],
 			[0, 100, 21, 0.7],
+			[28, 117, 0, 0.7],
 			[93, 146, 0, 0.7],
 			[154, 97, 0, 0.7],
 			[85, 0, 0, 0.7]
@@ -113,8 +106,6 @@ export const COLOR_SCALES: ColorScales = {
 	precipitation: {
 		type: 'breakpoint',
 		unit: 'mm',
-		min: 0.01,
-		max: 30,
 		breakpoints: [0.01, 0.055, 0.11, 0.255, 0.45, 0.95, 2, 3, 4.95, 7.45, 10, 15, 20, 25, 30],
 		colors: [
 			[4, 59, 92, 0.336],
@@ -137,8 +128,6 @@ export const COLOR_SCALES: ColorScales = {
 	pressure: {
 		type: 'breakpoint',
 		unit: 'hPa',
-		min: 940,
-		max: 1060,
 		breakpoints: [
 			940, 950, 960, 970, 980, 990, 995, 1000, 1005, 1010, 1015, 1020, 1025, 1030, 1040, 1050, 1060
 		],
@@ -165,8 +154,6 @@ export const COLOR_SCALES: ColorScales = {
 	relative: {
 		type: 'breakpoint',
 		unit: '%',
-		min: 0,
-		max: 95,
 		breakpoints: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95],
 		colors: [
 			[207, 89, 126, 0.7],
@@ -194,8 +181,6 @@ export const COLOR_SCALES: ColorScales = {
 	shortwave: {
 		type: 'breakpoint',
 		unit: 'W/m²',
-		min: 0,
-		max: 1000,
 		breakpoints: [0, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
 		colors: [
 			[0, 147, 146, 0.7],
@@ -216,8 +201,6 @@ export const COLOR_SCALES: ColorScales = {
 	snow_depth: {
 		type: 'breakpoint',
 		unit: 'm',
-		min: 0,
-		max: 5,
 		breakpoints: [0, 0.01, 0.05, 0.1, 0.2, 0.5, 1, 1.5, 2, 3, 4, 5],
 		colors: [
 			[0, 128, 0, 0],
@@ -237,8 +220,6 @@ export const COLOR_SCALES: ColorScales = {
 	soil_moisture: {
 		type: 'breakpoint',
 		unit: 'vol. %',
-		min: 0,
-		max: 0.5,
 		breakpoints: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5],
 		colors: [
 			[232, 200, 138, 0],
@@ -257,8 +238,6 @@ export const COLOR_SCALES: ColorScales = {
 	swell: {
 		type: 'breakpoint',
 		unit: 'm',
-		min: 0,
-		max: 10,
 		breakpoints: [0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10],
 		colors: [
 			[0, 0, 255, 0.7],
@@ -280,8 +259,6 @@ export const COLOR_SCALES: ColorScales = {
 	swell_period: {
 		type: 'breakpoint',
 		unit: 's',
-		min: 0,
-		max: 20,
 		breakpoints: [0, 3, 5, 7, 9, 11, 13, 15, 17, 20],
 		colors: [
 			[160, 97, 75, 0.7],
@@ -299,8 +276,6 @@ export const COLOR_SCALES: ColorScales = {
 	temperature: {
 		type: 'breakpoint',
 		unit: '°C',
-		min: -80,
-		max: 50,
 		breakpoints: [
 			-80, -60, -50, -40, -37.5, -35, -32.5, -30, -27.5, -25, -22.5, -20, -17.5, -15, -12.5, -10,
 			-8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40,
@@ -358,8 +333,6 @@ export const COLOR_SCALES: ColorScales = {
 	temperature_2m_anomaly: {
 		type: 'breakpoint',
 		unit: 'K',
-		min: -5,
-		max: 5,
 		breakpoints: [-5, -4, -3, -2, -1, 0.5, 0, 0.5, 1, 2, 3, 4, 5],
 		colors: [
 			[0, 0, 255, 0.75],
@@ -380,8 +353,6 @@ export const COLOR_SCALES: ColorScales = {
 	thunderstorm: {
 		type: 'breakpoint',
 		unit: '%',
-		min: 0,
-		max: 90,
 		breakpoints: [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90],
 		colors: [
 			[0, 0, 255, 0],
@@ -400,8 +371,6 @@ export const COLOR_SCALES: ColorScales = {
 	uv: {
 		type: 'breakpoint',
 		unit: '',
-		min: 0,
-		max: 12,
 		breakpoints: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
 		colors: [
 			[0, 147, 146, 0.75],
@@ -422,8 +391,6 @@ export const COLOR_SCALES: ColorScales = {
 	vertical_velocity: {
 		type: 'breakpoint',
 		unit: 'm/s',
-		min: -0.75,
-		max: 0.75,
 		breakpoints: [-0.75, -0.5, -0.3, -0.15, -0.05, 0, 0.05, 0.15, 0.3, 0.5, 0.75],
 		colors: [
 			[0, 0, 255, 0.75],
@@ -442,8 +409,6 @@ export const COLOR_SCALES: ColorScales = {
 	wind: {
 		type: 'breakpoint',
 		unit: 'm/s',
-		min: 0,
-		max: 60,
 		breakpoints: [
 			0, 0.3, 0.6, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12.5, 15, 17.5, 20, 25, 30, 40, 50, 60
 		],
