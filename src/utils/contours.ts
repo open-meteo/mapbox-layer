@@ -106,7 +106,9 @@ export const generateContours = (
 	x: number,
 	y: number,
 	z: number,
+	tileSize: number,
 	interval: number = 2,
+	intervals?: number[],
 	extent: number = 4096
 ) => {
 	const features = [];
@@ -114,8 +116,8 @@ export const generateContours = (
 
 	const buffer = 1;
 
-	const width = 128;
-	const height = width;
+	const width = tileSize;
+	const height = tileSize;
 
 	const multiplier = extent / width;
 	let tld: number, bld: number;
@@ -144,8 +146,6 @@ export const generateContours = (
 			trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
 			brd = grid.getLinearInterpolatedValue(values, latTop, lon);
 
-			// trd = tile.get(j, i - 1);
-			// brd = tile.get(j, i);
 			const minL = minR;
 			const maxL = maxR;
 			minR = Math.min(trd, brd);
@@ -153,12 +153,22 @@ export const generateContours = (
 			if (isNaN(tld) || isNaN(trd) || isNaN(brd) || isNaN(bld)) {
 				continue;
 			}
-			const min = Math.min(minL, minR);
-			const max = Math.max(maxL, maxR);
-			const start = Math.ceil(min / interval) * interval;
-			const end = Math.floor(max / interval) * interval;
 
-			for (let threshold = start; threshold <= end; threshold += interval) {
+			let intervalList;
+			if (!intervals) {
+				const min = Math.min(minL, minR);
+				const max = Math.max(maxL, maxR);
+				const start = Math.ceil(min / interval) * interval;
+				const end = Math.floor(max / interval) * interval;
+				intervalList = Array.from(
+					{ length: 1 + (end - start) / interval },
+					(_, i) => start + interval * i
+				);
+			} else {
+				intervalList = intervals;
+			}
+
+			for (const threshold of intervalList) {
 				const tl = tld > threshold;
 				const tr = trd > threshold;
 				const bl = bld > threshold;

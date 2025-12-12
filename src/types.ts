@@ -20,6 +20,7 @@ export interface RenderOptions {
 	drawArrows: boolean;
 	drawContours: boolean;
 	interval: number;
+	intervalOnBreakpoints: boolean;
 	colorScale: RenderableColorScale;
 }
 

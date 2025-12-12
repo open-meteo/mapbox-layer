@@ -101,10 +101,11 @@ const defaultResolveRenderOptions = (
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
 
+	const interval = Number(params.get('interval')) || 0;
 	const drawGrid = params.get('grid') === 'true';
 	const drawArrows = params.get('arrows') === 'true';
 	const drawContours = params.get('contours') === 'true';
-	const interval = Number(params.get('interval')) || 0;
+	const intervalOnBreakpoints = params.get('interval_on_breakpoints') === 'true';
 
 	return {
 		tileSize,
@@ -113,6 +114,7 @@ const defaultResolveRenderOptions = (
 		drawArrows,
 		drawContours,
 		interval,
+		intervalOnBreakpoints,
 		colorScale
 	};
 };
