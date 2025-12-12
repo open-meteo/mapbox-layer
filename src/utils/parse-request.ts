@@ -43,7 +43,8 @@ export const defaultResolveRequest = (
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
 		dataOptions,
-		settings.colorScales
+		settings.colorScales,
+		settings.intervals
 	);
 
 	return { dataOptions, renderOptions };
@@ -86,7 +87,8 @@ const defaultResolveDataIdentity = (
 const defaultResolveRenderOptions = (
 	urlComponents: ParsedUrlComponents,
 	dataOptions: DataIdentityOptions,
-	colorScales: ColorScales
+	colorScales: ColorScales,
+	intervals?: number[]
 ): RenderOptions => {
 	const { params } = urlComponents;
 
@@ -115,7 +117,8 @@ const defaultResolveRenderOptions = (
 		drawContours,
 		interval,
 		intervalOnBreakpoints,
-		colorScale
+		colorScale,
+		intervals
 	};
 };
 

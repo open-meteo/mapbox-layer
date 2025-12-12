@@ -70,7 +70,13 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			const interval = message.data.renderOptions.interval;
 			const grid = GridFactory.create(domain.grid, ranges);
 			let intervals;
-			if (colorScale.type === 'breakpoint' && message.data.renderOptions.intervalOnBreakpoints) {
+
+			if (message.data.renderOptions.intervals) {
+				intervals = message.data.renderOptions.intervals;
+			} else if (
+				colorScale.type === 'breakpoint' &&
+				message.data.renderOptions.intervalOnBreakpoints
+			) {
 				intervals = colorScale.breakpoints;
 			}
 			generateContours(pbf, values, grid, x, y, z, tileSize, interval ? interval : 2, intervals);
