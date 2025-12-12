@@ -81,43 +81,34 @@
 				hash: true
 			});
 
-			// give the 'dark=true' parameter to the url for dark background maps
-			function buildOmUrl(dark) {
-				const base = 'https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json';
-				const params = new URLSearchParams({
-					time_step: 'current_time_1H',
-					variable: 'cloud_cover'
-				});
-				if (dark) params.set('dark', 'true');
-				return base + '?' + params.toString();
-			}
+			let dark = false;
+			const baseOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=cloud_cover`;
 
-			// Add or replace the Open-Meteo source+layer using the given dark flag
 			function setDarkMode(dark) {
 				// update UI style
 				const wrapper = document.getElementById('toggle');
-				if (dark) wrapper.classList.add('dark');
-				else wrapper.classList.remove('dark');
-
-				// remove existing OM layer & source if present
-				if (map.getLayer('omFileLayer')) {
-					try {
-						map.removeLayer('omFileLayer');
-					} catch (e) {
-						/* ignore */
-					}
-				}
-				if (map.getSource('omFileSource')) {
-					try {
-						map.removeSource('omFileSource');
-					} catch (e) {
-						/* ignore */
-					}
+				if (dark) {
+					wrapper.classList.add('dark');
+				} else {
+					wrapper.classList.remove('dark');
 				}
 
-				const omUrl = buildOmUrl(dark);
+				const omUrl = baseOmUrl + (dark ? '&dark=true' : '');
+
+				const omFileSource = map.getSource('omFileSource');
+				if (omFileSource) {
+					omFileSource.setUrl('om://' + omUrl);
+				}
+			}
+
+			const checkbox = document.getElementById('modeCheckbox');
+			checkbox.addEventListener('change', (evt) => {
+				setDarkMode(evt.target.checked);
+			});
+
+			map.on('load', () => {
 				map.addSource('omFileSource', {
-					url: 'om://' + omUrl,
+					url: 'om://' + baseOmUrl,
 					type: 'raster',
 					tileSize: 256,
 					maxzoom: 12
@@ -127,21 +118,6 @@
 					id: 'omFileLayer',
 					type: 'raster',
 					source: 'omFileSource'
-				});
-			}
-
-			map.on('load', () => {
-				// initial mode is light
-				const stored = localStorage.getItem('om-dark-mode');
-				let dark = false;
-				const checkbox = document.getElementById('modeCheckbox');
-				checkbox.checked = dark;
-				// apply initial mode
-				setDarkMode(dark);
-
-				// wire toggle
-				checkbox.addEventListener('change', (evt) => {
-					setDarkMode(evt.target.checked);
 				});
 			});
 		</script>
