@@ -50,11 +50,11 @@ export const getColor = (
 	}
 };
 
-function transformScale<T extends BreakpointColorScale>(
-	scale: T,
+const transformScale = (
+	scale: BreakpointColorScale,
 	transform: (breakpoint: number) => number,
 	maybeUnit?: string
-): T {
+): BreakpointColorScale => {
 	const breakpoints = scale.breakpoints.map(transform);
 	const min = breakpoints[0];
 	const max = breakpoints[breakpoints.length - 1];
@@ -65,8 +65,8 @@ function transformScale<T extends BreakpointColorScale>(
 		min,
 		max,
 		unit
-	} as T;
-}
+	};
+};
 
 export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...COLOR_SCALES,
