@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Custom Breakpoint Colorscale</title>
+		<title>Open-Meteo Mapbox Layer - Post Read Callback Colorscale</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
@@ -26,7 +26,6 @@
 		<script>
 			// ECMWF IFS HRES Pressure Data is shown in MPa instead of HPa, scale the values down by 100 post read
 			const postReadCallback = (omFileReader, data, state) => {
-				console.log(state);
 				if (
 					state.dataOptions.domain.value === 'ecmwf_ifs' &&
 					state.dataOptions.variable === 'pressure_msl'

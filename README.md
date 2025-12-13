@@ -142,6 +142,27 @@ For the vector source examples there is the `examples/vector` sub-directory with
 - `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.
 - `examples/vector/wind-arrows.html` – displays wind map with directional arrows.
 
+### Callbacks
+
+When you need to modify the data after it’s been loaded, the protocol now includes a post‑read callback. You can transform the data with code similar to the following:
+
+```ts
+const postReadCallback = (omFileReader, data, state) => {
+	if (data.values) {
+		data.values = data.values?.map((value) => value / 100);
+	}
+};
+
+const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+omProtocolOptions.postReadCallback = postReadCallback;
+
+maplibregl.addProtocol('om', (params) =>
+	OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+);
+```
+
+An example could be found in `examples/callbacks`
+
 ## Capture API
 
 > **⚠️** Using the Capture API will add 0.5-1s delay for each request
