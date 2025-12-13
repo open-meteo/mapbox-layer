@@ -43,7 +43,8 @@ export const defaultResolveRequest = (
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
 		dataOptions,
-		settings.colorScales
+		settings.colorScales,
+		settings.intervals
 	);
 
 	return { dataOptions, renderOptions };
@@ -86,7 +87,8 @@ const defaultResolveDataIdentity = (
 const defaultResolveRenderOptions = (
 	urlComponents: ParsedUrlComponents,
 	dataOptions: DataIdentityOptions,
-	colorScales: ColorScales
+	colorScales: ColorScales,
+	intervals?: number[]
 ): RenderOptions => {
 	const { params } = urlComponents;
 
@@ -101,10 +103,11 @@ const defaultResolveRenderOptions = (
 	const tileSize = parseTileSize(params.get('tile-size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
 
+	const interval = Number(params.get('interval')) || 0;
 	const drawGrid = params.get('grid') === 'true';
 	const drawArrows = params.get('arrows') === 'true';
 	const drawContours = params.get('contours') === 'true';
-	const interval = Number(params.get('interval')) || 0;
+	const intervalOnBreakpoints = params.get('interval_on_breakpoints') === 'true';
 
 	return {
 		tileSize,
@@ -113,7 +116,9 @@ const defaultResolveRenderOptions = (
 		drawArrows,
 		drawContours,
 		interval,
-		colorScale
+		intervalOnBreakpoints,
+		colorScale,
+		intervals
 	};
 };
 

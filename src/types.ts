@@ -20,7 +20,9 @@ export interface RenderOptions {
 	drawArrows: boolean;
 	drawContours: boolean;
 	interval: number;
+	intervalOnBreakpoints: boolean;
 	colorScale: RenderableColorScale;
+	intervals?: number[];
 }
 
 export interface ParsedUrlComponents {
@@ -64,6 +66,7 @@ export interface OmProtocolSettings {
 	useSAB: boolean;
 
 	// dynamic
+	intervals?: number[];
 	colorScales: ColorScales;
 	domainOptions: Domain[];
 
