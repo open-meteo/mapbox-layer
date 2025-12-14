@@ -155,7 +155,7 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile-size=512&resolution-factor=2&grid=true&arrows=true&contours=true';
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=512&resolution-factor=2&grid=true&arrows=true&contours=true';
 			const components = parseUrlComponents(url);
 			const { renderOptions } = defaultResolveRequest(components, settings);
 
@@ -171,7 +171,7 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile-size=999';
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
 			const components = parseUrlComponents(url);
 
 			expect(() => defaultResolveRequest(components, settings)).toThrow('Invalid tile size');
