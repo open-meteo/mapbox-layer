@@ -7,7 +7,7 @@ import {
 	RENDERING_ONLY_PARAMS,
 	TILE_SUFFIX_REGEX,
 	TIME_STEP_REGEX,
-	VALID_OM_FILE_REGEX
+	VALID_OM_URL_REGEX
 } from './constants';
 
 import { ParsedUrlComponents, TileIndex } from '../types';
@@ -145,7 +145,7 @@ export const parseMetaJson = async (omUrl: string) => {
 };
 
 export const assertOmUrlValid = (url: string) => {
-	const groups = url.match(VALID_OM_FILE_REGEX)?.groups;
+	const groups = url.match(VALID_OM_URL_REGEX)?.groups;
 	if (!groups) return false;
 
 	const { domain, runYear } = groups;
