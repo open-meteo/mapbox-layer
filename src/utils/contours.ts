@@ -1,6 +1,7 @@
 import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
 
+import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
@@ -109,7 +110,7 @@ export const generateContours = (
 	tileSize: number,
 	interval: number = 2,
 	intervals?: number[],
-	extent: number = 4096
+	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];
 	let cursor: [number, number] = [0, 0];
