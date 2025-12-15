@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Open-Meteo Mapbox Layer - Darkmode Example</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+		<!-- x-release-please-start-version -->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>
+		<!-- x-release-please-end -->
+		<!-- Local development -->
+		<!--<script src="../../dist/index.js"></script>-->
+		<style>
+			html,
+			body,
+			#map {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+			}
+
+			.mode-toggle {
+				position: absolute;
+				right: 12px;
+				top: 12px;
+				background: rgba(255, 255, 255, 0.9);
+				border-radius: 6px;
+				padding: 8px 10px;
+				font-family: sans-serif;
+				box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+				z-index: 2;
+			}
+			.mode-toggle.dark {
+				background: rgba(20, 20, 20, 0.85);
+				color: #fff;
+			}
+			.mode-toggle label {
+				align-items: center;
+				display: inline-flex;
+				gap: 8px;
+				cursor: pointer;
+				user-select: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+
+		<div id="toggle" class="mode-toggle" role="region" aria-label="Map color mode">
+			<label>
+				<input id="modeCheckbox" type="checkbox" />
+				Dark mode
+			</label>
+		</div>
+
+		<script>
+			maplibregl.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
+
+			const map = new maplibregl.Map({
+				container: 'map',
+				style: {
+					version: 8,
+					sources: {
+						osm: {
+							type: 'raster',
+							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+							tileSize: 256,
+							attribution:
+								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+						}
+					},
+					layers: [
+						{
+							id: 'osm',
+							type: 'raster',
+							source: 'osm'
+						}
+					]
+				},
+				hash: true
+			});
+
+			let dark = false;
+			const baseOmUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=cloud_cover`;
+
+			function setDarkMode(dark) {
+				// update UI style
+				const wrapper = document.getElementById('toggle');
+				if (dark) {
+					wrapper.classList.add('dark');
+				} else {
+					wrapper.classList.remove('dark');
+				}
+
+				const omUrl = baseOmUrl + (dark ? '&dark=true' : '');
+
+				const omFileSource = map.getSource('omFileSource');
+				if (omFileSource) {
+					omFileSource.setUrl('om://' + omUrl);
+				}
+			}
+
+			const checkbox = document.getElementById('modeCheckbox');
+			checkbox.addEventListener('change', (evt) => {
+				setDarkMode(evt.target.checked);
+			});
+
+			map.on('load', () => {
+				map.addSource('omFileSource', {
+					url: 'om://' + baseOmUrl,
+					type: 'raster',
+					tileSize: 256,
+					maxzoom: 12
+				});
+
+				map.addLayer({
+					id: 'omFileLayer',
+					type: 'raster',
+					source: 'omFileSource'
+				});
+			});
+		</script>
+	</body>
+</html>
