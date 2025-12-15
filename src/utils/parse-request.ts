@@ -1,5 +1,12 @@
 import { GridFactory } from '../grids/index';
 
+import {
+	DEFAULT_INTERVAL,
+	DEFAULT_RESOLUTION_FACTOR,
+	DEFAULT_TILE_SIZE,
+	VALID_RESOLUTION_FACTORS,
+	VALID_TILE_SIZES
+} from './constants';
 import { parseUrlComponents } from './parse-url';
 import { getColorScale, resolveColorScale } from './styling';
 
@@ -11,14 +18,9 @@ import type {
 	OmProtocolSettings,
 	ParsedRequest,
 	ParsedUrlComponents,
-	RGBAColorScale,
-	RenderOptions
+	RenderOptions,
+	RenderableColorScale
 } from '../types';
-
-const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
-const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
-const DEFAULT_TILE_SIZE = 256;
-const DEFAULT_RESOLUTION_FACTOR = 1;
 
 export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedRequest => {
 	const urlComponents = parseUrlComponents(url);
@@ -91,20 +93,29 @@ const defaultResolveRenderOptions = (
 	const { params } = urlComponents;
 
 	const dark = params.get('dark') === 'true';
-	let colorScale: RGBAColorScale;
+	let colorScale: RenderableColorScale;
 	if (colorScales.custom) {
 		colorScale = resolveColorScale(colorScales.custom, dark);
 	} else {
 		colorScale = getColorScale(dataOptions.variable, dark, colorScales);
 	}
 
-	const tileSize = parseTileSize(params.get('tile-size'));
-	const resolutionFactor = parseResolutionFactor(params.get('resolution-factor'));
+	const tileSize = parseTileSize(params.get('tile_size'));
+	const resolutionFactor = parseResolutionFactor(params.get('resolution_factor'));
+
+	let intervals = [DEFAULT_INTERVAL];
+	if (params.get('intervals')) {
+		intervals = params
+			.get('intervals')
+			?.split(',')
+			.map((interval) => Number(interval)) as number[];
+	} else if (colorScale.type === 'breakpoint') {
+		intervals = colorScale.breakpoints;
+	}
 
 	const drawGrid = params.get('grid') === 'true';
 	const drawArrows = params.get('arrows') === 'true';
 	const drawContours = params.get('contours') === 'true';
-	const interval = Number(params.get('interval')) || 0;
 
 	return {
 		tileSize,
@@ -112,25 +123,25 @@ const defaultResolveRenderOptions = (
 		drawGrid,
 		drawArrows,
 		drawContours,
-		interval,
-		colorScale
+		colorScale,
+		intervals
 	};
 };
 
 const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
-	const size = value ? Number(value) : DEFAULT_TILE_SIZE;
-	if (!VALID_TILE_SIZES.includes(size)) {
+	const tileSize = value ? Number(value) : DEFAULT_TILE_SIZE;
+	if (!VALID_TILE_SIZES.includes(tileSize)) {
 		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
 	}
-	return size as 64 | 128 | 256 | 512 | 1024;
+	return tileSize as 64 | 128 | 256 | 512 | 1024;
 };
 
 const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
-	const factor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
-	if (!VALID_RESOLUTION_FACTORS.includes(factor)) {
+	const resolutionFactor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
+	if (!VALID_RESOLUTION_FACTORS.includes(resolutionFactor)) {
 		throw new Error(
 			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
 		);
 	}
-	return factor as 0.5 | 1 | 2;
+	return resolutionFactor as 0.5 | 1 | 2;
 };
