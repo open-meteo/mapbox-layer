@@ -167,6 +167,24 @@ export class ProjectionGrid implements GridInterface {
 		return { index, xFraction, yFraction };
 	}
 
+	getIndex(lon: number, lat: number): number | undefined {
+		const [xPos, yPos] = this.projection.forward(lat, lon);
+
+		const x = (xPos - this.minX) / this.dx;
+		const y = (yPos - this.minY) / this.dy;
+
+		if (x < 0 || x >= this.nx || y < 0 || y >= this.ny) {
+			return undefined;
+		}
+
+		const index = Math.floor(y) * this.nx + Math.floor(x);
+		if (index && index >= 0) {
+			return index;
+		} else {
+			return undefined;
+		}
+	}
+
 	private getProjectedBorderPoints(): number[][] {
 		const points = [];
 		for (let i = 0; i < this.ny; i++) {

@@ -114,7 +114,7 @@ export class GaussianGrid implements GridInterface {
 	/**
 	 * Find the grid point index for given latitude and longitude
 	 */
-	/*findPoint(lat: number, lon: number): number {
+	getIndex(lat: number, lon: number): number | undefined {
 		const dy = 180 / (2 * this.latitudeLines + 0.5);
 		const y =
 			(Math.round(this.latitudeLines - 1 - (lat - dy / 2) / dy) + 2 * this.latitudeLines) %
@@ -125,7 +125,7 @@ export class GaussianGrid implements GridInterface {
 
 		const x = (Math.round(lon / dx) + nx) % nx;
 		return this.integral(y) + x;
-	}*/
+	}
 
 	/*getPos(gridpoint: number): { y: number; x: number; nx: number } {
 		const y =
