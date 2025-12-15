@@ -92,6 +92,20 @@ export class RegularGrid implements GridInterface {
 		}
 	}
 
+	getLatLon(index: number): [lat: number, lon: number] | undefined {
+		if (index < 0 || index > this.nx * this.ny) {
+			return undefined;
+		}
+
+		const x = index % this.nx;
+		const y = Math.floor(index / this.nx);
+
+		const lat = this.bounds[1] + y * this.dy;
+		const lon = this.bounds[0] + x * this.dx;
+
+		return [lat, lon];
+	}
+
 	getBounds(): Bounds {
 		return this.bounds;
 	}

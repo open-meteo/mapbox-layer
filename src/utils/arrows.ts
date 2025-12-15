@@ -4,7 +4,7 @@ import Pbf from 'pbf';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
-import { DimensionRange, Domain } from '../types';
+import { ClippingOptions, DimensionRange, Domain } from '../types';
 
 export const generateArrows = (
 	pbf: Pbf,
@@ -15,6 +15,7 @@ export const generateArrows = (
 	x: number,
 	y: number,
 	z: number,
+	clippingOptions: ClippingOptions,
 	extent: number = 4096,
 	arrows: number = 27
 ) => {
@@ -38,6 +39,11 @@ export const generateArrows = (
 
 			const center = [tileX - size / 2, tileY - size / 2];
 			const geom = [];
+
+			const index = grid.getIndex(lon, lat);
+			if (clippingOptions.indicesInBounds && !clippingOptions.indicesInBounds[index]) {
+				continue;
+			}
 
 			const speed = grid.getLinearInterpolatedValue(values, lat, lon);
 			const direction = degreesToRadians(

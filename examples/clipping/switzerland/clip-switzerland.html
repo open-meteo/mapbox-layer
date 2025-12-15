@@ -28,7 +28,7 @@
 			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
-					// optionally use turf to do some simplication
+					// optionally use turf to do some simplication and calculate bbox
 					const swissPolygon = turf.multiPolygon(geojson.features[1].geometry.coordinates);
 					const swissBbox = turf.bbox(swissPolygon);
 					const simplifiedSwissPolygon = turf.simplify(swissPolygon, {
@@ -36,10 +36,30 @@
 						highQuality: true
 					});
 
+					const iconD2 = OpenMeteoMapboxLayer.domainOptions.find(
+						(dO) => dO.value === 'dwd_icon_d2'
+					);
+
+					const grid = OpenMeteoMapboxLayer.GridFactory.create(iconD2.grid);
+
+					const ranges = [
+						{ start: grid.ny, end: 0 },
+						{ start: grid.nx, end: 0 }
+					];
+					const indicesInBounds = Array(grid.nx * grid.ny);
+					for (let [i, _] of indicesInBounds.entries()) {
+						const [lat, lon] = grid.getLatLon(i);
+						const point = turf.point([lon, lat]);
+						const inBounds = turf.booleanWithin(point, simplifiedSwissPolygon);
+
+						indicesInBounds[i] = inBounds;
+					}
+
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
 						polygons: [...simplifiedSwissPolygon.geometry.coordinates[0]],
-						bounds: swissBbox
+						bounds: swissBbox,
+						indicesInBounds: indicesInBounds
 					};
 
 					// use the settings as argument for the protocol
@@ -70,7 +90,11 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+					//&partial=true&bounds=${swissBbox[1]},${swissBbox[0]},${swissBbox[3]},${swissBbox[2]}
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/latest.json?time_step=current_time_1H&variable=wind_u_component_10m&arrows=true`;
+
+					// return to meteoswiss rotatedlatlon projection after testing
+					//const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
@@ -83,6 +107,45 @@
 							id: 'omFileLayer',
 							type: 'raster',
 							source: 'omFileSource'
+						});
+
+						map.addSource('omFileVectorSource', {
+							url: 'om://' + omUrl + '&arrows=true',
+							type: 'vector'
+						});
+
+						map.addLayer({
+							id: 'omFileVectorLayer',
+							type: 'line',
+							source: 'omFileVectorSource',
+							'source-layer': 'wind-arrows',
+							paint: {
+								'line-color': [
+									'case',
+									['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
+									'rgba(0,0,0, 0.6)',
+									[
+										'case',
+										['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
+										'rgba(0,0,0, 0.5)',
+										[
+											'case',
+											['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
+											'rgba(0,0,0, 0.4)',
+											[
+												'case',
+												['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
+												'rgba(0,0,0, 0.3)',
+												'rgba(0,0,0, 0.2)'
+											]
+										]
+									]
+								],
+								'line-width': 2
+							},
+							layout: {
+								'line-cap': 'round'
+							}
 						});
 					});
 				});

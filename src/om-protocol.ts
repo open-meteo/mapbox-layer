@@ -123,6 +123,7 @@ const getTilejson = async (
 	clippingOptions?: ClippingOptions
 ): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
+	// Also parse ranges here
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
 	let bounds;
 	if (clippingOptions && clippingOptions.bounds) {

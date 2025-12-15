@@ -16,6 +16,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const ranges = message.data.dataOptions.ranges;
 	const domain = message.data.dataOptions.domain;
 	const values = message.data.data.values;
+	const clippingOptions = message.data.clippingOptions;
 
 	if (!values) {
 		throw new Error('No values provided');
@@ -24,57 +25,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	if (message.data.type == 'getImage') {
 		const tileSize = message.data.renderOptions.tileSize;
 		const colorScale = message.data.renderOptions.colorScale;
-
-		const clippingOptions = message.data.clippingOptions;
-
-		// let tileLiesInBoundaries = true;
-		// let tileLiesWithinBoundaries = true;
-		// let boundaries, polygons;
-		// if (clippingOptions) {
-		// 	try {
-		// 		// optional dependancy
-		// 		// const turf = await import('@turf/turf');
-
-		// 		tileLiesInBoundaries = false;
-		// 		tileLiesWithinBoundaries = false;
-		// 		const tileBbox = turf.polygon(tilebelt.tileToGeoJSON([x, y, z]).coordinates);
-
-		// 		// zoomlevel 0 should be 0.25 zoomlevel 12 should be 0.00025 (works for both example sources)
-		// 		const tolerance = 0.00025 * 10 ** ((12 - z) / 3);
-
-		// 		boundaries = [];
-		// 		polygons = [];
-		// 		for (const feature of clippingOptions.geojson.features) {
-		// 			const boundary = turf.polygon(feature.geometry.coordinates[0]);
-		// 			// highQuality is 10-20x slower, but better results, and since it's run only once here should be okay.
-		// 			const simplifiedBoundary = turf.simplify(boundary, {
-		// 				tolerance: tolerance,
-		// 				highQuality: true
-		// 			});
-		// 			if (!tileLiesInBoundaries && turf.booleanIntersects(tileBbox, simplifiedBoundary)) {
-		// 				tileLiesInBoundaries = true;
-		// 			}
-		// 			if (!tileLiesWithinBoundaries && turf.booleanWithin(tileBbox, simplifiedBoundary)) {
-		// 				tileLiesWithinBoundaries = true;
-		// 			}
-
-		// 			boundaries.push(simplifiedBoundary);
-
-		// 			for (const coordinates of simplifiedBoundary.geometry.coordinates) {
-		// 				polygons.push(
-		// 					coordinates.map((coordinate) => {
-		// 						const polyX = lon2tile(coordinate[0], z);
-		// 						const polyY = lat2tile(coordinate[1], z);
-		// 						return [(polyX - x) * tileSize, (polyY - y) * tileSize];
-		// 					})
-		// 				);
-		// 			}
-		// 		}
-		// 	} catch (e) {
-		// 		console.log(e);
-		// 		throw new Error('Could not load @turf/turf');
-		// 	}
-		// }
 
 		const pixels = tileSize * tileSize;
 		// Initialized with zeros
@@ -156,7 +106,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
+			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawContours) {
 			const interval = message.data.renderOptions.interval;
