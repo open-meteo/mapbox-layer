@@ -1,3 +1,5 @@
+export const DEFAULT_INTERVAL = 2;
+
 export const VALID_TILE_SIZES = [64, 128, 256, 512, 1024];
 export const DEFAULT_TILE_SIZE = 256;
 export const VALID_RESOLUTION_FACTORS = [0.5, 1, 2];
@@ -10,11 +12,10 @@ export const RENDERING_ONLY_PARAMS = new Set([
 	'grid',
 	'partial',
 	'arrows',
-	'interval',
+	'intervals',
 	'tile_size',
 	'contours',
-	'resolution_factor',
-	'interval_on_breakpoints'
+	'resolution_factor'
 ]);
 
 /* OM URL */

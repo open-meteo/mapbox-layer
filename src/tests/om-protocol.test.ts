@@ -72,13 +72,13 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&interval=2';
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
 			const components = parseUrlComponents(url);
 			const { dataOptions, renderOptions } = defaultResolveRequest(components, settings);
 
 			expect(dataOptions.domain.value).toBe('domain1');
 			expect(dataOptions.variable).toBe('temperature');
-			expect(renderOptions.interval).toBe(2);
+			expect(renderOptions.intervals).toBe([2]);
 		});
 
 		it('computes partial ranges when partial=true and bounds provided', async () => {
@@ -146,7 +146,7 @@ describe('Request Resolution', () => {
 			expect(renderOptions.drawGrid).toBe(false);
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
-			expect(renderOptions.interval).toBe(0);
+			expect(renderOptions.intervals).toBe([2]);
 			expect(renderOptions.colorScale.colors.length).toBe(46);
 		});
 
@@ -211,7 +211,7 @@ describe('Request Resolution', () => {
 					makeGrid: false,
 					makeArrows: false,
 					makeContours: false,
-					interval: 0,
+					interval: [2],
 					colorScale: {
 						min: 0,
 						max: 100,

@@ -67,19 +67,9 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
 		}
 		if (message.data.renderOptions.drawContours) {
-			const interval = message.data.renderOptions.interval;
+			const intervals = message.data.renderOptions.intervals;
 			const grid = GridFactory.create(domain.grid, ranges);
-			let intervals;
-
-			if (message.data.renderOptions.intervals) {
-				intervals = message.data.renderOptions.intervals;
-			} else if (
-				colorScale.type === 'breakpoint' &&
-				message.data.renderOptions.intervalOnBreakpoints
-			) {
-				intervals = colorScale.breakpoints;
-			}
-			generateContours(pbf, values, grid, x, y, z, tileSize, interval ? interval : 2, intervals);
+			generateContours(pbf, values, grid, x, y, z, tileSize, intervals);
 		}
 
 		const arrayBuffer = pbf.finish();

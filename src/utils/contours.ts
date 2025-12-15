@@ -108,8 +108,7 @@ export const generateContours = (
 	y: number,
 	z: number,
 	tileSize: number,
-	interval: number = 2,
-	intervals?: number[],
+	intervals: number[],
 	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];
@@ -156,7 +155,8 @@ export const generateContours = (
 			}
 
 			let intervalList;
-			if (!intervals) {
+			if (intervals.length === 1) {
+				const interval = intervals[0];
 				const min = Math.min(minL, minR);
 				const max = Math.max(maxL, maxR);
 				const start = Math.ceil(min / interval) * interval;

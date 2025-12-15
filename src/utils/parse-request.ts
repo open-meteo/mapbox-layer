@@ -1,6 +1,7 @@
 import { GridFactory } from '../grids/index';
 
 import {
+	DEFAULT_INTERVAL,
 	DEFAULT_RESOLUTION_FACTOR,
 	DEFAULT_TILE_SIZE,
 	VALID_RESOLUTION_FACTORS,
@@ -44,8 +45,7 @@ export const defaultResolveRequest = (
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
 		dataOptions,
-		settings.colorScales,
-		settings.intervals
+		settings.colorScales
 	);
 
 	return { dataOptions, renderOptions };
@@ -88,8 +88,7 @@ const defaultResolveDataIdentity = (
 const defaultResolveRenderOptions = (
 	urlComponents: ParsedUrlComponents,
 	dataOptions: DataIdentityOptions,
-	colorScales: ColorScales,
-	intervals?: number[]
+	colorScales: ColorScales
 ): RenderOptions => {
 	const { params } = urlComponents;
 
@@ -104,11 +103,19 @@ const defaultResolveRenderOptions = (
 	const tileSize = parseTileSize(params.get('tile_size'));
 	const resolutionFactor = parseResolutionFactor(params.get('resolution_factor'));
 
-	const interval = Number(params.get('interval')) || 0;
+	let intervals = [DEFAULT_INTERVAL];
+	if (params.get('intervals')) {
+		intervals = params
+			.get('intervals')
+			?.split(',')
+			.map((interval) => Number(interval)) as number[];
+	} else if (colorScale.type === 'breakpoint') {
+		intervals = colorScale.breakpoints;
+	}
+
 	const drawGrid = params.get('grid') === 'true';
 	const drawArrows = params.get('arrows') === 'true';
 	const drawContours = params.get('contours') === 'true';
-	const intervalOnBreakpoints = params.get('interval_on_breakpoints') === 'true';
 
 	return {
 		tileSize,
@@ -116,8 +123,6 @@ const defaultResolveRenderOptions = (
 		drawGrid,
 		drawArrows,
 		drawContours,
-		interval,
-		intervalOnBreakpoints,
 		colorScale,
 		intervals
 	};
