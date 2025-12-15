@@ -4,7 +4,13 @@ import { parseUrlComponents } from '../utils/parse-url';
 import { RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DimensionRange, Domain, OmProtocolSettings, TileJSON } from '../types';
+import {
+	DimensionRange,
+	Domain,
+	OmProtocolSettings,
+	ResolvedBreakpointColorScale,
+	TileJSON
+} from '../types';
 
 const { mockReturnBuffer, mockReadVariableResult } = vi.hoisted(() => ({
 	mockReturnBuffer: { value: new ArrayBuffer(16) },
@@ -78,7 +84,7 @@ describe('Request Resolution', () => {
 
 			expect(dataOptions.domain.value).toBe('domain1');
 			expect(dataOptions.variable).toBe('temperature');
-			expect(renderOptions.intervals).toBe([2]);
+			expect(renderOptions.intervals).toStrictEqual([2]);
 		});
 
 		it('computes partial ranges when partial=true and bounds provided', async () => {
@@ -141,12 +147,14 @@ describe('Request Resolution', () => {
 			const components = parseUrlComponents(url);
 			const { renderOptions } = defaultResolveRequest(components, settings);
 
+			const colorScale = renderOptions.colorScale as ResolvedBreakpointColorScale;
+
 			expect(renderOptions.tileSize).toBe(256);
 			expect(renderOptions.resolutionFactor).toBe(1);
 			expect(renderOptions.drawGrid).toBe(false);
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
-			expect(renderOptions.intervals).toBe([2]);
+			expect(renderOptions.intervals).toStrictEqual(colorScale.breakpoints);
 			expect(renderOptions.colorScale.colors.length).toBe(46);
 		});
 
