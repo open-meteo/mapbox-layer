@@ -1,8 +1,8 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { COLOR_SCALES as defaultColorScales } from './utils/color-scales';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
+import { COLOR_SCALES_WITH_ALIASES as defaultColorScales } from './utils/styling';
 
 import { domainOptions as defaultDomainOptions } from './domains';
 import { GridFactory } from './grids/index';
@@ -43,6 +43,15 @@ export const omProtocol = async (
 	const url = await resolveJSONUrl(params.url);
 	const request = parseRequest(url, settings);
 
+	const state = getOrCreateState(
+		instance.stateByKey,
+		request.stateKey,
+		request.dataOptions,
+		request.baseUrl
+	);
+
+	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback);
+
 	// Handle TileJSON request
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, request.dataOptions) };
@@ -55,19 +64,6 @@ export const omProtocol = async (
 
 	if (!request.tileIndex) {
 		throw new Error(`Tile coordinates required for ${params.type} request`);
-	}
-
-	const state = getOrCreateState(
-		instance.stateByKey,
-		request.stateKey,
-		request.dataOptions,
-		request.baseUrl
-	);
-
-	const data = await ensureData(state, instance.omFileReader);
-
-	if (settings.postReadCallback) {
-		settings.postReadCallback(instance.omFileReader, request.baseUrl, data);
 	}
 
 	const tile = await requestTile(request, data, params.type);
