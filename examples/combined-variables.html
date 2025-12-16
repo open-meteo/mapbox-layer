@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Temperature Example</title>
+		<title>Open-Meteo Mapbox Layer - Combined Variables Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>
 		<!-- x-release-please-end -->
@@ -33,9 +33,10 @@
 					sources: {
 						osm: {
 							type: 'raster',
-							tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
 							tileSize: 256,
-							attribution: '&copy; OpenStreetMap Contributors'
+							attribution:
+								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 						}
 					},
 					layers: [

@@ -2,6 +2,7 @@ import { GridFactory } from '../grids';
 import Pbf from 'pbf';
 import inside from 'point-in-polygon-hao';
 
+import { VECTOR_TILE_EXTENT } from './constants';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
@@ -17,8 +18,8 @@ export const generateArrows = (
 	y: number,
 	z: number,
 	clippingOptions: ClippingOptions,
-	extent: number = 4096,
-	arrows: number = 27
+	extent: number = VECTOR_TILE_EXTENT,
+	arrows: number = 25
 ) => {
 	if (z === 0) {
 		arrows = 50;
@@ -38,14 +39,16 @@ export const generateArrows = (
 		for (let tileX = 0; tileX < extent + 1; tileX += size) {
 			const lon = tile2lon(x + tileX / extent, z);
 
-			const center = [tileX - size / 2, tileY - size / 2];
+			// correct center would be (- size / 2 ), but it looks way better on the edges when center is far end of box
+			// const center = [tileX - size / 2, tileY - size / 2];
+			const center = [tileX, tileY];
 			const geom = [];
 
-			const index = grid.getIndex(lon, lat);
-			// if (clippingOptions.indicesInBounds && !clippingOptions.indicesInBounds[index]) {
-			// 	continue;
-			// }
-			if (!inside([lon, lat], clippingOptions.polygons)) {
+			if (
+				clippingOptions &&
+				clippingOptions.polygons &&
+				!inside([lon, lat], clippingOptions.polygons)
+			) {
 				continue;
 			}
 
@@ -60,29 +63,23 @@ export const generateArrows = (
 			};
 
 			const rotation = direction;
-			let length = 0.95;
-			if (speed < 30) {
-				length = 0.9;
-			}
+			let length = 0.85;
 			if (speed < 20) {
-				length = 0.85;
-			}
-			if (speed < 15) {
 				length = 0.8;
 			}
-			if (speed < 13) {
+			if (speed < 10) {
 				length = 0.75;
 			}
-			if (speed < 9) {
+			if (speed < 5) {
 				length = 0.7;
 			}
-			if (speed < 6) {
+			if (speed < 3) {
 				length = 0.6;
 			}
-			if (speed < 4) {
+			if (speed < 2) {
 				length = 0.55;
 			}
-			if (speed < 2) {
+			if (speed < 1) {
 				length = 0.5;
 			}
 

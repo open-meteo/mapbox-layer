@@ -1,5 +1,6 @@
 # Open-Meteo Mapbox Layer
 
+[![codecov](https://codecov.io/gh/open-meteo/mapbox-layer/graph/badge.svg?token=E2WYHGJJHP)](https://codecov.io/gh/open-meteo/mapbox-layer)
 [![Linting & Tests](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml/badge.svg)](https://github.com/open-meteo/mapbox-layer/actions/workflows/ci.yml)
 [![GitHub license](https://img.shields.io/github/license/open-meteo/mapbox-layer)](https://github.com/open-meteo/mapbox-layer/blob/main/LICENSE)
 [![npm version](https://img.shields.io/npm/v/@openmeteo/mapbox-layer?label=@openmeteo/mapbox-layer)](https://www.npmjs.com/package/@openmeteo/mapbox-layer)
@@ -60,7 +61,7 @@ For a standalone example, see `examples/temperature.html`.
 
 ```ts
 ...
-<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>
+<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.9/dist/index.js"></script>
 ...
 ```
 
@@ -94,18 +95,18 @@ For a standalone example, see `examples/temperature.html`.
 
 ## Examples
 
+### Raster sources
+
 The repository contains an `examples` directory with ready-to-run demos:
 
 - `examples/temperature.html` – shows temperature data from an OM file.
 - `examples/precipitation.html` – displays precipitation using a similar setup.
-- `examples/wind.html` – displays wind values with directional arrows.
+- `examples/wind.html` – displays wind values, for arrows overlay see [Vector sources](#vector-sources).
 - `examples/combined-variables.html` – shows multiple data sources on the same map.
-- `examples/colorscales/custom-rgba.html` – shows how to use your own RGBA color definition.
-- `examples/colorscales/custom-alpha.html` – shows how to use a function to scale opacity values and a custom RGB color definition.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
-## Arrows / Contouring / Gridpoints
+### Vector sources
 
 For directional arrows / contouring / gridpoints, an additional source must be added, since these features use vector tiles instead of raster tiles.
 
@@ -133,11 +134,45 @@ map.on('load', () => {
 
 For the vector source examples there is the `examples/vector` sub-directory with ready-to-run demos:
 
-- `examples/vector/contouring-pressure.html` – shows how to use contouring with a pressure map.
 - `examples/vector/grid-points.html` – displays all grid points for a model, with value data on each point.
 - `examples/vector/temperature-anomaly.html` – shows a seasonal forecast map with temperature anomalies.
 - `examples/vector/temperature-labels.html` – displays all grid points for a model, using value data to show temperature labels.
 - `examples/vector/wind-arrows.html` – displays wind map with directional arrows.
+
+### Contouring
+
+- `examples/vector/contouring/contouring-pressure.html` – shows how to use contouring with a pressure map.
+- `examples/vector/contouring/contouring-on-colorscale.html` – shows how to use contouring to follow the breakpoints in the colorscale.
+- `examples/vector/contouring/custom-contouring-interval.html` – shows how to use contouring a custom contouring interval.
+
+### Colors
+
+If you’re rendering tiles on a dark base‑map or simply want to experiment with alternative color schemes, the documentation includes several example pages that illustrate all the available color‑scale options:
+
+- `examples/colorscales/darkmode.html` – demonstrates the `dark=true` URL parameter, which automatically switches to palettes fine‑tuned for dark backgrounds.
+- `examples/colorscales/custom-rgba.html` – shows how to build a linear gradient from a user‑defined array of RGBA values.
+- `examples/colorscales/custom-breakpoint.html` – demonstrates how to insert your own breakpoints into the scale definitions.
+
+### Callbacks
+
+When you need to modify the data after it’s been loaded, the protocol now includes a post‑read callback. You can transform the data with code similar to the following:
+
+```ts
+const postReadCallback = (omFileReader, data, state) => {
+	if (data.values) {
+		data.values = data.values?.map((value) => value / 100);
+	}
+};
+
+const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+omProtocolOptions.postReadCallback = postReadCallback;
+
+maplibregl.addProtocol('om', (params) =>
+	OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+);
+```
+
+A sample implementation with a usefull case is available in the `examples/callbacks` sub-directory.
 
 ## Capture API
 
