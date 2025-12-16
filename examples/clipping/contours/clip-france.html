@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Clipping Example</title>
+		<title>Open-Meteo Mapbox Layer - Clipping Contours Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
@@ -25,25 +25,26 @@
 	<body>
 		<div id="map"></div>
 		<script>
-			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
+			fetch('./departements_dissolved.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
 					// optionally use turf to do some simplication and calculate bbox
-					const swissPolygon = turf.multiPolygon(geojson.features[1].geometry.coordinates);
-					const swissBbox = turf.bbox(swissPolygon);
-					const simplifiedSwissPolygon = turf.simplify(swissPolygon, {
+					console.log(geojson);
+					const francePolygon = turf.multiPolygon(geojson.features[0].geometry.coordinates);
+					const franceBbox = turf.bbox(francePolygon);
+					const simplifiedFrancePolygon = turf.simplify(francePolygon, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
-					const iconD2 = OpenMeteoMapboxLayer.domainOptions.find(
-						(dO) => dO.value === 'dwd_icon_d2'
+					const mfHD = OpenMeteoMapboxLayer.domainOptions.find(
+						(dO) => dO.value === 'meteofrance_arome_france_hd'
 					);
 
-					const grid = OpenMeteoMapboxLayer.GridFactory.create(iconD2.grid);
+					const grid = OpenMeteoMapboxLayer.GridFactory.create(mfHD.grid);
 
-					const simplifiedSwissPolygonBuffered = turf.buffer(
-						simplifiedSwissPolygon,
+					const simplifiedFrancePolygonBuffered = turf.buffer(
+						simplifiedFrancePolygon,
 						Math.max(grid.dx, grid.dy),
 						{ unit: 'degrees' }
 					);
@@ -52,20 +53,11 @@
 						{ start: grid.ny, end: 0 },
 						{ start: grid.nx, end: 0 }
 					];
-					const indicesInBounds = Array(grid.nx * grid.ny);
-					// for (let [i, _] of indicesInBounds.entries()) {
-					// 	const [lat, lon] = grid.getLatLon(i);
-					// 	const point = turf.point([lon, lat]);
-					// 	const inBounds = turf.booleanWithin(point, simplifiedSwissPolygonBuffered);
-
-					// 	indicesInBounds[i] = inBounds;
-					// }
 
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [...simplifiedSwissPolygon.geometry.coordinates[0]],
-						bounds: swissBbox
-						// indicesInBounds: indicesInBounds
+						polygons: [...simplifiedFrancePolygon.geometry.coordinates[0]],
+						bounds: franceBbox
 					};
 
 					// use the settings as argument for the protocol
@@ -98,7 +90,7 @@
 					});
 
 					//
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/latest.json?time_step=current_time_1H&variable=wind_u_component_10m&arrows=true&contours=true&tile_size=128&resolution_factor=0.5&partial=true&bounds=${swissBbox[1]},${swissBbox[0]},${swissBbox[3]},${swissBbox[2]}`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128&resolution_factor=0.5&partial=true&bounds=${franceBbox[1]},${franceBbox[0]},${franceBbox[3]},${franceBbox[2]}`;
 
 					// return to meteoswiss rotatedlatlon projection after testing
 					//const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;

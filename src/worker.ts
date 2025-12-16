@@ -111,7 +111,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		if (message.data.renderOptions.drawContours) {
 			const intervals = message.data.renderOptions.intervals;
 			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(pbf, values, grid, x, y, z, tileSize, intervals);
+			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
 		}
 
 		const arrayBuffer = pbf.finish();
