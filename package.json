@@ -61,6 +61,7 @@
 		"@turf/turf": "^7.3.1",
 		"@types/geojson": "^7946.0.16",
 		"maplibre-gl": "^5.9.0",
-		"pbf": "^4.0.1"
+		"pbf": "^4.0.1",
+		"point-in-polygon-hao": "^1.2.4"
 	}
 }

@@ -1,5 +1,6 @@
 import { GridFactory } from '../grids';
 import Pbf from 'pbf';
+import inside from 'point-in-polygon-hao';
 
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -41,7 +42,10 @@ export const generateArrows = (
 			const geom = [];
 
 			const index = grid.getIndex(lon, lat);
-			if (clippingOptions.indicesInBounds && !clippingOptions.indicesInBounds[index]) {
+			// if (clippingOptions.indicesInBounds && !clippingOptions.indicesInBounds[index]) {
+			// 	continue;
+			// }
+			if (!inside([lon, lat], clippingOptions.polygons)) {
 				continue;
 			}
 
