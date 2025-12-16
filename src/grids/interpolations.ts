@@ -11,12 +11,21 @@ export const interpolateLinear = (
 	index: number,
 	xFraction: number,
 	yFraction: number,
-	nx: number
+	nx: number,
+	ny: number,
+	longitudeWrap: boolean = false
 ): number => {
-	// Right border
-	// Note: For global grids, data could be allowed to wrap
-	if ((index + 1) % nx === 0) {
-		return NaN;
+	let nextIndex = index + 1;
+
+	if (longitudeWrap) {
+		// For global grids, data can wrap to the other side
+		nextIndex = nextIndex % (nx * ny);
+		index = index % (nx * ny);
+	} else {
+		// Right border
+		if ((index + 1) % nx === 0) {
+			return NaN;
+		}
 	}
 
 	// Bottom border
@@ -24,10 +33,13 @@ export const interpolateLinear = (
 		return NaN;
 	}
 
+	// p0 ---- p1
+	// |       |
+	// p2 ---- p3
 	const p0 = values[index];
-	const p1 = values[index + 1];
+	const p1 = values[nextIndex];
 	const p2 = values[index + nx];
-	const p3 = values[index + 1 + nx];
+	const p3 = values[nextIndex + nx];
 
 	const w0 = (1 - xFraction) * (1 - yFraction);
 	const w1 = xFraction * (1 - yFraction);
@@ -76,6 +88,7 @@ export const interpolateLinear = (
 	}
 
 	// More than 1 point missing → no valid triangle
+	// console.log('More than 1 point missing');
 	return NaN;
 };
 
