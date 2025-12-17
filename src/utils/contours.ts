@@ -133,7 +133,7 @@ export const generateContours = (
 	for (i = 1 - buffer; i < height + buffer; i++) {
 		const latTop = tile2lat(y + i / height, z);
 		const latBottom = tile2lat(y + (i - 1) / height, z);
-		const lonTop = tile2lon(x + i / width, z);
+		// const lonTop = tile2lon(x + i / width, z);
 		const lonBottom = tile2lon(x + (i - 1) / width, z);
 
 		// const latMiddle = (latBottom + latTop) / 2;
