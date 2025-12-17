@@ -53,11 +53,7 @@ export class RegularGrid implements GridInterface {
 		const latMax = data.latMin + this.dy * ranges[0].end;
 		this.bounds = [lonMin, latMin, lonMax, latMax];
 
-		if (lonMax - lonMin >= 357.5) {
-			this.longitudeWrap = true;
-		} else {
-			this.longitudeWrap = false;
-		}
+		this.longitudeWrap = lonMax - lonMin + this.dx >= 360 ? true : false;
 	}
 
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {

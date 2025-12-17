@@ -87,7 +87,6 @@ export const interpolateLinear = (
 	}
 
 	// More than 1 point missing → no valid triangle
-	// console.log('More than 1 point missing');
 	return NaN;
 };
 
