@@ -12,15 +12,14 @@ export const interpolateLinear = (
 	xFraction: number,
 	yFraction: number,
 	nx: number,
-	ny: number,
 	longitudeWrap: boolean = false
 ): number => {
 	let nextIndex = index + 1;
 
 	if (longitudeWrap) {
 		// For global grids, data can wrap to the other side
-		nextIndex = nextIndex % (nx * ny);
-		index = index % (nx * ny);
+		nextIndex = nextIndex % (values.length - 1);
+		index = index % (values.length - 1);
 	} else {
 		// Right border
 		if ((index + 1) % nx === 0) {
