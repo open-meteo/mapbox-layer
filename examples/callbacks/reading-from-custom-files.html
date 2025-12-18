@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Custom Breakpoint Colorscale Example</title>
+		<title>Open-Meteo Mapbox Layer - Reading from Custom Files Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.8/dist/index.js"></script>
+		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.9/dist/index.js"></script>-->
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../dist/index.js"></script>-->
+		<script src="../../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -26,29 +26,50 @@
 		<script>
 			const customColorScales = {
 				// use same key as variable name
-				temperature_2m: {
+				ffmc: {
 					type: 'breakpoint',
 					unit: '°C',
-					breakpoints: [-20, -10, -5, 0, 5, 10, 15, 20, 30, 40, 45],
+					breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
 					colors: [
 						// purple -> blue -> cyan -> green -> yellow -> orange -> red -> dark red
-						[75, 0, 130, 0.75], // -20 : purple
-						[0, 0, 255, 0.75], // -10 : blue
-						[0, 100, 255, 0.75], // -5  : blue-cyan
-						[0, 180, 255, 0.75], //  0  : cyan
-						[0, 220, 150, 0.75], //  5  : turquoise
-						[0, 200, 0, 0.75], // 10  : green
-						[170, 220, 0, 0.75], // 15  : yellow-green
-						[255, 220, 0, 0.75], // 20  : yellow
-						[255, 140, 0, 0.75], // 30 : orange
-						[255, 0, 0, 0.75], // 40 : red
-						[139, 0, 0, 0.75] // 45 : dark red
+						[75, 0, 130, 0.75],
+						[0, 0, 255, 0.75],
+						[0, 100, 255, 0.75],
+						[0, 180, 255, 0.75],
+						[0, 220, 150, 0.75],
+						[0, 200, 0, 0.75],
+						[170, 220, 0, 0.75],
+						[255, 220, 0, 0.75],
+						[255, 140, 0, 0.75],
+						[255, 0, 0, 0.75]
 					]
 				}
 			};
 
+			// const customVariableOptions = [{ value: 'ffmc', label: 'Fire POEP' }];
 			const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 			omProtocolOptions.colorScales = customColorScales;
+			omProtocolOptions.resolveRequest = (urlComponents, settings) => {
+				const domain = OpenMeteoMapboxLayer.domainOptions.find((d) => d.value === 'dwd_icon_eu');
+				const variable = { value: 'ffmc', label: 'Fire POEP' };
+				const dataOptions = {
+					domain: domain,
+					variable: variable,
+					ranges: null
+				};
+				const renderOptions = {
+					dark: false,
+					tileSize: 512,
+					resolutionFactor: 1,
+					drawGrid: false,
+					drawArrows: false,
+					drawContours: false,
+					interval: 1,
+					colorScale: customColorScales['ffmc']
+				};
+
+				return { dataOptions, renderOptions };
+			};
 
 			// use the settings as argument for the protocol
 			maplibregl.addProtocol('om', (params) =>
@@ -79,7 +100,8 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			// s3 storage structure: /data_spatial/{domain}/{modelRun /year/month/day/time}Z/{selectedTime year-month-day-time.om}?variable={variable}
+			const omUrl = `https://fsn1.your-objectstorage.com/testing-wf-indices/data_spatial/dwd_icon_eu/2025/10/21/0000Z/2025-10-21T1200.om`;
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
