@@ -187,33 +187,35 @@ export class GaussianGrid implements GridInterface {
 			return roundWithPrecision(p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3);
 		}
 
+		const xFraction = (1 - yFraction) * xFractionLower + yFraction * xFractionUpper;
+
 		// --- EXACTLY ONE POINT MISSING CASES ---
 		// ------------------
 		// p0 is missing → valid triangle = (p1, p2, p3)
 		// ------------------
 		if (n0 && !n1 && !n2 && !n3) {
-			if (xFractionLower + yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower < xFractionUpper || xFraction + yFraction < 1) return NaN; // Not in triangle
 			const ws = w1 + w2 + w3;
 			return roundWithPrecision((p1 * w1 + p2 * w2 + p3 * w3) / ws);
 		}
 
 		// p1 is missing → valid triangle = (p0, p2, p3)
 		if (!n0 && n1 && !n2 && !n3) {
-			if (1 - xFractionLower + yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower > xFractionUpper || 1 - xFraction + yFraction < 1) return NaN; // Not in triangle
 			const ws = w0 + w2 + w3;
 			return roundWithPrecision((p0 * w0 + p2 * w2 + p3 * w3) / ws);
 		}
 
 		// p2 is missing → valid triangle = (p0, p1, p3)
 		if (!n0 && !n1 && n2 && !n3) {
-			if (xFractionUpper + 1 - yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower > xFractionUpper || xFraction + 1 - yFraction < 1) return NaN; // Not in triangle
 			const ws = w0 + w1 + w3;
 			return roundWithPrecision((p0 * w0 + p1 * w1 + p3 * w3) / ws);
 		}
 
 		// p3 is missing → valid triangle = (p0, p1, p2)
 		if (!n0 && !n1 && !n2 && n3) {
-			if (1 - xFractionUpper + 1 - yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower < xFractionUpper || 1 - xFraction + 1 - yFraction < 1) return NaN; // Not in triangle
 			const ws = w0 + w1 + w2;
 			return roundWithPrecision((p0 * w0 + p1 * w1 + p2 * w2) / ws);
 		}
