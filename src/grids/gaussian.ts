@@ -201,7 +201,7 @@ export class GaussianGrid implements GridInterface {
 
 		// p1 is missing → valid triangle = (p0, p2, p3)
 		if (!n0 && n1 && !n2 && !n3) {
-			if (xFractionLower > xFractionUpper || 1 - xFraction + yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower > xFractionUpper || xFraction + 1 - yFraction > 1) return NaN; // Not in triangle
 			const ws = w0 + w2 + w3;
 			return roundWithPrecision((p0 * w0 + p2 * w2 + p3 * w3) / ws);
 		}
@@ -215,7 +215,7 @@ export class GaussianGrid implements GridInterface {
 
 		// p3 is missing → valid triangle = (p0, p1, p2)
 		if (!n0 && !n1 && !n2 && n3) {
-			if (xFractionLower < xFractionUpper || 1 - xFraction + 1 - yFraction < 1) return NaN; // Not in triangle
+			if (xFractionLower < xFractionUpper || xFraction + yFraction > 1) return NaN; // Not in triangle
 			const ws = w0 + w1 + w2;
 			return roundWithPrecision((p0 * w0 + p1 * w1 + p2 * w2) / ws);
 		}
