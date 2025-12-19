@@ -7,10 +7,10 @@
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
-		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.9/dist/index.js"></script>-->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.9/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<script src="../../dist/index.js"></script>
+		<!--<script src="../../dist/index.js"></script>-->
 		<style>
 			html,
 			body,
@@ -51,15 +51,14 @@
 			omProtocolOptions.colorScales = customColorScales;
 			omProtocolOptions.resolveRequest = (urlComponents, settings) => {
 				const domain = OpenMeteoMapboxLayer.domainOptions.find((d) => d.value === 'dwd_icon_eu');
-				const variable = { value: 'ffmc', label: 'Fire POEP' };
+				const variable = 'ffmc';
 				const dataOptions = {
 					domain: domain,
 					variable: variable,
 					ranges: null
 				};
 				const renderOptions = {
-					dark: false,
-					tileSize: 512,
+					tileSize: 256,
 					resolutionFactor: 1,
 					drawGrid: false,
 					drawArrows: false,
