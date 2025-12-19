@@ -25,6 +25,6 @@ export default defineConfig({
 			},
 			preserveEntrySignatures: 'strict'
 		},
-		minify: true
+		minify: false
 	}
 });
