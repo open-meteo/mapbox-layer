@@ -57,7 +57,9 @@ const defaultResolveDataIdentity = (
 ): DataIdentityOptions => {
 	const { baseUrl, params } = urlComponents;
 
-	const domainValue = baseUrl.split('/')[4];
+	const splitUrl = baseUrl.split('/');
+	const domainPos = splitUrl.indexOf('data_spatial');
+	const domainValue = splitUrl[domainPos + 1];
 	const domain = domainOptions.find((dm) => dm.value === domainValue);
 	if (!domain) {
 		throw new Error(`Invalid domain: ${domainValue}`);
