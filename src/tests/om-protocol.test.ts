@@ -85,6 +85,27 @@ describe('Request Resolution', () => {
 			expect(renderOptions.intervals).toStrictEqual([2]);
 		});
 
+		it('can resolve domain from a variety of different urls', async () => {
+			const domainOptions = [createTestDomain('domain1')];
+			const settings = createTestSettings({ domainOptions });
+
+			const url1 =
+				'om://https://nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			const url2 =
+				'om://http:/nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			const url3 =
+				'om://https://example.com/nested/bucket/structure/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			for (const url of [url1, url2, url3]) {
+				const { dataOptions, renderOptions } = parseRequest(url, settings);
+				expect(dataOptions.domain.value).toBe('domain1');
+				expect(dataOptions.variable).toBe('temperature');
+				expect(renderOptions.intervals).toStrictEqual([2]);
+			}
+		});
+
 		it('computes partial ranges when partial=true and bounds provided', async () => {
 			const domainOptions = [createTestDomain('domain1')];
 			const settings = createTestSettings({ domainOptions });
