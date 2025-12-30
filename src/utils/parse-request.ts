@@ -4,6 +4,7 @@ import {
 	DEFAULT_INTERVAL,
 	DEFAULT_RESOLUTION_FACTOR,
 	DEFAULT_TILE_SIZE,
+	RESOLVE_DOMAIN_REGEX,
 	VALID_RESOLUTION_FACTORS,
 	VALID_TILE_SIZES
 } from './constants';
@@ -57,9 +58,12 @@ const defaultResolveDataIdentity = (
 ): DataIdentityOptions => {
 	const { baseUrl, params } = urlComponents;
 
-	const splitUrl = baseUrl.split('/');
-	const domainPos = splitUrl.indexOf('data_spatial');
-	const domainValue = splitUrl[domainPos + 1];
+	const match = baseUrl.match(RESOLVE_DOMAIN_REGEX);
+	const domainValue = match?.groups?.domain;
+
+	if (!domainValue) {
+		throw new Error(`Could not parse domain from URL: ${baseUrl}`);
+	}
 	const domain = domainOptions.find((dm) => dm.value === domainValue);
 	if (!domain) {
 		throw new Error(`Invalid domain: ${domainValue}`);
