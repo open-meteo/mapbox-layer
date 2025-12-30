@@ -4,7 +4,7 @@
 	"main": "dist/index.cjs",
 	"types": "dist/index.d.ts",
 	"author": "Open-Meteo <info@open-meteo.com>",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"module": "dist/index.mjs",
 	"repository": {
 		"type": "git",
@@ -38,7 +38,7 @@
 		"@eslint/js": "^9.38.0",
 		"@trivago/prettier-plugin-sort-imports": "^6.0.0",
 		"@types/d3-interpolate": "^3.0.4",
-		"@types/node": "^24.9.2",
+		"@types/node": "^25.0.2",
 		"@typescript-eslint/eslint-plugin": "^8.46.2",
 		"@typescript-eslint/parser": "^8.46.2",
 		"@vitest/coverage-v8": "^4.0.15",

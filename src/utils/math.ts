@@ -2,6 +2,10 @@ import { Bounds } from '../types';
 
 const PI = Math.PI;
 
+export const roundWithPrecision = (value: number, precision: number = 1_000_000): number => {
+	return Math.round((value + Number.EPSILON) * precision) / precision;
+};
+
 export const degreesToRadians = (degree: number) => {
 	return degree * (PI / 180);
 };
@@ -10,8 +14,13 @@ export const radiansToDegrees = (rad: number) => {
 	return rad * (180 / PI);
 };
 
+/** Normalize longitude to [-180, 180] */
+export const normalizeLon = (lon: number): number => {
+	return ((lon + 540) % 360) - 180;
+};
+
 export const tile2lon = (x: number, z: number): number => {
-	return (x / Math.pow(2, z)) * 360 - 180;
+	return (((x / Math.pow(2, z)) * 360 + 360) % 360) - 180;
 };
 
 export const tile2lat = (y: number, z: number): number => {
