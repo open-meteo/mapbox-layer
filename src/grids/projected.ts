@@ -177,12 +177,7 @@ export class ProjectionGrid implements GridInterface {
 			return undefined;
 		}
 
-		const index = Math.floor(y) * this.nx + Math.floor(x);
-		if (index && index >= 0) {
-			return index;
-		} else {
-			return undefined;
-		}
+		return Math.floor(y) * this.nx + Math.floor(x);
 	}
 
 	private getProjectedBorderPoints(): number[][] {
