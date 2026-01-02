@@ -1,11 +1,12 @@
 import { GridFactory } from '../grids';
 import Pbf from 'pbf';
+import inside from 'point-in-polygon-hao';
 
 import { VECTOR_TILE_EXTENT } from './constants';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
-import { DimensionRange, Domain } from '../types';
+import { ClippingOptions, DimensionRange, Domain } from '../types';
 
 export const generateArrows = (
 	pbf: Pbf,
@@ -16,6 +17,7 @@ export const generateArrows = (
 	x: number,
 	y: number,
 	z: number,
+	clippingOptions: ClippingOptions,
 	extent: number = VECTOR_TILE_EXTENT,
 	arrows: number = 25
 ) => {
@@ -41,6 +43,14 @@ export const generateArrows = (
 			// const center = [tileX - size / 2, tileY - size / 2];
 			const center = [tileX, tileY];
 			const geom = [];
+
+			if (
+				clippingOptions &&
+				clippingOptions.polygons &&
+				!inside([lon, lat], clippingOptions.polygons)
+			) {
+				continue;
+			}
 
 			const speed = grid.getLinearInterpolatedValue(values, lat, lon);
 			const direction = degreesToRadians(

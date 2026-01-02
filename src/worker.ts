@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { tile2lat, tile2lon } from './utils/math';
+import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
@@ -15,10 +15,11 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const { z, x, y } = message.data.tileIndex;
 	const values = message.data.data.values;
 	const ranges = message.data.dataOptions.ranges;
-	const domain = message.data.dataOptions.domain;
-	const colorScale = message.data.renderOptions.colorScale;
 	const tileSize =
 		message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
+	const domain = message.data.dataOptions.domain;
+	const colorScale = message.data.renderOptions.colorScale;
+	const clippingOptions = message.data.clippingOptions;
 
 	if (!values) {
 		throw new Error('No values provided');
@@ -48,10 +49,51 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			}
 		}
 
-		const imageBitmap = await createImageBitmap(new ImageData(rgba, tileSize, tileSize), {
-			premultiplyAlpha: 'premultiply'
-		});
-		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
+		const imageData = new ImageData(rgba, tileSize, tileSize);
+
+		const canvas = new OffscreenCanvas(tileSize, tileSize);
+		const context = canvas.getContext('2d');
+
+		if (!context) {
+			throw new Error('Could not initialise canvas context');
+		}
+
+		context.putImageData(imageData, 0, 0);
+
+		let blob;
+		if (clippingOptions && clippingOptions.polygons) {
+			// create 2nd OffscreenCanvas to handle clipping
+			const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
+			const clipContext = clipCanvas.getContext('2d');
+
+			if (!clipContext) {
+				throw new Error('Could not initialise canvas context');
+			}
+
+			clipContext.beginPath();
+			for (const polygon of clippingOptions.polygons) {
+				for (const [index, [polyX, polyY]] of polygon.entries()) {
+					const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
+					const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+					if (index === 0) {
+						clipContext.moveTo(polyXtile, polyYtile);
+					} else {
+						clipContext.lineTo(polyXtile, polyYtile);
+					}
+				}
+			}
+			clipContext.closePath();
+
+			clipContext.clip('nonzero');
+			clipContext.drawImage(canvas, 0, 0);
+
+			blob = await clipCanvas.convertToBlob({ type: 'image/png' });
+		} else {
+			blob = await canvas.convertToBlob({ type: 'image/png' });
+		}
+
+		const arrayBuffer = await blob.arrayBuffer();
+		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const directions = message.data.data.directions;
 
@@ -64,12 +106,12 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z);
+			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawContours) {
 			const intervals = message.data.renderOptions.intervals;
 			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(pbf, values, grid, x, y, z, tileSize, intervals);
+			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
 		}
 
 		const arrayBuffer = pbf.finish();
