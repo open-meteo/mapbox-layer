@@ -13,7 +13,6 @@ import { WorkerPool } from './worker-pool';
 import type {
 	Data,
 	DataIdentityOptions,
-	MetaDataState,
 	OmProtocolInstance,
 	OmProtocolSettings,
 	ParsedRequest,
