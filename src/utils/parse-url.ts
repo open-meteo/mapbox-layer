@@ -1,5 +1,6 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
+import { evictStaleStates, touchState } from '../om-protocol-state';
 
 import {
 	DOMAIN_META_REGEX,
@@ -10,7 +11,7 @@ import {
 	VALID_OM_URL_REGEX
 } from './constants';
 
-import { ParsedUrlComponents, TileIndex } from '../types';
+import { MetaDataState, OmProtocolInstance, ParsedUrlComponents, TileIndex } from '../types';
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -33,10 +34,10 @@ const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUr
  * Handles om:// prefix, query params, and tile coordinates.
  *
  * The URL structure is:
- * om://<baseUrl>?<params>/<z>/<x>/<y>  (tile request)
- * om://<baseUrl>?<params>              (tilejson request)
- * om://<baseUrl>/<z>/<x>/<y>           (tile request, no params)
- * om://<baseUrl>                       (tilejson request, no params)
+ * om://<baseUrl>?<params>/<z>/<x>/<y>	     (tile request)
+ * om://<baseUrl>?<params>				(tilejson request)
+ * om://<baseUrl>/<z>/<x>/<y>			       (tile request, no params)
+ * om://<baseUrl>						 (tilejson request, no params)
  */
 export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	const { tileIndex, remainingUrl } = parseTileIndex(url);
@@ -71,18 +72,34 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
-export const parseMetaJson = async (omUrl: string) => {
+export const parseMetaJson = async (omUrl: string, instance: OmProtocolInstance) => {
+	const stateByKey = instance.metaDataStateByKey;
+
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
+	const { tileIndex, remainingUrl } = parseTileIndex(omUrl);
+
+	const existingMetaDataState = stateByKey.get(remainingUrl);
+	if (existingMetaDataState) {
+		touchState(stateByKey, remainingUrl, existingMetaDataState);
+		// flag for first TileJSON request which doesn't have tileIndex
+		if (tileIndex) {
+			const { z, y, x } = tileIndex as TileIndex;
+			return existingMetaDataState.parsedUrl + `/${z}/${x}/${y}`;
+		} else {
+			return existingMetaDataState.parsedUrl;
+		}
+	}
+
 	const { uri, domain, meta } = url.match(DOMAIN_META_REGEX)?.groups as {
 		uri: string;
 		domain: string;
 		meta: string; // E.G. latest | in-progress
 	};
-	const latest = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
+	const metaResult = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
 		response.json()
 	);
-	const modelRun = new Date(latest.reference_time);
+	const modelRun = new Date(metaResult.reference_time);
 
 	const parsedOmUrl = new URL(url);
 	const timeStep = parsedOmUrl.searchParams.get('time_step');
@@ -123,25 +140,37 @@ export const parseMetaJson = async (omUrl: string) => {
 		} else if (capture === 'valid_times') {
 			if (amountAndUnit) {
 				const index = Number(amountAndUnit);
-				date = new Date(latest.valid_times[index]);
+				date = new Date(metaResult.valid_times[index]);
 			} else {
 				throw new Error('Missing valid times index');
 			}
 		}
 	} else {
 		// if no time_step defined, then take the first valid time
-		date = new Date(latest.valid_times[0]);
+		date = new Date(metaResult.valid_times[0]);
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
-	// we need to return a URL that is not percent encoded
-	return decodeURIComponent(
+	// need to return a URL that is not percent encoded
+	const parsedUrl = decodeURIComponent(
 		'om://' +
 			parsedOmUrl.href.replace(
 				`${meta}.json`,
 				`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
 			)
 	);
+
+	evictStaleStates(stateByKey, remainingUrl);
+
+	const state: MetaDataState = {
+		meta: metaResult,
+		parsedUrl,
+		lastAccess: Date.now()
+	};
+
+	stateByKey.set(remainingUrl, state);
+
+	return parsedUrl;
 };
 
 export const assertOmUrlValid = (url: string) => {

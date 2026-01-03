@@ -13,6 +13,8 @@ import { WorkerPool } from './worker-pool';
 import type {
 	Data,
 	DataIdentityOptions,
+	MetaDataState,
+	OmProtocolInstance,
 	OmProtocolSettings,
 	ParsedRequest,
 	RenderOptions,
@@ -41,7 +43,9 @@ export const omProtocol = async (
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	const instance = getProtocolInstance(settings);
 
-	const url = await resolveJSONUrl(params.url);
+	console.log(instance);
+
+	const url = await resolveJSONUrl(params.url, instance);
 	const request = parseRequest(url, settings);
 
 	const state = getOrCreateState(
@@ -72,10 +76,10 @@ export const omProtocol = async (
 	return { data: tile };
 };
 
-const resolveJSONUrl = async (url: string): Promise<string> => {
+const resolveJSONUrl = async (url: string, instance: OmProtocolInstance): Promise<string> => {
 	let normalized = url;
-	if (normalized.includes('.json')) {
-		normalized = await parseMetaJson(normalized);
+	if (url.includes('.json')) {
+		normalized = await parseMetaJson(normalized, instance);
 	}
 	assertOmUrlValid(normalized);
 	return normalized;
