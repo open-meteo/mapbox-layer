@@ -77,7 +77,7 @@ export const parseMetaJson = async (omUrl: string, instance: OmProtocolInstance)
 
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { tileIndex, remainingUrl } = parseTileIndex(omUrl);
+	const { tileIndex, remainingUrl } = parseTileIndex(url);
 
 	const existingMetaDataState = stateByKey.get(remainingUrl);
 	if (existingMetaDataState) {
