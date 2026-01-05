@@ -42,8 +42,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 
 	const instance = {
 		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
-		stateByKey: new Map(),
-		metaDataStateByKey: new Map()
+		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;
 	return instance;
@@ -142,10 +141,7 @@ export const getValueFromLatLong = (
  * Since Map maintains insertion order and we re-insert on access,
  * the oldest entries are always at the front - no sorting needed.
  */
-export const evictStaleStates = (
-	stateByKey: Map<string, OmUrlState>,
-	currentKey?: string
-): void => {
+const evictStaleStates = (stateByKey: Map<string, OmUrlState>, currentKey?: string): void => {
 	const now = Date.now();
 
 	// Iterate from oldest to newest (Map iteration order)
@@ -174,11 +170,7 @@ export const evictStaleStates = (
  * Moves an entry to the end of the map (most recently used position).
  * This maintains LRU order without sorting.
  */
-export const touchState = (
-	stateByKey: Map<string, OmUrlState>,
-	key: string,
-	state: OmUrlState
-): void => {
+const touchState = (stateByKey: Map<string, OmUrlState>, key: string, state: OmUrlState): void => {
 	state.lastAccess = Date.now();
 	// Delete and re-insert to move to end (most recent)
 	stateByKey.delete(key);

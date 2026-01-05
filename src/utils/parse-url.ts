@@ -33,10 +33,10 @@ const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUr
  * Handles om:// prefix, query params, and tile coordinates.
  *
  * The URL structure is:
- * om://<baseUrl>?<params>/<z>/<x>/<y>	(tile request)
- * om://<baseUrl>?<params>				      (tilejson request)
- * om://<baseUrl>/<z>/<x>/<y>			      (tile request, no params)
- * om://<baseUrl>						            (tilejson request, no params)
+ * om://<baseUrl>?<params>/<z>/<x>/<y>  (tile request)
+ * om://<baseUrl>?<params>              (tilejson request)
+ * om://<baseUrl>/<z>/<x>/<y>           (tile request, no params)
+ * om://<baseUrl>                       (tilejson request, no params)
  */
 export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	const { tileIndex, remainingUrl } = parseTileIndex(url);
@@ -144,14 +144,13 @@ export const parseMetaJson = async (omUrl: string) => {
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
 	// need to return a URL that is not percent encoded
-	const parsedUrl = decodeURIComponent(
+	return decodeURIComponent(
 		'om://' +
 			parsedOmUrl.href.replace(
 				`${meta}.json`,
 				`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
 			)
 	);
-	return parsedUrl;
 };
 
 export const assertOmUrlValid = (url: string) => {
