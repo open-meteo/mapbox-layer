@@ -10,7 +10,7 @@ import {
 	VALID_OM_URL_REGEX
 } from './constants';
 
-import { MetaJson, ParsedUrlComponents, TileIndex } from '../types';
+import { DomainMetaDataJson, ParsedUrlComponents, TileIndex } from '../types';
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -72,7 +72,7 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 };
 
 // {meta}.json files are cached for 60 seconds
-const metaDataCache = new Map<string, Promise<MetaJson>>();
+const metaDataCache = new Map<string, Promise<DomainMetaDataJson>>();
 
 export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date();
@@ -85,7 +85,7 @@ export const parseMetaJson = async (omUrl: string) => {
 	if (!metaDataCache.has(jsonUrl)) {
 		metaDataCache.set(
 			jsonUrl,
-			fetch(jsonUrl).then((response) => response.json() as Promise<MetaJson>)
+			fetch(jsonUrl).then((response) => response.json() as Promise<DomainMetaDataJson>)
 		);
 		setTimeout(() => metaDataCache.delete(jsonUrl), 60000); // delete after 60 seconds
 	}
