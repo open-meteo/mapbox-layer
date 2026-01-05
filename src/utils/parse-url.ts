@@ -71,7 +71,7 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
-// {meta}.json files are cached for 10 seconds
+// {meta}.json files are cached for 60 seconds
 const metaDataCache = new Map<string, Promise<MetaJson>>();
 
 export const parseMetaJson = async (omUrl: string) => {
@@ -84,7 +84,7 @@ export const parseMetaJson = async (omUrl: string) => {
 			remainingUrl,
 			fetch(remainingUrl).then((response) => response.json() as Promise<MetaJson>)
 		);
-		setTimeout(() => metaDataCache.delete(remainingUrl), 10000); // delete after 10 seconds
+		setTimeout(() => metaDataCache.delete(remainingUrl), 60000); // delete after 60 seconds
 	}
 	const metaResult = await metaDataCache.get(remainingUrl)!;
 
