@@ -136,7 +136,7 @@ const getTilejson = async (
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
 	let bounds;
 	if (clippingOptions && clippingOptions.bounds) {
-		bounds = clipBounds([grid.getBounds(), clippingOptions.bounds]);
+		bounds = clipBounds(grid.getBounds(), clippingOptions.bounds);
 	} else {
 		bounds = grid.getBounds();
 	}

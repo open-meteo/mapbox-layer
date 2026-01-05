@@ -107,26 +107,21 @@ export const hermite = (t: number, p0: number, p1: number, m0: number, m1: numbe
 /*
 Compares list of bounds against the first bounds passed to function
 */
-export const clipBounds = (boundsList: Bounds[]): Bounds => {
-	if (boundsList.length === 0) throw new Error('No bounds to compare');
-	if (boundsList.length === 1) return boundsList[0];
-
+export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds => {
 	// shifts the first entry out, so it's not compared against itself
-	let [minLon, minLat, maxLon, maxLat] = boundsList.shift() as Bounds;
+	let [minLon, minLat, maxLon, maxLat] = bounds;
 
-	for (const bounds of boundsList) {
-		if (minLon < bounds[0]) {
-			minLon = bounds[0];
-		}
-		if (minLat < bounds[1]) {
-			minLat = bounds[1];
-		}
-		if (maxLon > bounds[2]) {
-			maxLon = bounds[2];
-		}
-		if (maxLat > bounds[3]) {
-			maxLat = bounds[3];
-		}
+	if (minLon < clipBounds[0]) {
+		minLon = clipBounds[0];
+	}
+	if (minLat < clipBounds[1]) {
+		minLat = clipBounds[1];
+	}
+	if (maxLon > clipBounds[2]) {
+		maxLon = clipBounds[2];
+	}
+	if (maxLat > clipBounds[3]) {
+		maxLat = clipBounds[3];
 	}
 
 	return [minLon, minLat, maxLon, maxLat];
