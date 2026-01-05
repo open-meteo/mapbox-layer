@@ -1,6 +1,5 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
-import { evictStaleStates, touchState } from '../om-protocol-state';
 
 import {
 	DOMAIN_META_REGEX,
@@ -11,7 +10,7 @@ import {
 	VALID_OM_URL_REGEX
 } from './constants';
 
-import { MetaDataState, OmProtocolInstance, ParsedUrlComponents, TileIndex } from '../types';
+import { MetaJson, ParsedUrlComponents, TileIndex } from '../types';
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -34,10 +33,10 @@ const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUr
  * Handles om:// prefix, query params, and tile coordinates.
  *
  * The URL structure is:
- * om://<baseUrl>?<params>/<z>/<x>/<y>	     (tile request)
- * om://<baseUrl>?<params>				(tilejson request)
- * om://<baseUrl>/<z>/<x>/<y>			       (tile request, no params)
- * om://<baseUrl>						 (tilejson request, no params)
+ * om://<baseUrl>?<params>/<z>/<x>/<y>	(tile request)
+ * om://<baseUrl>?<params>				      (tilejson request)
+ * om://<baseUrl>/<z>/<x>/<y>			      (tile request, no params)
+ * om://<baseUrl>						            (tilejson request, no params)
  */
 export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	const { tileIndex, remainingUrl } = parseTileIndex(url);
@@ -72,33 +71,26 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
-export const parseMetaJson = async (omUrl: string, instance: OmProtocolInstance) => {
-	const stateByKey = instance.metaDataStateByKey;
+// {meta}.json files are cached for 10 seconds
+const metaDataCache = new Map<string, Promise<MetaJson>>();
 
+export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { tileIndex, remainingUrl } = parseTileIndex(url);
+	const { remainingUrl } = parseTileIndex(url);
 
-	const existingMetaDataState = stateByKey.get(remainingUrl);
-	if (existingMetaDataState) {
-		touchState(stateByKey, remainingUrl, existingMetaDataState);
-		// flag for first TileJSON request which doesn't have tileIndex
-		if (tileIndex) {
-			const { z, y, x } = tileIndex as TileIndex;
-			return existingMetaDataState.parsedUrl + `/${z}/${x}/${y}`;
-		} else {
-			return existingMetaDataState.parsedUrl;
-		}
+	if (!metaDataCache.has(remainingUrl)) {
+		metaDataCache.set(
+			remainingUrl,
+			fetch(remainingUrl).then((response) => response.json() as Promise<MetaJson>)
+		);
+		setTimeout(() => metaDataCache.delete(remainingUrl), 10000); // delete after 10 seconds
 	}
+	const metaResult = await metaDataCache.get(remainingUrl)!;
 
-	const { uri, domain, meta } = url.match(DOMAIN_META_REGEX)?.groups as {
-		uri: string;
-		domain: string;
+	const { meta } = url.match(DOMAIN_META_REGEX)?.groups as {
 		meta: string; // E.G. latest | in-progress
 	};
-	const metaResult = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
-		response.json()
-	);
 	const modelRun = new Date(metaResult.reference_time);
 
 	const parsedOmUrl = new URL(url);
@@ -159,17 +151,6 @@ export const parseMetaJson = async (omUrl: string, instance: OmProtocolInstance)
 				`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
 			)
 	);
-
-	evictStaleStates(stateByKey, remainingUrl);
-
-	const state: MetaDataState = {
-		meta: metaResult,
-		parsedUrl,
-		lastAccess: Date.now()
-	};
-
-	stateByKey.set(remainingUrl, state);
-
 	return parsedUrl;
 };
 

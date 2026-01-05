@@ -5,7 +5,6 @@ export interface OmProtocolInstance {
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;
-	metaDataStateByKey: Map<string, MetaDataState>;
 }
 
 export interface DataIdentityOptions {
@@ -343,8 +342,7 @@ export interface DomainMetaData {
 	variables: string[];
 }
 
-export interface MetaDataState {
-	meta: DomainMetaData;
-	parsedUrl: string;
-	lastAccess: number;
+export interface MetaJson {
+	reference_time: string;
+	valid_times: string[];
 }

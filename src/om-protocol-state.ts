@@ -9,7 +9,6 @@ import { OMapsFileReader } from './om-file-reader';
 import type {
 	Data,
 	DataIdentityOptions,
-	MetaDataState,
 	OmProtocolInstance,
 	OmProtocolSettings,
 	OmUrlState,
@@ -144,7 +143,7 @@ export const getValueFromLatLong = (
  * the oldest entries are always at the front - no sorting needed.
  */
 export const evictStaleStates = (
-	stateByKey: Map<string, OmUrlState | MetaDataState>,
+	stateByKey: Map<string, OmUrlState>,
 	currentKey?: string
 ): void => {
 	const now = Date.now();
@@ -176,9 +175,9 @@ export const evictStaleStates = (
  * This maintains LRU order without sorting.
  */
 export const touchState = (
-	stateByKey: Map<string, OmUrlState | MetaDataState>,
+	stateByKey: Map<string, OmUrlState>,
 	key: string,
-	state: OmUrlState | MetaDataState
+	state: OmUrlState
 ): void => {
 	state.lastAccess = Date.now();
 	// Delete and re-insert to move to end (most recent)

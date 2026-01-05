@@ -1,20 +1,13 @@
-import { OMapsFileReader } from '../om-file-reader';
 import { pad } from '../utils';
 import { assertOmUrlValid, parseMetaJson, parseUrlComponents } from '../utils/parse-url';
 import { describe, expect, it } from 'vitest';
-
-const instance = {
-	omFileReader: new OMapsFileReader(),
-	stateByKey: new Map(),
-	metaDataStateByKey: new Map()
-};
 
 describe('URL Parsing', () => {
 	describe('parseMetaJson', () => {
 		it('resolves latest.json to current model run URL', async () => {
 			const url =
 				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m';
-			const parsedUrl = await parseMetaJson(url, instance);
+			const parsedUrl = await parseMetaJson(url);
 			const now = new Date();
 
 			expect(parsedUrl).not.toContain('latest');
@@ -27,7 +20,7 @@ describe('URL Parsing', () => {
 		it('resolves in-progress.json to current model run URL', async () => {
 			const url =
 				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon/in-progress.json?time_step=current_time_1H&variable=temperature_2m';
-			const parsedUrl = await parseMetaJson(url, instance);
+			const parsedUrl = await parseMetaJson(url);
 
 			expect(parsedUrl).not.toContain('in-progress');
 			assertOmUrlValid(parsedUrl);
