@@ -77,16 +77,19 @@ const metaDataCache = new Map<string, Promise<MetaJson>>();
 export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { remainingUrl } = parseTileIndex(url);
 
-	if (!metaDataCache.has(remainingUrl)) {
+	// jsonUrl should be everything until ".json" of the current url (inclusive)
+	const jsonIndex = url.indexOf('.json');
+	const jsonUrl = jsonIndex !== -1 ? url.slice(0, jsonIndex + '.json'.length) : url;
+
+	if (!metaDataCache.has(jsonUrl)) {
 		metaDataCache.set(
-			remainingUrl,
-			fetch(remainingUrl).then((response) => response.json() as Promise<MetaJson>)
+			jsonUrl,
+			fetch(jsonUrl).then((response) => response.json() as Promise<MetaJson>)
 		);
-		setTimeout(() => metaDataCache.delete(remainingUrl), 60000); // delete after 60 seconds
+		setTimeout(() => metaDataCache.delete(jsonUrl), 60000); // delete after 60 seconds
 	}
-	const metaResult = await metaDataCache.get(remainingUrl)!;
+	const metaResult = await metaDataCache.get(jsonUrl)!;
 
 	const { meta } = url.match(DOMAIN_META_REGEX)?.groups as {
 		meta: string; // E.G. latest | in-progress
