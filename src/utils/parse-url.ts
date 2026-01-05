@@ -80,7 +80,7 @@ export const parseMetaJson = async (omUrl: string) => {
 
 	// jsonUrl should be everything until ".json" of the current url (inclusive)
 	const jsonIndex = url.indexOf('.json');
-	const jsonUrl = jsonIndex !== -1 ? url.slice(0, jsonIndex + '.json'.length) : url;
+	const jsonUrl = url.slice(0, jsonIndex + '.json'.length);
 
 	if (!metaDataCache.has(jsonUrl)) {
 		metaDataCache.set(
