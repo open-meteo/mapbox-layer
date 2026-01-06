@@ -129,7 +129,7 @@ export const getValueFromLatLong = (
 		return { value: NaN };
 	}
 
-	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
+	const grid = GridFactory.create(state.dataOptions.grid, state.dataOptions.ranges);
 	const lonNormalized = normalizeLon(lon);
 	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
 

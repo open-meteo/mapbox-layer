@@ -10,7 +10,7 @@
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.11/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../dist/index.js"></script>-->
+		<script src="../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -51,7 +51,7 @@
 			});
 
 			// below url is used to request 'latest.json' and get the nearest timestep to "current local time" + 1 hour
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 			// example of an actual omUrl:
 			// const omUrl = `om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m`;
 
@@ -59,7 +59,7 @@
 				map.addSource('omFileSource', {
 					url: 'om://' + omUrl,
 					type: 'raster',
-					tileSize: 256,
+					tileSize: 512,
 					maxzoom: 12
 				});
 				map.addLayer({

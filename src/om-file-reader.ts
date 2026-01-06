@@ -7,7 +7,7 @@ import {
 
 import { fastAtan2, radiansToDegrees } from './utils/math';
 
-import type { Data, DimensionRange } from './types';
+import type { Data, DimensionRange, GridData, RegularGridData } from './types';
 
 /**
  * Configuration options for the OMapsFileReader.
@@ -46,6 +46,34 @@ export class OMapsFileReader {
 
 		// TODO: This could be a combination of user-defined and default derivation rules
 		this.allDerivationRules = DEFAULT_DERIVATION_RULES;
+	}
+
+	async getGridParameters(variable: string): Promise<GridData> {
+		if (!this.reader) {
+			throw new Error('Reader not initialized');
+		}
+
+		const variableReader = await this.reader.getChildByName(variable);
+
+		if (!variableReader) {
+			throw new Error(`Variable ${variable} not found`);
+		}
+
+		const dimensions = variableReader.getDimensions();
+
+		if (dimensions.length !== 2) {
+			throw new Error(`Variable ${variable} does not have 2 dimensions`);
+		}
+
+		const [ny, nx] = dimensions;
+
+		const wkt2Crs = await this.reader.getChildByName('crs_wkt');
+		const wkt = wkt2Crs!.readScalar<string>(OmDataType.String)!;
+		const grid = parseWktToRegularGridData(wkt, nx, ny, {
+			inclusiveBounds: false,
+			zoom: 1
+		});
+		return grid;
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {
@@ -277,3 +305,60 @@ const DEFAULT_DERIVATION_RULES: VariableDerivationRule[] = [
 		})
 	}
 ];
+
+function parseWktBbox(
+	wkt: string
+): { latMin: number; lonMin: number; latMax: number; lonMax: number } | null {
+	const bboxMatch = wkt.match(/BBOX\[\s*([^\]]+)\s*\]/i);
+	if (!bboxMatch) return null;
+	const parts = bboxMatch[1].split(',').map((s) => parseFloat(s.trim()));
+	if (parts.length !== 4 || parts.some(isNaN)) return null;
+	// WKT here is [latMin, lonMin, latMax, lonMax]
+	return { latMin: parts[0], lonMin: parts[1], latMax: parts[2], lonMax: parts[3] };
+}
+
+type ParseGridOptions = {
+	// If true, compute dx = (range) / (n - 1). If false (default) dx = (range) / n.
+	inclusiveBounds?: boolean;
+	// If true, force longitude range to be positive by adding 360 if necessary
+	normalizeLongitude?: boolean;
+	zoom?: number;
+};
+
+function parseWktToRegularGridData(
+	wkt: string,
+	nx: number,
+	ny: number,
+	opts: ParseGridOptions = {}
+): RegularGridData {
+	const bbox = parseWktBbox(wkt);
+	if (!bbox) throw new Error('No BBOX found in WKT');
+
+	const inclusive = opts.inclusiveBounds ?? false;
+	const normalizeLon = opts.normalizeLongitude ?? true;
+
+	let lonRange = bbox.lonMax - bbox.lonMin;
+	if (normalizeLon && lonRange < 0) {
+		lonRange += 360; // e.g. -180..179.75 should be handled
+	}
+	const latRange = bbox.latMax - bbox.latMin;
+
+	const denomX = inclusive ? nx - 1 : nx;
+	const denomY = inclusive ? ny - 1 : ny;
+	if (denomX <= 0 || denomY <= 0)
+		throw new Error('Invalid nx/ny or inclusive option leading to non-positive denominator');
+
+	const dx = lonRange / denomX;
+	const dy = latRange / denomY;
+
+	const result: RegularGridData = {
+		type: 'regular',
+		nx,
+		ny,
+		lonMin: bbox.lonMin,
+		latMin: bbox.latMin,
+		dx,
+		dy
+	};
+	return result;
+}

@@ -8,7 +8,8 @@ export interface OmProtocolInstance {
 }
 
 export interface DataIdentityOptions {
-	domain: Domain;
+	baseUrl: string;
+	grid: GridData;
 	variable: string;
 	ranges: DimensionRange[] | null;
 }
@@ -52,8 +53,9 @@ export interface OmUrlState {
  */
 export type RequestResolver = (
 	urlComponents: ParsedUrlComponents,
-	settings: OmProtocolSettings
-) => { dataOptions: DataIdentityOptions; renderOptions: RenderOptions };
+	settings: OmProtocolSettings,
+	reader: OMapsFileReader
+) => Promise<{ dataOptions: DataIdentityOptions; renderOptions: RenderOptions }>;
 
 export type PostReadCallback =
 	| ((omFileReader: OMapsFileReader, data: Data, state: OmUrlState) => void)
@@ -65,7 +67,6 @@ export interface OmProtocolSettings {
 
 	// dynamic
 	colorScales: ColorScales;
-	domainOptions: Domain[];
 
 	/**
 	 * Optional custom resolver for URL settings.
@@ -290,10 +291,14 @@ export interface LAEAProjectionData {
 export interface Domain {
 	value: string;
 	label?: string;
-	grid: GridData;
+	// grid: GridData;
 	time_interval: ModelDt;
 	model_interval: ModelUpdateInterval;
 }
+
+// export interface DomainGrid {
+// 	grid: GridData;
+// }
 
 export type ModelDt =
 	| '15_minute'
