@@ -38,7 +38,7 @@
 
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [...simplifiedSwissPolygon.geometry.coordinates[0]],
+						polygons: simplifiedSwissPolygon.geometry.coordinates[0],
 						bounds: swissBbox
 					};
 

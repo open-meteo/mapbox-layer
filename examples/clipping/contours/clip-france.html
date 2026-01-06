@@ -8,7 +8,7 @@
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.10/dist/index.js"></script>
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.11/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
 		<!--<script src="../../../dist/index.js"></script>-->
@@ -89,11 +89,7 @@
 						hash: true
 					});
 
-					//
 					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128&resolution_factor=0.5&partial=true&bounds=${franceBbox[1]},${franceBbox[0]},${franceBbox[3]},${franceBbox[2]}`;
-
-					// return to meteoswiss rotatedlatlon projection after testing
-					//const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
