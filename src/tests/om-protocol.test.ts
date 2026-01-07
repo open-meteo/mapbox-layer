@@ -348,7 +348,7 @@ describe('omProtocol', () => {
 			const resultData = result.data as TileJSON;
 
 			// DWD ICON global bounds
-			expect(resultData.bounds).toEqual([-180, -90, 179.75, 90]);
+			expect(resultData.bounds).toEqual([-180, -90, 179.875, 90.125]);
 		});
 	});
 

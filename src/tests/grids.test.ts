@@ -37,7 +37,7 @@ const knmiDomainGrid = {
 	longitudeBounds: [-25.162262, 38.75702],
 	zoom: 3.5,
 	projection: {
-		rotatedLat: -35,
+		rotatedLat: 35,
 		rotatedLon: -8,
 		name: 'RotatedLatLonProjection'
 	}
