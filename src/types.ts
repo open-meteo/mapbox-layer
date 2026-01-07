@@ -198,7 +198,6 @@ export type Interpolator = (
 interface BaseGridData {
 	nx: number;
 	ny: number;
-	zoom?: number;
 }
 
 // Union type for all grid types
