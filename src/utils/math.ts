@@ -107,20 +107,61 @@ export const hermite = (t: number, p0: number, p1: number, m0: number, m1: numbe
 /*
 Compares domain bounds against bounds limitation set in clippingOptions
 */
-export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds => {
+export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds | undefined => {
 	let [minLon, minLat, maxLon, maxLat] = bounds;
+	const [clipMinLon, clipMinLat, clipMaxLon, clipMaxLat] = clipBounds;
 
-	if (minLon < clipBounds[0]) {
-		minLon = clipBounds[0];
-	}
-	if (minLat < clipBounds[1]) {
-		minLat = clipBounds[1];
-	}
-	if (maxLon > clipBounds[2]) {
-		maxLon = clipBounds[2];
-	}
-	if (maxLat > clipBounds[3]) {
-		maxLat = clipBounds[3];
+	// Clip latitude (always simple, no wrapping)
+	if (minLat < clipMinLat) minLat = clipMinLat;
+	if (maxLat > clipMaxLat) maxLat = clipMaxLat;
+
+	const boundsCrossesDateline = minLon > maxLon;
+	const clipCrossesDateline = clipMinLon > clipMaxLon;
+
+	if (!boundsCrossesDateline && !clipCrossesDateline) {
+		// Standard case: neither crosses dateline
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+	} else if (!boundsCrossesDateline && clipCrossesDateline) {
+		// Bounds don't cross, but clip does
+		// Valid clip longitudes: [clipMinLon, 180] ∪ [-180, clipMaxLon]
+
+		// If minLon is in the "gap" (between clipMaxLon and clipMinLon), clamp to clipMinLon
+		if (minLon < normalizeLon(clipMaxLon) && minLon < normalizeLon(clipMinLon)) {
+			minLon = clipMinLon;
+		} else {
+			return undefined;
+		}
+
+		// If maxLon is in the "gap", clamp to clipMaxLon
+		if (maxLon > normalizeLon(clipMinLon) && maxLon > normalizeLon(clipMaxLon)) {
+			maxLon = clipMaxLon;
+		} else {
+			return undefined;
+		}
+	} else if (boundsCrossesDateline && !clipCrossesDateline) {
+		// Bounds cross dateline, but clip doesn't
+		// Bounds covers: [minLon, 180] ∪ [-180, maxLon]
+		// Clip covers: [clipMinLon, clipMaxLon]
+		const deltaClipLon = Math.abs(clipMaxLon - clipMinLon);
+		if (deltaClipLon < 360) {
+			if (normalizeLon(maxLon) < clipMaxLon) {
+				maxLon = clipMaxLon;
+			}
+			if (normalizeLon(minLon) < clipMinLon) {
+				minLon = clipMinLon;
+			}
+		}
+
+		if (minLon === maxLon) {
+			return undefined;
+		}
+	} else {
+		// Both cross dateline
+		// Bounds: [minLon, 180] ∪ [-180, maxLon]
+		// Clip: [clipMinLon, 180] ∪ [-180, clipMaxLon]
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
 	}
 
 	return [minLon, minLat, maxLon, maxLat];
