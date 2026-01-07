@@ -79,36 +79,6 @@ export class RegularGrid implements GridInterface {
 		return interpolateLinear(values, index, xFraction, yFraction, this.nx, this.longitudeWrap);
 	}
 
-	getIndex(lon: number, lat: number): number | undefined {
-		if (
-			lat < this.bounds[1] ||
-			lat >= this.bounds[3] ||
-			lon < this.bounds[0] ||
-			lon >= this.bounds[2]
-		) {
-			return undefined;
-		}
-
-		const x = Math.floor((lon - this.bounds[0]) / this.dx);
-		const y = Math.floor((lat - this.bounds[1]) / this.dy);
-
-		return y * this.nx + x;
-	}
-
-	getLatLon(index: number): [lat: number, lon: number] | undefined {
-		if (index < 0 || index > this.nx * this.ny) {
-			return undefined;
-		}
-
-		const x = index % this.nx;
-		const y = Math.floor(index / this.nx);
-
-		const lat = this.bounds[1] + y * this.dy;
-		const lon = this.bounds[0] + x * this.dx;
-
-		return [lat, lon];
-	}
-
 	getBounds(): Bounds {
 		return this.bounds;
 	}
