@@ -26,6 +26,12 @@ An interactive demo is available at [maps.open-meteo.com](https://maps.open-mete
 npm install @openmeteo/mapbox-layer
 ```
 
+## Development
+
+```bash
+npm run serve
+```
+
 ```ts
 // ...
 import { omProtocol } from '@openmeteo/mapbox-layer';
