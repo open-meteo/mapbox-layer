@@ -180,6 +180,23 @@ maplibregl.addProtocol('om', (params) =>
 
 A sample implementation with a usefull case is available in the `examples/callbacks` sub-directory.
 
+### Clipping
+
+To restrict weather data to a geometric boundary, the clipping parameters can be supplied during the instantiation of the omProtocol.
+
+```ts
+const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+omProtocolOptions.clippingOptions = {
+	polygons: polygonList, // optionally clip raster / vector data to this polygons
+	bounds: clipBbox // optionally limit tile generation to this bbox bounds
+};
+```
+
+- `examples/clipping/raster/clip-switzerland.html` – Demonstrates temperature raster data clipped to the geographical contour of Switzerland.
+- `examples/clipping/arrows/clip-italy.html` – Shows wind velocity raster and vector arrow fields clipped to the contour of Italy.
+- `examples/clipping/contours/clip-france.html` – Illustrates temperature and isocontour overlays confined to the French boundary.
+- `examples/clipping/oceans/clip-oceans.html` – Depicts the exclusion of oceanic regions from a global model, thereby hiding weather data on ocean surfaces.
+
 ## Capture API
 
 > **⚠️** Using the Capture API will add 0.5-1s delay for each request

@@ -73,12 +73,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			for (const polygon of clippingOptions.polygons) {
 				clipContext.beginPath();
 				for (const coordinate of polygon) {
-					// if (Array.isArray(coordinate[0])) {
-					// 	console.log('arry');
-					// 	continue;
-					// } else {
-					// 	console.log('polygon');
-
 					for (const [index, [polyX, polyY]] of coordinate.entries()) {
 						const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
 						const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
@@ -88,7 +82,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 							clipContext.lineTo(polyXtile, polyYtile);
 						}
 					}
-					//}
 				}
 				clipContext.closePath();
 			}

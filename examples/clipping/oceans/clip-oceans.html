@@ -6,6 +6,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.11/dist/index.js"></script>
 		<!-- x-release-please-end -->
@@ -27,22 +28,24 @@
 			fetch('./natural_earth_50m_land_10km_buffer.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
-					const polygons = [];
-					for (let feature of geojson.features) {
-						for (let coordinateGroup of feature.geometry.coordinates) {
-							if (typeof coordinateGroup[0][0] === 'number') {
-								polygons.push(coordinateGroup);
-							} else {
-								for (let coordinates of coordinateGroup) {
-									polygons.push(coordinates);
-								}
-							}
-						}
+					const oceansFlatten = turf.flatten(geojson);
+					const oceansDissolve = turf.dissolve(oceansFlatten, { propertyName: 'combine' });
+					const oceansPolygon = turf.union(oceansDissolve);
+
+					const oceansBbox = turf.bbox(oceansPolygon);
+					const simplifiedoceansPolygon = turf.simplify(oceansPolygon, {
+						tolerance: 0.00025,
+						highQuality: true
+					});
+
+					let polygons = [];
+					for (let coords of simplifiedoceansPolygon.geometry.coordinates) {
+						polygons.push(...coords);
 					}
 
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: polygons
+						polygons: [polygons]
 					};
 
 					// use the settings as argument for the protocol
@@ -74,7 +77,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&resolution_factor=0.5`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
@@ -86,7 +89,10 @@
 						map.addLayer({
 							id: 'omFileLayer',
 							type: 'raster',
-							source: 'omFileSource'
+							source: 'omFileSource',
+							paint: {
+								'raster-opacity': 0.75
+							}
 						});
 					});
 				});

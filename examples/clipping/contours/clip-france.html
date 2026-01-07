@@ -31,23 +31,22 @@
 					// optionally use turf to do some simplication and calculate bbox
 					const franceFlatten = turf.flatten(geojson);
 					const franceDissolve = turf.dissolve(franceFlatten, { propertyName: 'combine' });
-					const franceUnion = turf.union(franceDissolve);
+					const francePolygon = turf.union(franceDissolve);
 
-					const francePolygon = franceUnion;
 					const franceBbox = turf.bbox(francePolygon);
 					const simplifiedFrancePolygon = turf.simplify(francePolygon, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
+					let polygons = [];
+					for (let coords of simplifiedFrancePolygon.geometry.coordinates) {
+						polygons.push(...coords);
+					}
+
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [
-							[
-								...simplifiedFrancePolygon.geometry.coordinates[12], // mainland
-								...simplifiedFrancePolygon.geometry.coordinates[30] // corse
-							]
-						],
+						polygons: [polygons],
 						bounds: franceBbox
 					};
 

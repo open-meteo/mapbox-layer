@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Clipping Switzerland Example</title>
+		<title>Open-Meteo Mapbox Layer - Clipping Raster Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<!--<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.11/dist/index.js"></script>-->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.11/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<script src="../../../dist/index.js"></script>
+		<!--<script src="../../../dist/index.js"></script>-->
 		<style>
 			html,
 			body,
@@ -28,19 +28,16 @@
 			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
-					console.log(geojson);
 					// optionally use turf to do some simplication and calculate bbox
-					// const swissPolygon = turf.multiPolygon(geojson.features[1].geometry.coordinates);
+					const swissFlatten = turf.flatten(geojson);
+					const swissDissolve = turf.dissolve(swissFlatten, { propertyName: 'combine' });
 
-					const swissPolygon = turf.union(turf.flatten(geojson));
+					const swissPolygon = swissDissolve.features[0];
 					const swissBbox = turf.bbox(swissPolygon);
 					const simplifiedSwissPolygon = turf.simplify(swissPolygon, {
-						tolerance: 0.1,
-						//tolerance: 0.00025,
+						tolerance: 0.00025,
 						highQuality: true
 					});
-
-					console.log(simplifiedSwissPolygon);
 
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
@@ -77,7 +74,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m&resolution_factor=0.5`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {

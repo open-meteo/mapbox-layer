@@ -136,17 +136,6 @@ export const generateContours = (
 		// const lonTop = tile2lon(x + i / width, z);
 		const lonBottom = tile2lon(x + (i - 1) / width, z);
 
-		// const latMiddle = (latBottom + latTop) / 2;
-		// const lonMiddle = (lonBottom + lonTop) / 2;
-
-		// if (
-		// 	clippingOptions &&
-		// 	clippingOptions.polygons &&
-		// 	!inside([lonMiddle, latMiddle], clippingOptions.polygons)
-		// ) {
-		// 	continue;
-		// }
-
 		let trd = grid.getLinearInterpolatedValue(values, latBottom, lonBottom);
 		let brd = grid.getLinearInterpolatedValue(values, latTop, lonBottom);
 

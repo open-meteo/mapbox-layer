@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Clipping Contours Example</title>
+		<title>Open-Meteo Mapbox Layer - Clipping Wind Arrows Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
@@ -31,24 +31,22 @@
 					// optionally use turf to do some simplication and calculate bbox
 					const italyFlatten = turf.flatten(geojson);
 					const italyDissolve = turf.dissolve(italyFlatten, { propertyName: 'combine' });
-					const italyUnion = turf.union(italyDissolve);
+					const italyPolygon = turf.union(italyDissolve);
 
-					const italyPolygon = italyUnion;
 					const italyBbox = turf.bbox(italyPolygon);
 					const simplifieditalyPolygon = turf.simplify(italyPolygon, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
+					let polygons = [];
+					for (let coords of simplifieditalyPolygon.geometry.coordinates) {
+						polygons.push(...coords);
+					}
+
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [
-							[
-								...simplifieditalyPolygon.geometry.coordinates[0], // mainland
-								...simplifieditalyPolygon.geometry.coordinates[1], // sardinia
-								...simplifieditalyPolygon.geometry.coordinates[239] // sicilia
-							]
-						],
+						polygons: [polygons],
 						bounds: italyBbox
 					};
 
