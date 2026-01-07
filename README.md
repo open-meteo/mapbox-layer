@@ -11,10 +11,9 @@
 
 ## Overview
 
-This repository demonstrates how to use the **Open-Meteo File Protocol** (`.om`) with Mapbox / MapLibre GL JS.
-The `.om` files are hosted on an S3 bucket and can be accessed directly via the `om` protocol:
+This repository serves as a demonstration of the **Open-Meteo File Protocol** (`om://`) with Mapbox / MapLibre GL JS. The `.om` files are hosted on an S3 bucket and can be accessed directly through the protocol handler.
 
-The actual weather API implementation lives in the [open-meteo/open-meteo](https://github.com/open-meteo/open-meteo) repository.
+The core weather data generation and API is hosted in the [open-meteo/open-meteo](https://github.com/open-meteo/open-meteo) repository.
 
 An interactive demo is available at [maps.open-meteo.com](https://maps.open-meteo.com/).
 
@@ -167,7 +166,7 @@ If you’re rendering tiles on a dark base‑map or simply want to experiment wi
 
 ### Callbacks
 
-In scenarios where post‑loading transformations of weather data is required, the protocol now provides a post‑read callback. This callback is invoked immediately after the data has been parsed by `omFileReader`, allowing transformations before the data is forwarded to the rendering pipeline. A typical usage pattern is illustrated below:
+In scenarios where post‑loading transformations of weather data is required, the protocol provides a post‑read callback. This callback is invoked immediately after the data has been parsed by `omFileReader`, allowing transformations before the data is forwarded to the rendering pipeline. A typical usage pattern is illustrated below:
 
 ```ts
 const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
