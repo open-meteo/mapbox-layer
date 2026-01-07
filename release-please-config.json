@@ -28,9 +28,10 @@
 		"examples/colorscales/custom-alpha.html",
 		"examples/colorscales/custom-breakpoints.html",
 
-		"examples/clipping/oceans/clip-oceans.html",
+		"examples/clipping/arrows/clip-italy.html",
 		"examples/clipping/contours/clip-france.html",
-		"examples/clipping/switzerland/clip-switzerland.html",
+		"examples/clipping/oceans/clip-oceans.html",
+		"examples/clipping/raster/clip-switzerland.html",
 
 		"examples/vector/contouring/contouring-pressure.html",
 		"examples/vector/contouring/contouring-on-colorscale.html",
