@@ -168,9 +168,17 @@ export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds | undefin
 };
 
 export const checkAgainstBounds = (point: number, min: number, max: number) => {
-	if (point < min || point > max) {
-		return true;
+	if (max < min) {
+		if (point < min && point > max) {
+			return true;
+		} else {
+			return false;
+		}
 	} else {
-		return false;
+		if (point < min || point > max) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 };
