@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
+import { checkAgainstBounds, lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
@@ -34,9 +34,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		for (let i = 0; i < tileSize; i++) {
 			const lat = tile2lat(y + i / tileSize, z);
+
+			if (clippingOptions?.bounds)
+				if (checkAgainstBounds(lat, clippingOptions.bounds[1], clippingOptions.bounds[3])) continue;
+
 			for (let j = 0; j < tileSize; j++) {
 				const ind = j + i * tileSize;
 				const lon = tile2lon(x + j / tileSize, z);
+
+				if (clippingOptions?.bounds)
+					if (checkAgainstBounds(lon, clippingOptions.bounds[0], clippingOptions.bounds[2]))
+						continue;
+
 				const px = grid.getLinearInterpolatedValue(values, lat, lon);
 
 				if (isFinite(px)) {

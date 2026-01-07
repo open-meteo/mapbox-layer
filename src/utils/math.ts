@@ -105,10 +105,9 @@ export const hermite = (t: number, p0: number, p1: number, m0: number, m1: numbe
 };
 
 /*
-Compares list of bounds against the first bounds passed to function
+Compares domain bounds against bounds limitation set in clippingOptions
 */
 export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds => {
-	// shifts the first entry out, so it's not compared against itself
 	let [minLon, minLat, maxLon, maxLat] = bounds;
 
 	if (minLon < clipBounds[0]) {
@@ -125,4 +124,12 @@ export const clipBounds = (bounds: Bounds, clipBounds: Bounds): Bounds => {
 	}
 
 	return [minLon, minLat, maxLon, maxLat];
+};
+
+export const checkAgainstBounds = (point: number, min: number, max: number) => {
+	if (point < min || point > max) {
+		return true;
+	} else {
+		return false;
+	}
 };

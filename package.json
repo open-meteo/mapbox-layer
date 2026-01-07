@@ -32,7 +32,7 @@
 		"build:umd": "vite build --config vite.config.umd.ts",
 		"build": "npm run build:esm && npm run build:cjs && npm run build:umd",
 		"prepare": "npm run build",
-		"serve": "serve examples"
+		"serve": "serve"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
