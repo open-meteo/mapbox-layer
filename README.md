@@ -167,7 +167,7 @@ If you’re rendering tiles on a dark base‑map or simply want to experiment wi
 
 ### Callbacks
 
-When you need to modify the data after it’s been loaded, the protocol now includes a post‑read callback. You can transform the data with code similar to the following:
+In scenarios where post‑loading transformations of weather data is required, the protocol now provides a post‑read callback. This callback is invoked immediately after the data has been parsed by `omFileReader`, allowing transformations before the data is forwarded to the rendering pipeline. A typical usage pattern is illustrated below:
 
 ```ts
 const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
@@ -182,7 +182,7 @@ maplibregl.addProtocol('om', (params) =>
 );
 ```
 
-A sample implementation with a usefull case is available in the `examples/callbacks` sub-directory.
+An example implementation with a usefull case is available in the `examples/callbacks` sub-directory.
 
 ### Clipping
 
