@@ -44,11 +44,15 @@ export const generateArrows = (
 			const center = [tileX, tileY];
 			const geom = [];
 
-			if (
-				clippingOptions &&
-				clippingOptions.polygons &&
-				!inside([lon, lat], clippingOptions.polygons)
-			) {
+			let insideClip = true;
+			if (clippingOptions && clippingOptions.polygons) {
+				for (const polygon of clippingOptions.polygons) {
+					if (!inside([lon, lat], polygon)) {
+						insideClip = false;
+					}
+				}
+			}
+			if (!insideClip) {
 				continue;
 			}
 

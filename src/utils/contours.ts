@@ -170,11 +170,15 @@ export const generateContours = (
 				continue;
 			}
 
-			if (
-				clippingOptions &&
-				clippingOptions.polygons &&
-				!inside([lon, latBottom], clippingOptions.polygons)
-			) {
+			let insideClip = true;
+			if (clippingOptions && clippingOptions.polygons) {
+				for (const polygon of clippingOptions.polygons) {
+					if (!inside([lon, latBottom], polygon)) {
+						insideClip = false;
+					}
+				}
+			}
+			if (!insideClip) {
 				continue;
 			}
 

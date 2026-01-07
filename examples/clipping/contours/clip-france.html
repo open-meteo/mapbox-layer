@@ -25,38 +25,29 @@
 	<body>
 		<div id="map"></div>
 		<script>
-			fetch('./departements_dissolved.geojson')
+			fetch('./regions.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
 					// optionally use turf to do some simplication and calculate bbox
-					console.log(geojson);
-					const francePolygon = turf.multiPolygon(geojson.features[0].geometry.coordinates);
+					const franceFlatten = turf.flatten(geojson);
+					const franceDissolve = turf.dissolve(franceFlatten, { propertyName: 'combine' });
+					const franceUnion = turf.union(franceDissolve);
+
+					const francePolygon = franceUnion;
 					const franceBbox = turf.bbox(francePolygon);
 					const simplifiedFrancePolygon = turf.simplify(francePolygon, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
-					const mfHD = OpenMeteoMapboxLayer.domainOptions.find(
-						(dO) => dO.value === 'meteofrance_arome_france_hd'
-					);
-
-					const grid = OpenMeteoMapboxLayer.GridFactory.create(mfHD.grid);
-
-					const simplifiedFrancePolygonBuffered = turf.buffer(
-						simplifiedFrancePolygon,
-						Math.max(grid.dx, grid.dy),
-						{ unit: 'degrees' }
-					);
-
-					const ranges = [
-						{ start: grid.ny, end: 0 },
-						{ start: grid.nx, end: 0 }
-					];
-
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [...simplifiedFrancePolygon.geometry.coordinates[0]],
+						polygons: [
+							[
+								...simplifiedFrancePolygon.geometry.coordinates[12], // mainland
+								...simplifiedFrancePolygon.geometry.coordinates[30] // corse
+							]
+						],
 						bounds: franceBbox
 					};
 
@@ -89,7 +80,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128&resolution_factor=0.5&partial=true&bounds=${franceBbox[1]},${franceBbox[0]},${franceBbox[3]},${franceBbox[2]}`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128&resolution_factor=0.5`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
@@ -101,46 +92,15 @@
 						map.addLayer({
 							id: 'omFileLayer',
 							type: 'raster',
-							source: 'omFileSource'
+							source: 'omFileSource',
+							paint: {
+								'raster-opacity': 0.75
+							}
 						});
 
 						map.addSource('omFileVectorSource', {
 							url: 'om://' + omUrl + '&arrows=true',
 							type: 'vector'
-						});
-
-						map.addLayer({
-							id: 'omFileVectorLayer',
-							type: 'line',
-							source: 'omFileVectorSource',
-							'source-layer': 'wind-arrows',
-							paint: {
-								'line-color': [
-									'case',
-									['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
-									'rgba(0,0,0, 0.6)',
-									[
-										'case',
-										['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
-										'rgba(0,0,0, 0.5)',
-										[
-											'case',
-											['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
-											'rgba(0,0,0, 0.4)',
-											[
-												'case',
-												['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
-												'rgba(0,0,0, 0.3)',
-												'rgba(0,0,0, 0.2)'
-											]
-										]
-									]
-								],
-								'line-width': 2
-							},
-							layout: {
-								'line-cap': 'round'
-							}
 						});
 
 						map.addLayer({
@@ -191,8 +151,6 @@
 								'text-field': ['to-string', ['get', 'value']],
 								'text-padding': 1,
 								'text-offset': [0, -0.6]
-								//'text-allow-overlap': true,
-								//'text-ignore-placement': true
 							},
 							paint: {
 								'text-color': [

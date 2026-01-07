@@ -70,19 +70,28 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 				throw new Error('Could not initialise canvas context');
 			}
 
-			clipContext.beginPath();
 			for (const polygon of clippingOptions.polygons) {
-				for (const [index, [polyX, polyY]] of polygon.entries()) {
-					const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
-					const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
-					if (index === 0) {
-						clipContext.moveTo(polyXtile, polyYtile);
-					} else {
-						clipContext.lineTo(polyXtile, polyYtile);
+				clipContext.beginPath();
+				for (const coordinate of polygon) {
+					// if (Array.isArray(coordinate[0])) {
+					// 	console.log('arry');
+					// 	continue;
+					// } else {
+					// 	console.log('polygon');
+
+					for (const [index, [polyX, polyY]] of coordinate.entries()) {
+						const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
+						const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+						if (index === 0) {
+							clipContext.moveTo(polyXtile, polyYtile);
+						} else {
+							clipContext.lineTo(polyXtile, polyYtile);
+						}
 					}
+					//}
 				}
+				clipContext.closePath();
 			}
-			clipContext.closePath();
 
 			clipContext.clip('nonzero');
 			clipContext.drawImage(canvas, 0, 0);
