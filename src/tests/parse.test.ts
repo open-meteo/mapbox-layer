@@ -36,14 +36,6 @@ describe('URL Parsing', () => {
 			).toBe(true);
 		});
 
-		it('rejects invalid domain', () => {
-			expect(() =>
-				assertOmUrlValid(
-					'https://map-tiles.open-meteo.com/data_spatial/not_a_valid_domain/2025/11/17/0600Z/2025-11-17T1300.om'
-				)
-			).toThrowError('Invalid Domain');
-		});
-
 		it('rejects model run too far in the past', () => {
 			expect(() =>
 				assertOmUrlValid(

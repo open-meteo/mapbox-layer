@@ -1,5 +1,6 @@
 import { pad } from '.';
-import { domainOptions } from '../domains';
+
+// import { domainOptions } from '../domains';
 
 import {
 	DOMAIN_META_REGEX,
@@ -160,9 +161,8 @@ export const assertOmUrlValid = (url: string) => {
 	const groups = url.match(VALID_OM_URL_REGEX)?.groups;
 	if (!groups) return false;
 
-	const { domain, runYear } = groups;
+	const { _domain, runYear } = groups;
 
-	if (!domainOptions.find((d) => d.value == domain)) throw new Error('Invalid Domain');
 	if (Number(runYear) < 2025) throw new Error('Model run too far in the past');
 
 	return true;
