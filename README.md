@@ -170,14 +170,12 @@ If you’re rendering tiles on a dark base‑map or simply want to experiment wi
 When you need to modify the data after it’s been loaded, the protocol now includes a post‑read callback. You can transform the data with code similar to the following:
 
 ```ts
-const postReadCallback = (omFileReader, data, state) => {
+const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
+omProtocolOptions.postReadCallback = (omFileReader, data, state) => {
 	if (data.values) {
 		data.values = data.values?.map((value) => value / 100);
 	}
 };
-
-const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
-omProtocolOptions.postReadCallback = postReadCallback;
 
 maplibregl.addProtocol('om', (params) =>
 	OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
@@ -193,9 +191,10 @@ To restrict weather data to a geometric boundary, the clipping parameters can be
 ```ts
 const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 omProtocolOptions.clippingOptions = {
-	polygons: polygonList, // optionally clip raster / vector data to this polygons
-	bounds: clipBbox // optionally limit tile generation to this bbox bounds
+	polygons: polygonList, // optionally clip raster / vector data to these polygons
+	bounds: clipBbox // optionally limit tile generation to these bbox bounds
 };
+...
 ```
 
 - `examples/clipping/raster/clip-switzerland.html` – Demonstrates temperature raster data clipped to the geographical contour of Switzerland.
