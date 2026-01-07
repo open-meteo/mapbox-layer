@@ -25,12 +25,6 @@ An interactive demo is available at [maps.open-meteo.com](https://maps.open-mete
 npm install @openmeteo/mapbox-layer
 ```
 
-## Development
-
-```bash
-npm run serve
-```
-
 ```ts
 // ...
 import { omProtocol } from '@openmeteo/mapbox-layer';
@@ -103,6 +97,16 @@ For a standalone example, see `examples/temperature.html`.
 	});
 </script>
 ```
+
+## Development
+
+The examples can be served locally, providing direct access to the bundled assets and data files. To launch the development server, execute:
+
+```bash
+npm run serve
+```
+
+This command initiates a lightweight static server, enabling the interactive demos to be viewed in a browser while reflecting any code changes in real time.
 
 ## Examples
 

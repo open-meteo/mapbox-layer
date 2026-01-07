@@ -32,7 +32,7 @@
 		"build:umd": "vite build --config vite.config.umd.ts",
 		"build": "npm run build:esm && npm run build:cjs && npm run build:umd",
 		"prepare": "npm run build",
-		"serve": "serve"
+		"serve": "concurrently --kill-others \"npm run dev:umd\" \"serve\""
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
@@ -44,6 +44,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.46.2",
 		"@typescript-eslint/parser": "^8.46.2",
 		"@vitest/coverage-v8": "^4.0.15",
+		"concurrently": "^9.2.1",
 		"d3-color": "^3.1.0",
 		"d3-interpolate": "^3.0.1",
 		"eslint": "^9.38.0",
