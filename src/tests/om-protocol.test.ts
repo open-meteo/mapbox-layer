@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	DimensionRange,
-	Domain,
 	GridData,
 	OmProtocolSettings,
 	ResolvedBreakpointColorScale,
@@ -60,13 +59,6 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.restoreAllMocks();
-});
-
-const createTestDomain = (value: string): Domain => ({
-	value,
-	label: `Test ${value}`,
-	time_interval: 'hourly',
-	model_interval: '3_hourly'
 });
 
 const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProtocolSettings => ({
@@ -219,7 +211,6 @@ describe('Request Resolution', () => {
 
 			const customResolver = vi.fn().mockReturnValue({
 				dataOptions: {
-					domain: createTestDomain('custom_domain'),
 					variable: { value: 'custom_var' },
 					ranges: [
 						{ start: 0, end: 10 },
@@ -314,6 +305,7 @@ describe('omProtocol', () => {
 	describe('TileJSON requests', () => {
 		beforeEach(() => {
 			vi.resetModules();
+			// FIXME: This is extremely ugly. Any test after these tests will not have the om-file-reader mock available anymore.
 			vi.doUnmock('../om-file-reader');
 		});
 
