@@ -1,8 +1,12 @@
 import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
+import inside from 'point-in-polygon-hao';
 
+import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
+
+import { ClippingOptions } from '../types';
 
 // prettier-ignore
 export const CASES: [number, number][][][] = [
@@ -106,16 +110,18 @@ export const generateContours = (
 	x: number,
 	y: number,
 	z: number,
-	interval: number = 2,
-	extent: number = 4096
+	tileSize: number,
+	intervals: number[],
+	clippingOptions: ClippingOptions,
+	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];
 	let cursor: [number, number] = [0, 0];
 
 	const buffer = 1;
 
-	const width = 128;
-	const height = width;
+	const width = tileSize;
+	const height = tileSize;
 
 	const multiplier = extent / width;
 	let tld: number, bld: number;
@@ -127,10 +133,11 @@ export const generateContours = (
 	for (i = 1 - buffer; i < height + buffer; i++) {
 		const latTop = tile2lat(y + i / height, z);
 		const latBottom = tile2lat(y + (i - 1) / height, z);
-		const lon = tile2lon(x + 0 / height, z);
+		// const lonTop = tile2lon(x + i / width, z);
+		const lonBottom = tile2lon(x + (i - 1) / width, z);
 
-		let trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
-		let brd = grid.getLinearInterpolatedValue(values, latTop, lon);
+		let trd = grid.getLinearInterpolatedValue(values, latBottom, lonBottom);
+		let brd = grid.getLinearInterpolatedValue(values, latTop, lonBottom);
 
 		let minR = Math.min(trd, brd);
 		let maxR = Math.max(trd, brd);
@@ -144,8 +151,6 @@ export const generateContours = (
 			trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
 			brd = grid.getLinearInterpolatedValue(values, latTop, lon);
 
-			// trd = tile.get(j, i - 1);
-			// brd = tile.get(j, i);
 			const minL = minR;
 			const maxL = maxR;
 			minR = Math.min(trd, brd);
@@ -153,16 +158,39 @@ export const generateContours = (
 			if (isNaN(tld) || isNaN(trd) || isNaN(brd) || isNaN(bld)) {
 				continue;
 			}
-			const min = Math.min(minL, minR);
-			const max = Math.max(maxL, maxR);
-			const start = Math.ceil(min / interval) * interval;
-			const end = Math.floor(max / interval) * interval;
 
-			for (let threshold = start; threshold <= end; threshold += interval) {
-				const tl = tld > threshold;
-				const tr = trd > threshold;
-				const bl = bld > threshold;
-				const br = brd > threshold;
+			let insideClip = true;
+			if (clippingOptions && clippingOptions.polygons) {
+				for (const polygon of clippingOptions.polygons) {
+					if (!inside([lon, latBottom], polygon)) {
+						insideClip = false;
+					}
+				}
+			}
+			if (!insideClip) {
+				continue;
+			}
+
+			let intervalList;
+			if (intervals.length === 1) {
+				const interval = intervals[0];
+				const min = Math.min(minL, minR);
+				const max = Math.max(maxL, maxR);
+				const start = Math.ceil(min / interval) * interval;
+				const end = Math.floor(max / interval) * interval;
+				intervalList = Array.from(
+					{ length: 1 + (end - start) / interval },
+					(_, i) => start + interval * i
+				);
+			} else {
+				intervalList = intervals;
+			}
+
+			for (const threshold of intervalList) {
+				const tl = tld >= threshold;
+				const tr = trd >= threshold;
+				const bl = bld >= threshold;
+				const br = brd >= threshold;
 				for (const segment of CASES[(tl ? 8 : 0) | (tr ? 4 : 0) | (br ? 2 : 0) | (bl ? 1 : 0)]) {
 					let fragmentByStart = fragmentByStartByLevel.get(threshold);
 					if (!fragmentByStart)

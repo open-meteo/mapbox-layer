@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.0.12](https://github.com/open-meteo/mapbox-layer/compare/v0.0.11...v0.0.12) (2026-01-07)
+
+
+### Features
+
+* Boundary clipping ([#91](https://github.com/open-meteo/mapbox-layer/issues/91)) ([9185ef6](https://github.com/open-meteo/mapbox-layer/commit/9185ef690b59fa3e3aa2ccbddcea9e6135331498))
+
+
+### Bug Fixes
+
+* Capture API requests on every tile ([#142](https://github.com/open-meteo/mapbox-layer/issues/142)) ([3b116a2](https://github.com/open-meteo/mapbox-layer/commit/3b116a26a15e5f85b44224fb311de72bdc10e797))
+
+## [0.0.11](https://github.com/open-meteo/mapbox-layer/compare/v0.0.10...v0.0.11) (2025-12-30)
+
+
+### Bug Fixes
+
+* bump the openmeteo group with 4 updates ([#137](https://github.com/open-meteo/mapbox-layer/issues/137)) ([4b134bd](https://github.com/open-meteo/mapbox-layer/commit/4b134bd4a8de82e48fdba72b7757a9ec51a572ab))
+* Correctly normalize longitude values everywhere ([#138](https://github.com/open-meteo/mapbox-layer/issues/138)) ([f845bd8](https://github.com/open-meteo/mapbox-layer/commit/f845bd88575e5bb1927f164ddad27eedb392a515))
+
+## [0.0.10](https://github.com/open-meteo/mapbox-layer/compare/v0.0.9...v0.0.10) (2025-12-22)
+
+
+### Features
+
+* 3 point interpolation for gaussian grid ([#133](https://github.com/open-meteo/mapbox-layer/issues/133)) ([42cc2ac](https://github.com/open-meteo/mapbox-layer/commit/42cc2ac87e1e237fe866b8921e2e4ce50e3cfdd9))
+* Add codecov ([#127](https://github.com/open-meteo/mapbox-layer/issues/127)) ([29ad165](https://github.com/open-meteo/mapbox-layer/commit/29ad165825bfe54913974c81e76cdc042500f475))
+* Longitude wrapping for regular grids ([#132](https://github.com/open-meteo/mapbox-layer/issues/132)) ([8cbaf4a](https://github.com/open-meteo/mapbox-layer/commit/8cbaf4a5d14642cd7d1d3c5cca7b78f8892defd4))
+* More flexible domain discovery ([#135](https://github.com/open-meteo/mapbox-layer/issues/135)) ([f69dd51](https://github.com/open-meteo/mapbox-layer/commit/f69dd51d3172e51cef380d8016e9eaec3571fdf4))
+
+
+### Bug Fixes
+
+* Add codecov dependenies ([#128](https://github.com/open-meteo/mapbox-layer/issues/128)) ([151af93](https://github.com/open-meteo/mapbox-layer/commit/151af930424fb3504cc2916f779ab2e2cc54ef1a))
+* Add opacity to paint property in examples ([#130](https://github.com/open-meteo/mapbox-layer/issues/130)) ([9bbaaa8](https://github.com/open-meteo/mapbox-layer/commit/9bbaaa8c5ab67bf4003495096e5c79ec92d1cb72))
+* Attempt to slice on null ([#131](https://github.com/open-meteo/mapbox-layer/issues/131)) ([3d929ac](https://github.com/open-meteo/mapbox-layer/commit/3d929ac9373d1201dcf2eee39c174ceac449a371))
+* Bump maplibre-gl from 5.13.0 to 5.14.0 in the openmeteo group ([#121](https://github.com/open-meteo/mapbox-layer/issues/121)) ([73d4246](https://github.com/open-meteo/mapbox-layer/commit/73d4246e37461c0f05aa73ee8745f45f49a78fa5))
+* Bump the openmeteo group with 5 updates ([#136](https://github.com/open-meteo/mapbox-layer/issues/136)) ([c4fe97a](https://github.com/open-meteo/mapbox-layer/commit/c4fe97a62f56d295ea12a6d128b5ab2213e5a004))
+* Interpolation artifacts due to numerical instabilities ([#120](https://github.com/open-meteo/mapbox-layer/issues/120)) ([2311906](https://github.com/open-meteo/mapbox-layer/commit/2311906b83df65810ef692a9a8a43c2ec1505c31))
+* Outdated mapbox layer version in examples ([#134](https://github.com/open-meteo/mapbox-layer/issues/134)) ([bea2ae1](https://github.com/open-meteo/mapbox-layer/commit/bea2ae15744edf50d9666f5e461dc68084ce4276))
+
+## [0.0.9](https://github.com/open-meteo/mapbox-layer/compare/v0.0.8...v0.0.9) (2025-12-15)
+
+
+### Features
+
+* Add combined variable example ([#103](https://github.com/open-meteo/mapbox-layer/issues/103)) ([c4ceed3](https://github.com/open-meteo/mapbox-layer/commit/c4ceed36bf679d323b2224d07e24f09db7a5f605))
+* Add darkmode example ([#104](https://github.com/open-meteo/mapbox-layer/issues/104)) ([294d1ad](https://github.com/open-meteo/mapbox-layer/commit/294d1ad3ea09e5edef9018ede39d36a4788c426c))
+* Add missing variable labels and remove variable type ([#105](https://github.com/open-meteo/mapbox-layer/issues/105)) ([6c576e7](https://github.com/open-meteo/mapbox-layer/commit/6c576e746a9b0f2d8f60f2411fd3a11791e09025))
+* Custom contouring intervals and contouring intervals on breakpoints ([#116](https://github.com/open-meteo/mapbox-layer/issues/116)) ([132e3a8](https://github.com/open-meteo/mapbox-layer/commit/132e3a805376b0ebbf328ff1595e7e68a268998d))
+* Improve reader derivation rules for values and directions ([#99](https://github.com/open-meteo/mapbox-layer/issues/99)) ([3722506](https://github.com/open-meteo/mapbox-layer/commit/3722506b2cbfd3902a8618d1145697b44633b692))
+* Improve `time_interval` and `model_interval` of Domain type ([#100](https://github.com/open-meteo/mapbox-layer/issues/100)) ([5d383a1](https://github.com/open-meteo/mapbox-layer/commit/5d383a176e33113d2b7e2e196bf25266ab50d7f2))
+* Rework colorscales ([#79](https://github.com/open-meteo/mapbox-layer/issues/79)) ([f9a75f4](https://github.com/open-meteo/mapbox-layer/commit/f9a75f42340f351708fcac17840169d429fac5bb)) ([#110](https://github.com/open-meteo/mapbox-layer/issues/110)) ([248950a](https://github.com/open-meteo/mapbox-layer/commit/248950a5d6d5fea43941b3d03c5b030a63827009))
+
+
+### Bug Fixes
+
+* Await `ensureData` before `getTileJson` ([#113](https://github.com/open-meteo/mapbox-layer/issues/113)) ([12a12e1](https://github.com/open-meteo/mapbox-layer/commit/12a12e18558a1dfa9c2c1d0223dd18b692783bef))
+* Bump tsx from 4.20.6 to 4.21.0 in the openmeteo group ([#106](https://github.com/open-meteo/mapbox-layer/issues/106)) ([a398cdf](https://github.com/open-meteo/mapbox-layer/commit/a398cdfbc3a188ab3c43e85cf9d1351ad369031a))
+* Change readme examples to capture api ([7c0b06a](https://github.com/open-meteo/mapbox-layer/commit/7c0b06af6930aa1142a8bbc4f527f3fb57857dce))
+
 ## [0.0.8](https://github.com/open-meteo/mapbox-layer/compare/v0.0.7...v0.0.8) (2025-12-02)
 
 

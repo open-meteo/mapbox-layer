@@ -19,8 +19,8 @@ export interface RenderOptions {
 	drawGrid: boolean;
 	drawArrows: boolean;
 	drawContours: boolean;
-	interval: number;
-	colorScale: RGBAColorScale;
+	intervals: number[];
+	colorScale: RenderableColorScale;
 }
 
 export interface ParsedUrlComponents {
@@ -35,7 +35,8 @@ export interface ParsedRequest {
 	stateKey: string;
 	tileIndex: TileIndex | null;
 	renderOptions: RenderOptions; // Only rendering-related params
-	dataOptions: DataIdentityOptions; // Only data-identity params
+	dataOptions: DataIdentityOptions; // Only data-identity params,
+	clippingOptions: ClippingOptions;
 }
 
 export interface OmUrlState {
@@ -55,6 +56,10 @@ export type RequestResolver = (
 	settings: OmProtocolSettings
 ) => { dataOptions: DataIdentityOptions; renderOptions: RenderOptions };
 
+export type PostReadCallback =
+	| ((omFileReader: OMapsFileReader, data: Data, state: OmUrlState) => void)
+	| undefined;
+
 export interface OmProtocolSettings {
 	// static
 	useSAB: boolean;
@@ -62,6 +67,7 @@ export interface OmProtocolSettings {
 	// dynamic
 	colorScales: ColorScales;
 	domainOptions: Domain[];
+	clippingOptions: ClippingOptions;
 
 	/**
 	 * Optional custom resolver for URL settings.
@@ -69,10 +75,7 @@ export interface OmProtocolSettings {
 	 * Default implementation uses standard query param parsing.
 	 */
 	resolveRequest: RequestResolver;
-
-	postReadCallback:
-		| ((omFileReader: OMapsFileReader, omUrl: string, data: Data) => void)
-		| undefined;
+	postReadCallback: PostReadCallback;
 }
 
 export interface Data {
@@ -111,6 +114,7 @@ export interface TileRequest {
 	tileIndex: TileIndex;
 	renderOptions: RenderOptions;
 	dataOptions: DataIdentityOptions;
+	clippingOptions: ClippingOptions;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;
@@ -141,12 +145,6 @@ export type TilePixel = {
 	tileIndex: TileIndex;
 };
 
-interface ColorScaleBase {
-	min: number;
-	max: number;
-	unit: string;
-}
-
 // Simple RGB color
 export type RGB = [number, number, number];
 export type RGBA = [number, number, number, number];
@@ -159,25 +157,37 @@ export type OpacityFn = (px: number, dark?: boolean) => number;
 // Opacity definition can a simple constant or a function
 export type OpacityDefinition = number | OpacityFn;
 
-// The two color scale variants
-export interface RGBAColorScale extends ColorScaleBase {
-	type: 'rgba';
+export interface BreakpointColorScale {
+	type: 'breakpoint';
+	unit: string;
+	// Must be sorted, e.g. [0, 10, 20, 30, 50, 100]
+	breakpoints: number[];
+	// Needs to have same length as breakpoints
+	colors: RGBA[] | { light: RGBA[]; dark: RGBA[] };
+}
+
+export interface ResolvedBreakpointColorScale {
+	type: 'breakpoint';
+	unit: string;
+	breakpoints: number[];
 	colors: RGBA[];
 }
 
-export interface ResolvableColorScale extends ColorScaleBase {
-	type: 'alpha_resolvable';
-	colors: ColorDefinition;
-	opacity?: OpacityDefinition;
+export interface RGBAColorScale {
+	type: 'rgba';
+	unit: string;
+	min: number;
+	max: number;
+	colors: RGBA[];
 }
 
 // Union type with discriminant
-export type ColorScale = RGBAColorScale | ResolvableColorScale;
+export type ColorScale = RGBAColorScale | BreakpointColorScale;
+
+export type RenderableColorScale = RGBAColorScale | ResolvedBreakpointColorScale;
 
 // Dictionary of color scales
 export type ColorScales = Record<string, ColorScale>;
-
-export type InterpolationMethod = 'none' | 'linear' | 'hermite2d';
 
 export type Interpolator = (
 	values: Float32Array<ArrayBufferLike>,
@@ -327,10 +337,14 @@ export interface DimensionRange {
 	end: number;
 }
 
-export interface DomainMetaData {
+export interface DomainMetaDataJson {
 	completed: boolean;
 	last_modified_time: string;
 	reference_time: string;
 	valid_times: string[];
 	variables: string[];
 }
+
+export type ZoomLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+
+export type ClippingOptions = { polygons: [number, number][][][]; bounds: Bounds } | undefined;

@@ -1,22 +1,16 @@
 import { pad } from '.';
 import { domainOptions } from '../domains';
 
-import { ParsedUrlComponents, TileIndex } from '../types';
+import {
+	DOMAIN_META_REGEX,
+	OM_PREFIX_REGEX,
+	RENDERING_ONLY_PARAMS,
+	TILE_SUFFIX_REGEX,
+	TIME_STEP_REGEX,
+	VALID_OM_URL_REGEX
+} from './constants';
 
-const OM_URL_REGEX = /^om:\/\/([^?]+)(?:\?(.*))?$/;
-// Match both regular and percent-encoded slashes
-const TILE_SUFFIX_REGEX = /(?:\/)(\d+)(?:\/)(\d+)(?:\/)(\d+)$/i;
-
-// Parameters that don't affect the data identity (only affect rendering)
-const RENDERING_ONLY_PARAMS = new Set([
-	'grid',
-	'arrows',
-	'contours',
-	'partial',
-	'tile-size', // TODO: tile_size ?
-	'resolution-factor', // TODO: resolution_factor ?
-	'interval'
-]);
+import { DomainMetaDataJson, ParsedUrlComponents, TileIndex } from '../types';
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -47,7 +41,7 @@ const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUr
 export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	const { tileIndex, remainingUrl } = parseTileIndex(url);
 
-	const match = remainingUrl.match(OM_URL_REGEX);
+	const match = remainingUrl.match(OM_PREFIX_REGEX);
 	if (!match) {
 		throw new Error(`Invalid OM protocol URL: ${url}`);
 	}
@@ -69,12 +63,6 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	return { baseUrl, params, stateKey, tileIndex };
 };
 
-const VALID_OM_FILE_REGEX =
-	/(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<runYear>[\s\S]+)?\/(?<runMonth>[\s\S]+)?\/(?<runDate>[\s\S]+)?\/(?<runTime>[\s\S]+)?\/(?<file>[\s\S]+)?\.(om|json)(?<params>[\s\S]+)?/;
-const DOMAIN_REGEX = /(http|https):\/\/(?<uri>[\s\S]+)\/(?<domain>[\s\S]+)\/(?<meta>[\s\S]+).json/;
-const TIME_STEP_REGEX =
-	/(?<capture>(current_time|valid_times))(_)?(?<modifier>(\+|-))?(?<amountAndUnit>.*)?/;
-
 /**
  * Returns positive amount if modifier is '+' or 'undefined', returns negative amount otherwise
  */
@@ -83,18 +71,30 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
+// {meta}.json files are cached for 60 seconds
+const metaDataCache = new Map<string, Promise<DomainMetaDataJson>>();
+
 export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { uri, domain, meta } = url.match(DOMAIN_REGEX)?.groups as {
-		uri: string;
-		domain: string;
+
+	// jsonUrl should be everything until ".json" of the current url (inclusive)
+	const jsonIndex = url.indexOf('.json');
+	const jsonUrl = url.slice(0, jsonIndex + '.json'.length);
+
+	if (!metaDataCache.has(jsonUrl)) {
+		metaDataCache.set(
+			jsonUrl,
+			fetch(jsonUrl).then((response) => response.json() as Promise<DomainMetaDataJson>)
+		);
+		setTimeout(() => metaDataCache.delete(jsonUrl), 60000); // delete after 60 seconds
+	}
+	const metaResult = await metaDataCache.get(jsonUrl)!;
+
+	const { meta } = url.match(DOMAIN_META_REGEX)?.groups as {
 		meta: string; // E.G. latest | in-progress
 	};
-	const latest = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
-		response.json()
-	);
-	const modelRun = new Date(latest.reference_time);
+	const modelRun = new Date(metaResult.reference_time);
 
 	const parsedOmUrl = new URL(url);
 	const timeStep = parsedOmUrl.searchParams.get('time_step');
@@ -135,18 +135,18 @@ export const parseMetaJson = async (omUrl: string) => {
 		} else if (capture === 'valid_times') {
 			if (amountAndUnit) {
 				const index = Number(amountAndUnit);
-				date = new Date(latest.valid_times[index]);
+				date = new Date(metaResult.valid_times[index]);
 			} else {
 				throw new Error('Missing valid times index');
 			}
 		}
 	} else {
 		// if no time_step defined, then take the first valid time
-		date = new Date(latest.valid_times[0]);
+		date = new Date(metaResult.valid_times[0]);
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
-	// we need to return a URL that is not percent encoded
+	// need to return a URL that is not percent encoded
 	return decodeURIComponent(
 		'om://' +
 			parsedOmUrl.href.replace(
@@ -157,7 +157,7 @@ export const parseMetaJson = async (omUrl: string) => {
 };
 
 export const assertOmUrlValid = (url: string) => {
-	const groups = url.match(VALID_OM_FILE_REGEX)?.groups;
+	const groups = url.match(VALID_OM_URL_REGEX)?.groups;
 	if (!groups) return false;
 
 	const { domain, runYear } = groups;

@@ -1,5 +1,6 @@
 import { setupGlobalCache } from '@openmeteo/file-reader';
 
+import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
 
 import { GridFactory } from './grids';
@@ -10,7 +11,8 @@ import type {
 	DataIdentityOptions,
 	OmProtocolInstance,
 	OmProtocolSettings,
-	OmUrlState
+	OmUrlState,
+	PostReadCallback
 } from './types';
 
 // Configuration constants - could be made configurable via OmProtocolSettings
@@ -79,7 +81,8 @@ export const getOrCreateState = (
 
 export const ensureData = async (
 	state: OmUrlState,
-	omFileReader: OMapsFileReader
+	omFileReader: OMapsFileReader,
+	postReadCallback: PostReadCallback
 ): Promise<Data> => {
 	if (state.data) return state.data;
 	if (state.dataPromise) return state.dataPromise;
@@ -91,6 +94,10 @@ export const ensureData = async (
 				state.dataOptions.variable,
 				state.dataOptions.ranges
 			);
+
+			if (postReadCallback) {
+				postReadCallback(omFileReader, data, state);
+			}
 
 			state.data = data;
 			state.dataPromise = null;
@@ -128,7 +135,7 @@ export const getValueFromLatLong = (
 	}
 
 	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
-	const lonNormalized = ((lon + 540) % 360) - 180;
+	const lonNormalized = normalizeLon(lon);
 	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
 
 	return { value };

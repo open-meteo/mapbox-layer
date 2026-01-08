@@ -1,10 +1,15 @@
 import { defaultOmProtocolSettings } from '../om-protocol';
-import { defaultResolveRequest } from '../utils/parse-request';
-import { parseUrlComponents } from '../utils/parse-url';
+import { parseRequest } from '../utils/parse-request';
 import { RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DimensionRange, Domain, OmProtocolSettings, TileJSON } from '../types';
+import {
+	DimensionRange,
+	Domain,
+	OmProtocolSettings,
+	ResolvedBreakpointColorScale,
+	TileJSON
+} from '../types';
 
 const { mockReturnBuffer, mockReadVariableResult } = vi.hoisted(() => ({
 	mockReturnBuffer: { value: new ArrayBuffer(16) },
@@ -66,30 +71,48 @@ const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProt
 });
 
 describe('Request Resolution', () => {
-	describe('defaultResolveRequest', () => {
+	describe('parseRequest', () => {
 		it('resolves data identity and render options from URL', async () => {
 			const domainOptions = [createTestDomain('domain1')];
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&interval=2';
-			const components = parseUrlComponents(url);
-			const { dataOptions, renderOptions } = defaultResolveRequest(components, settings);
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+			const { dataOptions, renderOptions } = parseRequest(url, settings);
 
 			expect(dataOptions.domain.value).toBe('domain1');
 			expect(dataOptions.variable).toBe('temperature');
-			expect(renderOptions.interval).toBe(2);
+			expect(renderOptions.intervals).toStrictEqual([2]);
+		});
+
+		it('can resolve domain from a variety of different urls', async () => {
+			const domainOptions = [createTestDomain('domain1')];
+			const settings = createTestSettings({ domainOptions });
+
+			const url1 =
+				'om://https://nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			const url2 =
+				'om://http:/nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			const url3 =
+				'om://https://example.com/nested/bucket/structure/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			for (const url of [url1, url2, url3]) {
+				const { dataOptions, renderOptions } = parseRequest(url, settings);
+				expect(dataOptions.domain.value).toBe('domain1');
+				expect(dataOptions.variable).toBe('temperature');
+				expect(renderOptions.intervals).toStrictEqual([2]);
+			}
 		});
 
 		it('computes partial ranges when partial=true and bounds provided', async () => {
 			const domainOptions = [createTestDomain('domain1')];
 			const settings = createTestSettings({ domainOptions });
-
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&partial=true&bounds=0,0,10,10';
-			const components = parseUrlComponents(url);
-			const { dataOptions } = defaultResolveRequest(components, settings);
 
+			const { dataOptions } = parseRequest(url, settings);
 			// Ranges should be computed based on bounds overlap with grid
 			expect(dataOptions.ranges).toEqual([
 				{ start: 0, end: 12 },
@@ -100,12 +123,10 @@ describe('Request Resolution', () => {
 		it('uses full grid ranges when partial=false', async () => {
 			const domainOptions = [createTestDomain('domain1', { nx: 100, ny: 200 })];
 			const settings = createTestSettings({ domainOptions });
-
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&bounds=0,0,10,10';
-			const components = parseUrlComponents(url);
-			const { dataOptions } = defaultResolveRequest(components, settings);
 
+			const { dataOptions } = parseRequest(url, settings);
 			expect(dataOptions.ranges).toEqual([
 				{ start: 0, end: 200 },
 				{ start: 0, end: 100 }
@@ -114,23 +135,17 @@ describe('Request Resolution', () => {
 
 		it('throws for invalid domain', async () => {
 			const settings = createTestSettings({ domainOptions: [] });
-
 			const url = 'om://https://example.com/data_spatial/unknown/file.om?variable=temp';
-			const components = parseUrlComponents(url);
 
-			expect(() => defaultResolveRequest(components, settings)).toThrow('Invalid domain');
+			expect(() => parseRequest(url, settings)).toThrow('Invalid domain');
 		});
 
 		it('throws for missing variable', async () => {
 			const domainOptions = [createTestDomain('domain1')];
 			const settings = createTestSettings({ domainOptions });
-
 			const url = 'om://https://example.com/data_spatial/domain1/file.om';
-			const components = parseUrlComponents(url);
 
-			expect(() => defaultResolveRequest(components, settings)).toThrow(
-				'Variable is required but not defined'
-			);
+			expect(() => parseRequest(url, settings)).toThrow('Variable is required but not defined');
 		});
 
 		it('parses render options with defaults', async () => {
@@ -138,16 +153,17 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url = 'om://https://example.com/data_spatial/domain1/file.om?variable=temp';
-			const components = parseUrlComponents(url);
-			const { renderOptions } = defaultResolveRequest(components, settings);
+			const { renderOptions } = parseRequest(url, settings);
+
+			const colorScale = renderOptions.colorScale as ResolvedBreakpointColorScale;
 
 			expect(renderOptions.tileSize).toBe(256);
 			expect(renderOptions.resolutionFactor).toBe(1);
 			expect(renderOptions.drawGrid).toBe(false);
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
-			expect(renderOptions.interval).toBe(0);
-			expect(renderOptions.colorScale.colors.length).toBe(65);
+			expect(renderOptions.intervals).toStrictEqual(colorScale.breakpoints);
+			expect(renderOptions.colorScale.colors.length).toBe(46);
 		});
 
 		it('parses custom render options', async () => {
@@ -155,9 +171,8 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile-size=512&resolution-factor=2&grid=true&arrows=true&contours=true';
-			const components = parseUrlComponents(url);
-			const { renderOptions } = defaultResolveRequest(components, settings);
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=512&resolution_factor=2&grid=true&arrows=true&contours=true';
+			const { renderOptions } = parseRequest(url, settings);
 
 			expect(renderOptions.tileSize).toBe(512);
 			expect(renderOptions.resolutionFactor).toBe(2);
@@ -171,10 +186,9 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile-size=999';
-			const components = parseUrlComponents(url);
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
 
-			expect(() => defaultResolveRequest(components, settings)).toThrow('Invalid tile size');
+			expect(() => parseRequest(url, settings)).toThrow('Invalid tile size');
 		});
 
 		it('throws for invalid resolution factor', async () => {
@@ -182,12 +196,9 @@ describe('Request Resolution', () => {
 			const settings = createTestSettings({ domainOptions });
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&resolution-factor=3';
-			const components = parseUrlComponents(url);
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&resolution_factor=3';
 
-			expect(() => defaultResolveRequest(components, settings)).toThrow(
-				'Invalid resolution factor'
-			);
+			expect(() => parseRequest(url, settings)).toThrow('Invalid resolution factor');
 		});
 	});
 
@@ -211,13 +222,12 @@ describe('Request Resolution', () => {
 					makeGrid: false,
 					makeArrows: false,
 					makeContours: false,
-					interval: 0,
+					interval: [2],
 					colorScale: {
 						min: 0,
 						max: 100,
 						colors: [],
-						unit: 'C',
-						interpolationMethod: 'linear'
+						unit: 'C'
 					}
 				}
 			});
@@ -270,7 +280,7 @@ describe('omProtocol', () => {
 	});
 
 	describe('tile requests', () => {
-		it('returns ArrayBuffer for arrayBuffer type', async () => {
+		it('early return for vector requests', async () => {
 			const { omProtocol } = await import('../om-protocol');
 
 			const params: RequestParameters = {
@@ -280,7 +290,7 @@ describe('omProtocol', () => {
 			const result = await omProtocol(params, undefined, defaultOmProtocolSettings);
 
 			expect(result.data).toBeInstanceOf(ArrayBuffer);
-			expect((result.data as ArrayBuffer).byteLength).toBe(16);
+			expect(result.data as ArrayBuffer).toEqual(new ArrayBuffer(0));
 		});
 
 		it('throws for tile request without coordinates', async () => {
@@ -312,8 +322,8 @@ describe('omProtocol', () => {
 			expect(postReadCallback).toHaveBeenCalledTimes(1);
 			expect(postReadCallback).toHaveBeenCalledWith(
 				expect.anything(), // omFileReader
-				expect.stringContaining('map-tiles.open-meteo.com'), // baseUrl
-				expect.objectContaining({ values: expect.any(Float32Array) }) // data
+				expect.objectContaining({ values: expect.any(Float32Array) }), // data
+				expect.objectContaining({ omFileUrl: expect.stringContaining('map-tiles.open-meteo.com') })
 			);
 		});
 	});

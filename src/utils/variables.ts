@@ -50,9 +50,13 @@ export const variableOptions = [
 	{ value: 'latent_heat_flux', label: 'Latent Heat Flux' },
 
 	{ value: 'lifted_index', label: 'Lifted Index' },
+
+	{ value: 'lightning_density', label: 'Lightning Density' },
 	{ value: 'lightning_potential', label: 'Lightning Potential' },
 
 	{ value: 'mass_density_8m', label: 'Mass Density (8m)' },
+
+	{ value: 'ocean_u_current', label: 'Ocean Current' },
 
 	{ value: 'potential_evapotranspiration', label: 'Potential Evapotranspiration' },
 
@@ -75,10 +79,12 @@ export const variableOptions = [
 	{ value: 'rain', label: 'Rain' },
 	{ value: 'rain_probability', label: 'Rain Probability' },
 
-	{ value: 'runoff', label: 'Runoff' },
-
 	{ value: 'roughness_length', label: 'Roughness Length' },
 
+	{ value: 'runoff', label: 'Runoff' },
+
+	{ value: 'sea_ice_thickness', label: 'Sea Ice Thickness' },
+	{ value: 'sea_level_height_msl', label: 'Sea Level Height Mean Sea Level' },
 	{ value: 'sea_surface_temperature_anomaly', label: 'Sea Surface Temperature Anomaly' },
 	{ value: 'sea_surface_temperature_mean', label: 'Sea Surface Temperature Mean' },
 
@@ -116,7 +122,8 @@ export const variableOptions = [
 	{ value: 'surface_temperature', label: 'Surface Temperature' },
 	{ value: 'surface_temperature_anomaly_gt0', label: 'Surface Temperature Anomaly GT0' },
 
-	{ value: 'swell_wave_height', label: 'Swell Wave Height' },
+	{ value: 'swell_wave_height', label: 'Swell Wave Height & Direction' }, // combined
+	{ value: 'swell_wave_direction', label: 'Swell Wave Height & Direction' }, // combined
 	{ value: 'swell_wave_peak_period', label: 'Swell Wave Peak Period' },
 	{ value: 'swell_wave_period', label: 'Swell Wave Period' },
 
@@ -129,6 +136,8 @@ export const variableOptions = [
 	{ value: 'temperature_2m_anomaly_ltm2', label: 'Temperature (2m) Anomaly LTM2' },
 	{ value: 'temperature_2m_efi', label: 'Temperature (2m) EFI' },
 	{ value: 'temperature_2m_mean', label: 'Temperature (2m) Mean' },
+	{ value: 'temperature_2m_min', label: 'Temperature (2m) Min' },
+	{ value: 'temperature_2m_max', label: 'Temperature (2m) Max' },
 	{ value: 'temperature_2m_sot10', label: 'Temperature (2m) SOT10' },
 	{ value: 'temperature_2m_sot90', label: 'Temperature (2m) SOT90' },
 	{ value: 'temperature_max6h_2m_anomaly', label: 'Temperature Max 6h (2m) Anomaly' },
@@ -156,16 +165,17 @@ export const variableOptions = [
 
 	{ value: 'visibility', label: 'Visibility' },
 
-	{ value: 'wave_height', label: 'Wave Height & Direction' },
+	{ value: 'wave_height', label: 'Wave Height & Direction' }, // combined
+	{ value: 'wave_direction', label: 'Wave Height & Direction' }, // combined
 	{ value: 'wave_period', label: 'Wave Period' },
-	{ value: 'wave_direction', label: 'Wave Direction' },
 	{ value: 'wave_peak_period', label: 'Wave Peak Period' },
 
 	{ value: 'weather_code', label: 'Weather Codes' },
 
 	{ value: 'wind_gusts_10m', label: 'Wind Gusts (10m)' },
 
-	{ value: 'wind_wave_height', label: 'Wind Wave Height' },
+	{ value: 'wind_wave_height', label: 'Wind Wave Height & Direction' }, // combined
+	{ value: 'wind_wave_direction', label: 'Wind Wave Height & Direction' }, // combined
 	{ value: 'wind_wave_period', label: 'Wind Wave Period' },
 	{ value: 'wind_wave_peak_period', label: 'Wind Wave Peak Period' },
 	{ value: 'wind_u_component_10m_anomaly', label: 'Wind (10m) Anomaly' },
