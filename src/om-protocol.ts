@@ -37,14 +37,21 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
-export const defaultAbortController = new AbortController();
-
 export const omProtocol = async (
 	params: RequestParameters,
-	abortController = defaultAbortController,
+	abortController?: AbortController,
 	settings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
-	const instance = getProtocolInstance(abortController, settings);
+): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer | null>> => {
+	const controller = abortController ?? new AbortController();
+	const signal = controller.signal;
+
+	// Check if already aborted
+	if (signal.aborted) {
+		return { data: null };
+		// throw new Error('Request aborted');
+	}
+
+	const instance = getProtocolInstance(controller, settings);
 
 	const url = await normalizeUrl(params.url);
 	const request = parseRequest(url, settings);
@@ -56,7 +63,13 @@ export const omProtocol = async (
 		request.baseUrl
 	);
 
-	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback);
+	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
+
+	// Check abort status before proceeding
+	if (signal.aborted) {
+		return { data: null };
+		// throw new Error('Request aborted');
+	}
 
 	// Handle TileJSON request
 	if (params.type == 'json') {
@@ -72,9 +85,14 @@ export const omProtocol = async (
 		throw new Error(`Tile coordinates required for ${params.type} request`);
 	}
 
-	const tile = await requestTile(request, data, params.type);
+	const { data: tileData, cancelled } = await requestTile(request, data, params.type, signal);
 
-	return { data: tile };
+	if (cancelled) {
+		return { data: null };
+		// throw new Error('Request aborted');
+	} else {
+		return { data: tileData! };
+	}
 };
 
 const normalizeUrl = async (url: string): Promise<string> => {
@@ -97,7 +115,8 @@ const buildTileKey = (request: ParsedRequest): string => {
 const requestTile = async (
 	request: ParsedRequest,
 	data: Data,
-	type: 'image' | 'arrayBuffer'
+	type: 'image' | 'arrayBuffer',
+	signal?: AbortSignal
 ): TilePromise => {
 	if (!request.tileIndex) {
 		throw new Error('Tile coordinates required for tile request');
@@ -113,7 +132,7 @@ const requestTile = async (
 			!request.renderOptions.drawContours &&
 			!request.renderOptions.drawGrid
 		) {
-			return new ArrayBuffer(0);
+			return { data: new ArrayBuffer(0), cancelled: false };
 		}
 	}
 
@@ -124,7 +143,8 @@ const requestTile = async (
 		data,
 		dataOptions: request.dataOptions,
 		renderOptions: request.renderOptions,
-		clippingOptions: request.clippingOptions
+		clippingOptions: request.clippingOptions,
+		signal
 	});
 };
 

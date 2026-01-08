@@ -1,7 +1,7 @@
 // @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
-import { TilePromise, TileRequest, TileResponse, WorkerResponse } from './types';
+import { TilePromise, TileRequest, TileResult, WorkerResponse } from './types';
 
 export class WorkerPool {
 	private workers: Worker[] = [];
@@ -13,7 +13,7 @@ export class WorkerPool {
 	 * Stores an array of resolve functions for each pending key.
 	 * This allows for multiple subscribers for the same tile key.
 	 */
-	private resolvers = new Map<string, Array<(tile: TileResponse) => void>>();
+	private resolvers = new Map<string, Array<(tile: TileResult) => void>>();
 
 	constructor() {
 		if (typeof window === 'undefined' || typeof Worker === 'undefined') {
@@ -31,6 +31,17 @@ export class WorkerPool {
 
 	private handleMessage(message: MessageEvent): void {
 		const data = message.data as WorkerResponse;
+
+		if (data.type === 'cancelled') {
+			const resolvers = this.resolvers.get(data.key);
+			if (resolvers) {
+				// Resolve with cancelled status
+				resolvers.forEach((resolve) => resolve({ cancelled: true }));
+				this.cleanupRequest(data.key);
+			}
+			return;
+		}
+
 		if (data.type.startsWith('return')) {
 			const resolveFns = this.resolvers.get(data.key);
 
@@ -39,26 +50,26 @@ export class WorkerPool {
 
 				// The first subscriber can receive the original (transferred) buffer.
 				const firstResolver = resolveFns.shift()!;
-				firstResolver(originalTile);
+				firstResolver({ data: originalTile, cancelled: false });
 
 				// All other subscribers must receive a clone.
 				resolveFns.forEach((resolve) => {
-					if (originalTile instanceof ArrayBuffer) {
-						// Create a copy for each subsequent subscriber.
-						resolve(originalTile.slice(0));
-					} else {
-						// ImageBitmaps are safe to share without cloning.
-						resolve(originalTile);
-					}
+					// Create a copy for each subsequent subscriber.
+					// ImageBitmaps are safe to share without cloning.
+					const tile = originalTile instanceof ArrayBuffer ? originalTile.slice(0) : originalTile;
+					resolve({ data: tile, cancelled: false });
 				});
 
-				// Clean up now that all promises for this key are resolved.
-				this.resolvers.delete(data.key);
-				this.pendingTiles.delete(data.key);
+				this.cleanupRequest(data.key);
 			} else {
-				console.error(`Unexpected tile response for ${data.key}`);
+				console.error(`Unexpected tile response for ${data.key}. ${data.type}`);
 			}
 		}
+	}
+
+	private cleanupRequest(key: string): void {
+		this.resolvers.delete(key);
+		this.pendingTiles.delete(key);
 	}
 
 	private handleError(error: ErrorEvent): void {
@@ -75,11 +86,23 @@ export class WorkerPool {
 	}
 
 	public requestTile(request: TileRequest): TilePromise {
+		// Return resolved promise with null/undefined for aborted requests
+		if (request.signal?.aborted) {
+			return Promise.resolve({ cancelled: true });
+		}
+
 		// If a request for this key is already in flight...
 		if (this.pendingTiles.has(request.key)) {
-			// ...create a new promise and add its resolver to the list for this key.
-			return new Promise<TileResponse>((resolve) => {
+			return new Promise<TileResult>((resolve, reject) => {
 				this.resolvers.get(request.key)!.push(resolve);
+
+				// Set up abort listener for this specific promise
+				if (request.signal) {
+					const abortHandler = () => {
+						reject(new Error('Request aborted'));
+					};
+					request.signal.addEventListener('abort', abortHandler, { once: true });
+				}
 			});
 		}
 
@@ -90,14 +113,29 @@ export class WorkerPool {
 		}
 
 		// Create the promise and store its resolver in a new array.
-		const promise = new Promise<TileResponse>((resolve) => {
+		const promise = new Promise<TileResult>((resolve) => {
 			this.resolvers.set(request.key, [resolve]);
+
+			// Set up abort listener
+			if (request.signal) {
+				const abortHandler = () => {
+					// Send cancel message to worker
+					worker.postMessage({
+						type: 'cancel',
+						key: request.key
+					});
+				};
+
+				request.signal.addEventListener('abort', abortHandler, { once: true });
+			}
 		});
 
 		// Store the master promise to indicate a request is in-flight.
 		this.pendingTiles.set(request.key, promise);
 
-		worker.postMessage(request);
+		// Don't send the signal object to the worker (it's not transferable)
+		const { signal: _signal, ...requestWithoutSignal } = request;
+		worker.postMessage(requestWithoutSignal);
 
 		return promise;
 	}
