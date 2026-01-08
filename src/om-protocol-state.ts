@@ -28,7 +28,12 @@ const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 setupGlobalCache();
 
-export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
+export const getProtocolInstance = (
+	abortController: AbortController,
+	settings: OmProtocolSettings
+): OmProtocolInstance => {
+	const signal = abortController.signal;
+
 	if (omProtocolInstance) {
 		// Warn if critical settings differ from initial configuration
 		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
@@ -41,7 +46,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 	}
 
 	const instance = {
-		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
+		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }, signal),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;
@@ -77,7 +82,8 @@ export const getOrCreateState = (
 export const ensureData = async (
 	state: OmUrlState,
 	omFileReader: OMapsFileReader,
-	postReadCallback: PostReadCallback
+	postReadCallback: PostReadCallback,
+	signal?: AbortSignal
 ): Promise<Data> => {
 	if (state.data) return state.data;
 	if (state.dataPromise) return state.dataPromise;
@@ -85,6 +91,11 @@ export const ensureData = async (
 	const promise = (async () => {
 		try {
 			await omFileReader.setToOmFile(state.omFileUrl);
+
+			if (signal?.aborted) {
+				return { values: undefined, directions: undefined } as Data;
+			}
+
 			const data = await omFileReader.readVariable(
 				state.dataOptions.variable,
 				state.dataOptions.ranges
