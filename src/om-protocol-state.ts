@@ -1,5 +1,6 @@
 import { setupGlobalCache } from '@openmeteo/file-reader';
 
+import { boundsIncluded } from './utils/bounds';
 import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
 
@@ -9,6 +10,7 @@ import { OMapsFileReader } from './om-file-reader';
 import type {
 	Data,
 	DataIdentityOptions,
+	DimensionRange,
 	OmProtocolInstance,
 	OmProtocolSettings,
 	OmUrlState,
@@ -55,15 +57,36 @@ export const getOrCreateState = (
 	omFileUrl: string
 ): OmUrlState => {
 	const existingState = stateByKey.get(stateKey);
-	if (existingState) {
-		touchState(stateByKey, stateKey, existingState);
-		return existingState;
+	if (existingState && existingState.dataOptions.bounds && dataOptions.bounds) {
+		if (boundsIncluded(dataOptions.bounds, existingState.dataOptions.bounds)) {
+			touchState(stateByKey, stateKey, existingState);
+			return existingState;
+		} else {
+			console.log('bounds not included');
+		}
 	}
 
 	evictStaleStates(stateByKey, stateKey);
 
+	let ranges: DimensionRange[];
+	if (dataOptions.bounds) {
+		const gridGetter = GridFactory.create(dataOptions.domain.grid, null);
+		ranges = gridGetter.getCoveringRanges(
+			dataOptions.bounds[1],
+			dataOptions.bounds[0],
+			dataOptions.bounds[3],
+			dataOptions.bounds[2]
+		);
+	} else {
+		ranges = [
+			{ start: 0, end: dataOptions.domain.grid.ny },
+			{ start: 0, end: dataOptions.domain.grid.nx }
+		];
+	}
+
 	const state: OmUrlState = {
 		dataOptions,
+		ranges,
 		omFileUrl,
 		data: null,
 		dataPromise: null,
@@ -85,10 +108,7 @@ export const ensureData = async (
 	const promise = (async () => {
 		try {
 			await omFileReader.setToOmFile(state.omFileUrl);
-			const data = await omFileReader.readVariable(
-				state.dataOptions.variable,
-				state.dataOptions.ranges
-			);
+			const data = await omFileReader.readVariable(state.dataOptions.variable, state.ranges);
 
 			if (postReadCallback) {
 				postReadCallback(omFileReader, data, state);
@@ -117,10 +137,10 @@ export const getValueFromLatLong = (
 		throw new Error('OmProtocolInstance is not initialized');
 	}
 
-	const { stateKey } = parseUrlComponents(omUrl);
-	const state = omProtocolInstance.stateByKey.get(stateKey);
+	const { fileAndVariableKey } = parseUrlComponents(omUrl);
+	const state = omProtocolInstance.stateByKey.get(fileAndVariableKey);
 	if (!state) {
-		throw new Error(`State not found for key: ${stateKey}`);
+		throw new Error(`State not found for key: ${fileAndVariableKey}`);
 	}
 
 	state.lastAccess = Date.now();
@@ -129,7 +149,7 @@ export const getValueFromLatLong = (
 		return { value: NaN };
 	}
 
-	const grid = GridFactory.create(state.dataOptions.domain.grid, state.dataOptions.ranges);
+	const grid = GridFactory.create(state.dataOptions.domain.grid, state.ranges);
 	const lonNormalized = normalizeLon(lon);
 	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
 
