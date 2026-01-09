@@ -61,9 +61,8 @@ export const getOrCreateState = (
 		if (boundsIncluded(dataOptions.bounds, existingState.dataOptions.bounds)) {
 			touchState(stateByKey, stateKey, existingState);
 			return existingState;
-		} else {
-			console.log('bounds not included');
 		}
+		// else we need to create a new state
 	}
 
 	evictStaleStates(stateByKey, stateKey);
