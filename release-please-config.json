@@ -11,14 +11,31 @@
 	},
 	"extra-files": [
 		"README.md",
+
 		"examples/wind.html",
 		"examples/temperature.html",
 		"examples/precipitation.html",
-		"examples/colorscales/custom-rgba.html",
-		"examples/colorscales/custom-alpha.html",
+		"examples/combined-variables.html",
+		"examples/partial-requests.html",
+
 		"examples/vector/grid-points.html",
 		"examples/vector/wind-arrows.html",
 		"examples/vector/temperature-labels.html",
-		"examples/vector/contouring-pressure.html"
+		"examples/vector/temperature-anomaly.html",
+
+		"examples/callbacks/post-read-callback.html",
+
+		"examples/colorscales/custom-breakpoints.html",
+		"examples/colorscales/custom-rgba.html",
+		"examples/colorscales/darkmode.html",
+
+		"examples/clipping/arrows/clip-italy.html",
+		"examples/clipping/contours/clip-france.html",
+		"examples/clipping/oceans/clip-oceans.html",
+		"examples/clipping/raster/clip-switzerland.html",
+
+		"examples/vector/contouring/contouring-pressure.html",
+		"examples/vector/contouring/contouring-on-colorscale.html",
+		"examples/vector/contouring/custom-contouring-intervals.html"
 	]
 }

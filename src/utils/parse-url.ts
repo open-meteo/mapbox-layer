@@ -2,15 +2,15 @@ import { pad } from '.';
 import { domainOptions } from '../domains';
 
 import {
-	DOMAIN_REGEX,
+	DATA_RELEVANT_PARAMS,
+	DOMAIN_META_REGEX,
 	OM_PREFIX_REGEX,
-	RENDERING_ONLY_PARAMS,
 	TILE_SUFFIX_REGEX,
 	TIME_STEP_REGEX,
 	VALID_OM_URL_REGEX
 } from './constants';
 
-import { ParsedUrlComponents, TileIndex } from '../types';
+import { DomainMetaDataJson, ParsedUrlComponents, TileIndex } from '../types';
 
 const parseTileIndex = (url: string): { tileIndex: TileIndex | null; remainingUrl: string } => {
 	const match = url.match(TILE_SUFFIX_REGEX);
@@ -52,15 +52,14 @@ export const parseUrlComponents = (url: string): ParsedUrlComponents => {
 	// Build state key from baseUrl + only data-affecting params
 	const dataParams = new URLSearchParams();
 	for (const [key, value] of params) {
-		if (!RENDERING_ONLY_PARAMS.has(key)) {
+		if (DATA_RELEVANT_PARAMS.has(key)) {
 			dataParams.set(key, value);
 		}
 	}
-	dataParams.sort();
 	const paramString = dataParams.toString();
-	const stateKey = paramString ? `${baseUrl}?${paramString}` : baseUrl;
+	const fileAndVariableKey = paramString ? `${baseUrl}?${paramString}` : baseUrl;
 
-	return { baseUrl, params, stateKey, tileIndex };
+	return { baseUrl, params, fileAndVariableKey, tileIndex };
 };
 
 /**
@@ -71,18 +70,30 @@ const getModifiedAmount = (amount: number, modifier = '+') => {
 	return -amount;
 };
 
+// {meta}.json files are cached for 60 seconds
+const metaDataCache = new Map<string, Promise<DomainMetaDataJson>>();
+
 export const parseMetaJson = async (omUrl: string) => {
 	let date = new Date();
 	const url = omUrl.replace('om://', '');
-	const { uri, domain, meta } = url.match(DOMAIN_REGEX)?.groups as {
-		uri: string;
-		domain: string;
+
+	// jsonUrl should be everything until ".json" of the current url (inclusive)
+	const jsonIndex = url.indexOf('.json');
+	const jsonUrl = url.slice(0, jsonIndex + '.json'.length);
+
+	if (!metaDataCache.has(jsonUrl)) {
+		metaDataCache.set(
+			jsonUrl,
+			fetch(jsonUrl).then((response) => response.json() as Promise<DomainMetaDataJson>)
+		);
+		setTimeout(() => metaDataCache.delete(jsonUrl), 60000); // delete after 60 seconds
+	}
+	const metaResult = await metaDataCache.get(jsonUrl)!;
+
+	const { meta } = url.match(DOMAIN_META_REGEX)?.groups as {
 		meta: string; // E.G. latest | in-progress
 	};
-	const latest = await fetch(`https://${uri}/${domain}/${meta}.json`).then((response) =>
-		response.json()
-	);
-	const modelRun = new Date(latest.reference_time);
+	const modelRun = new Date(metaResult.reference_time);
 
 	const parsedOmUrl = new URL(url);
 	const timeStep = parsedOmUrl.searchParams.get('time_step');
@@ -123,18 +134,18 @@ export const parseMetaJson = async (omUrl: string) => {
 		} else if (capture === 'valid_times') {
 			if (amountAndUnit) {
 				const index = Number(amountAndUnit);
-				date = new Date(latest.valid_times[index]);
+				date = new Date(metaResult.valid_times[index]);
 			} else {
 				throw new Error('Missing valid times index');
 			}
 		}
 	} else {
 		// if no time_step defined, then take the first valid time
-		date = new Date(latest.valid_times[0]);
+		date = new Date(metaResult.valid_times[0]);
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
 
-	// we need to return a URL that is not percent encoded
+	// need to return a URL that is not percent encoded
 	return decodeURIComponent(
 		'om://' +
 			parsedOmUrl.href.replace(

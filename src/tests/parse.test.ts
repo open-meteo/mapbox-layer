@@ -15,9 +15,6 @@ describe('URL Parsing', () => {
 				`/${now.getUTCFullYear()}/${pad(now.getUTCMonth() + 1)}/${pad(now.getUTCDate())}/`
 			);
 			expect(parsedUrl).not.toContain('current_time_1H');
-			// expect(parsedUrl).toContain(
-			// 	`${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours() + 1)}00.om`
-			// );
 		});
 
 		it('resolves in-progress.json to current model run URL', async () => {
@@ -86,7 +83,7 @@ describe('URL Parsing', () => {
 			const components2 = parseUrlComponents(url2);
 
 			// Same stateKey despite different tile_size
-			expect(components1.stateKey).toBe(components2.stateKey);
+			expect(components1.fileAndVariableKey).toBe(components2.fileAndVariableKey);
 		});
 
 		it('includes data-affecting params in stateKey', async () => {
@@ -96,7 +93,7 @@ describe('URL Parsing', () => {
 			const components1 = parseUrlComponents(url1);
 			const components2 = parseUrlComponents(url2);
 
-			expect(components1.stateKey).not.toBe(components2.stateKey);
+			expect(components1.fileAndVariableKey).not.toBe(components2.fileAndVariableKey);
 		});
 
 		it('rejects invalid OM protocol URL', async () => {

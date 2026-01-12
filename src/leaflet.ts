@@ -31,18 +31,22 @@ export class OpenMeteoLeafletLayer extends L.GridLayer {
 
 		const state = getOrCreateState(
 			this.omProtocolInstance.stateByKey,
-			this.parsedRequest.stateKey,
+			this.parsedRequest.fileAndVariableKey,
 			this.parsedRequest.dataOptions,
 			this.parsedRequest.baseUrl
 		);
 
-		ensureData(state, this.omProtocolInstance.omFileReader).then((data) => {
+		ensureData(
+			state,
+			this.omProtocolInstance.omFileReader,
+			defaultOmProtocolSettings.postReadCallback
+		).then((data) => {
 			this.parsedRequest.tileIndex = {
 				x: coords.x,
 				y: coords.y,
 				z: coords.z
 			};
-			requestTile(this.parsedRequest, data, 'image')
+			requestTile(this.parsedRequest, data, state.ranges, 'image')
 				.then((value: TileResponse) => {
 					const imageBitmap = value as ImageBitmap;
 					const ctx = tile.getContext('2d');
