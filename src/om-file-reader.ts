@@ -29,13 +29,14 @@ interface FileReaderConfig {
  * Caches the backend of recently accessed files.
  */
 export class OMapsFileReader {
+	private signal: AbortSignal;
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
 	readonly config: Required<FileReaderConfig>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 
-	constructor(config: FileReaderConfig = {}) {
+	constructor(config: FileReaderConfig = {}, signal: AbortSignal) {
 		this.config = {
 			useSAB: false,
 			maxCachedFiles: 50,
@@ -43,6 +44,7 @@ export class OMapsFileReader {
 			eTagValidation: false,
 			...config
 		};
+		this.signal = signal;
 
 		// TODO: This could be a combination of user-defined and default derivation rules
 		this.allDerivationRules = DEFAULT_DERIVATION_RULES;

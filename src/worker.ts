@@ -10,7 +10,17 @@ import { GridFactory } from './grids/index';
 
 import { TileRequest } from './types';
 
+// Simple tracking of cancelled requests
+const cancelledRequests = new Set<string>();
+
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
+	// Handle cancellation messages
+	if (message.data.type === 'cancel') {
+		cancelledRequests.add(message.data.key);
+		console.log(`Cancelled request for tile ${message.data.key}`);
+		postMessage({ type: 'cancelled', key: message.data.key });
+		return;
+	}
 	const key = message.data.key;
 	const { z, x, y } = message.data.tileIndex;
 	const values = message.data.data.values;
