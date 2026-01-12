@@ -57,8 +57,13 @@ export const getOrCreateState = (
 	omFileUrl: string
 ): OmUrlState => {
 	const existingState = stateByKey.get(stateKey);
-	if (existingState && existingState.dataOptions.bounds && dataOptions.bounds) {
-		if (boundsIncluded(dataOptions.bounds, existingState.dataOptions.bounds)) {
+	if (existingState) {
+		if (existingState.dataOptions.bounds && dataOptions.bounds) {
+			if (boundsIncluded(dataOptions.bounds, existingState.dataOptions.bounds)) {
+				touchState(stateByKey, stateKey, existingState);
+				return existingState;
+			}
+		} else if (existingState.dataOptions.bounds === undefined && dataOptions.bounds === undefined) {
 			touchState(stateByKey, stateKey, existingState);
 			return existingState;
 		}
