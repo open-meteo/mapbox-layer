@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.0.12](https://github.com/open-meteo/mapbox-layer/compare/v0.0.11...v0.0.12) (2026-01-07)
+
+
+### Features
+
+* Boundary clipping ([#91](https://github.com/open-meteo/mapbox-layer/issues/91)) ([9185ef6](https://github.com/open-meteo/mapbox-layer/commit/9185ef690b59fa3e3aa2ccbddcea9e6135331498))
+
+
+### Bug Fixes
+
+* Capture API requests on every tile ([#142](https://github.com/open-meteo/mapbox-layer/issues/142)) ([3b116a2](https://github.com/open-meteo/mapbox-layer/commit/3b116a26a15e5f85b44224fb311de72bdc10e797))
+
+## [0.0.11](https://github.com/open-meteo/mapbox-layer/compare/v0.0.10...v0.0.11) (2025-12-30)
+
+
+### Bug Fixes
+
+* bump the openmeteo group with 4 updates ([#137](https://github.com/open-meteo/mapbox-layer/issues/137)) ([4b134bd](https://github.com/open-meteo/mapbox-layer/commit/4b134bd4a8de82e48fdba72b7757a9ec51a572ab))
+* Correctly normalize longitude values everywhere ([#138](https://github.com/open-meteo/mapbox-layer/issues/138)) ([f845bd8](https://github.com/open-meteo/mapbox-layer/commit/f845bd88575e5bb1927f164ddad27eedb392a515))
+
 ## [0.0.10](https://github.com/open-meteo/mapbox-layer/compare/v0.0.9...v0.0.10) (2025-12-22)
 
 

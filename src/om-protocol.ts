@@ -1,5 +1,6 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
+import { clipBounds } from './utils/math';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { assertOmUrlValid, parseMetaJson } from './utils/parse-url';
 import { COLOR_SCALES_WITH_ALIASES as defaultColorScales } from './utils/styling';
@@ -11,8 +12,10 @@ import { capitalize } from './utils';
 import { WorkerPool } from './worker-pool';
 
 import type {
+	ClippingOptions,
 	Data,
 	DataIdentityOptions,
+	DimensionRange,
 	OmProtocolSettings,
 	ParsedRequest,
 	RenderOptions,
@@ -27,6 +30,7 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	useSAB: false,
 
 	// dynamic
+	clippingOptions: undefined,
 	colorScales: defaultColorScales,
 	domainOptions: defaultDomainOptions,
 
@@ -41,12 +45,12 @@ export const omProtocol = async (
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer>> => {
 	const instance = getProtocolInstance(settings);
 
-	const url = await resolveJSONUrl(params.url);
+	const url = await normalizeUrl(params.url);
 	const request = parseRequest(url, settings);
 
 	const state = getOrCreateState(
 		instance.stateByKey,
-		request.stateKey,
+		request.fileAndVariableKey,
 		request.dataOptions,
 		request.baseUrl
 	);
@@ -55,7 +59,7 @@ export const omProtocol = async (
 
 	// Handle TileJSON request
 	if (params.type == 'json') {
-		return { data: await getTilejson(params.url, request.dataOptions) };
+		return { data: await getTilejson(params.url, request.dataOptions, settings.clippingOptions) };
 	}
 
 	// Handle tile request
@@ -67,14 +71,14 @@ export const omProtocol = async (
 		throw new Error(`Tile coordinates required for ${params.type} request`);
 	}
 
-	const tile = await requestTile(request, data, params.type);
+	const tile = await requestTile(request, data, state.ranges, params.type);
 
 	return { data: tile };
 };
 
-const resolveJSONUrl = async (url: string): Promise<string> => {
+const normalizeUrl = async (url: string): Promise<string> => {
 	let normalized = url;
-	if (normalized.includes('.json')) {
+	if (url.includes('.json')) {
 		normalized = await parseMetaJson(normalized);
 	}
 	assertOmUrlValid(normalized);
@@ -92,6 +96,7 @@ const buildTileKey = (request: ParsedRequest): string => {
 const requestTile = async (
 	request: ParsedRequest,
 	data: Data,
+	ranges: DimensionRange[],
 	type: 'image' | 'arrayBuffer'
 ): TilePromise => {
 	if (!request.tileIndex) {
@@ -117,18 +122,27 @@ const requestTile = async (
 		key,
 		tileIndex: request.tileIndex,
 		data,
+		ranges,
 		dataOptions: request.dataOptions,
-		renderOptions: request.renderOptions
+		renderOptions: request.renderOptions,
+		clippingOptions: request.clippingOptions
 	});
 };
 
 const getTilejson = async (
 	fullUrl: string,
-	dataOptions: DataIdentityOptions
+	dataOptions: DataIdentityOptions,
+	clippingOptions?: ClippingOptions
 ): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
+	// Also parse ranges here
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
-	const bounds = grid.getBounds();
+	let bounds;
+	if (clippingOptions && clippingOptions.bounds) {
+		bounds = clipBounds(grid.getBounds(), clippingOptions.bounds);
+	} else {
+		bounds = grid.getBounds();
+	}
 
 	return {
 		tilejson: '2.2.0',
