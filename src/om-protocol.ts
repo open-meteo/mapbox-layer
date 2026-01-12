@@ -15,6 +15,7 @@ import type {
 	ClippingOptions,
 	Data,
 	DataIdentityOptions,
+	DimensionRange,
 	OmProtocolSettings,
 	ParsedRequest,
 	RenderOptions,
@@ -58,7 +59,7 @@ export const omProtocol = async (
 
 	const state = getOrCreateState(
 		instance.stateByKey,
-		request.stateKey,
+		request.fileAndVariableKey,
 		request.dataOptions,
 		request.baseUrl
 	);
@@ -85,7 +86,13 @@ export const omProtocol = async (
 		throw new Error(`Tile coordinates required for ${params.type} request`);
 	}
 
-	const { data: tileData, cancelled } = await requestTile(request, data, params.type, signal);
+	const { data: tileData, cancelled } = await requestTile(
+		request,
+		data,
+		state.ranges,
+		params.type,
+		signal
+	);
 
 	if (cancelled) {
 		return { data: null };
@@ -115,6 +122,7 @@ const buildTileKey = (request: ParsedRequest): string => {
 const requestTile = async (
 	request: ParsedRequest,
 	data: Data,
+	ranges: DimensionRange[],
 	type: 'image' | 'arrayBuffer',
 	signal?: AbortSignal
 ): TilePromise => {
@@ -141,6 +149,7 @@ const requestTile = async (
 		key,
 		tileIndex: request.tileIndex,
 		data,
+		ranges,
 		dataOptions: request.dataOptions,
 		renderOptions: request.renderOptions,
 		clippingOptions: request.clippingOptions,
