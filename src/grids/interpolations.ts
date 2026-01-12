@@ -20,7 +20,7 @@ export const interpolateLinear = (
 	let nextIndex: number;
 	if (longitudeWrap) {
 		// For global grids, data can wrap to the other side
-		nextIndex = y * nx + ((x + 1) % (nx + 1));
+		nextIndex = y * nx + ((x + 1) % nx);
 	} else {
 		nextIndex = index + 1;
 		// Right border
