@@ -11,6 +11,7 @@ export class RegularGrid implements GridInterface {
 	private dy: number;
 
 	private bounds: Bounds;
+	private longitudeWrap: boolean;
 	private center?: { lng: number; lat: number };
 
 	constructor(data: RegularGridData, ranges: DimensionRange[] | null = null) {
@@ -51,25 +52,33 @@ export class RegularGrid implements GridInterface {
 		const lonMax = data.lonMin + this.dx * ranges[1].end;
 		const latMax = data.latMin + this.dy * ranges[0].end;
 		this.bounds = [lonMin, latMin, lonMax, latMax];
+
+		// icon global is one grid point short, therefore compare to 359.875
+		this.longitudeWrap = lonMax - lonMin >= 359.875 ? true : false;
 	}
 
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
-		if (
-			lat < this.bounds[1] ||
-			lat >= this.bounds[3] ||
-			lon < this.bounds[0] ||
-			lon >= this.bounds[2]
-		) {
+		// check longitude is within bounds
+		if (!this.longitudeWrap) {
+			if (lon < this.bounds[0] || lon > this.bounds[2]) {
+				return NaN;
+			}
+		}
+
+		// check latitude is within bounds
+		if (lat < this.bounds[1] || lat >= this.bounds[3]) {
 			return NaN;
 		}
-		const x = Math.floor((lon - this.bounds[0]) / this.dx);
 		const y = Math.floor((lat - this.bounds[1]) / this.dy);
-
-		const xFraction = ((lon - this.bounds[0]) % this.dx) / this.dx;
 		const yFraction = ((lat - this.bounds[1]) % this.dy) / this.dy;
 
-		const index = y * this.nx + x;
-		return interpolateLinear(values, index, xFraction, yFraction, this.nx);
+		// small visual hack for "incomplete" icon global grids
+		// compare: https://github.com/open-meteo/mapbox-layer/pull/148#discussion_r2681391084
+		const x = Math.min(Math.floor((lon - this.bounds[0]) / this.dx), this.nx - 1);
+		const dx = this.longitudeWrap && lon >= this.bounds[2] - this.dx ? this.dx * 2 : this.dx;
+		const xFraction = ((lon - this.bounds[0]) % dx) / dx;
+
+		return interpolateLinear(values, x, y, xFraction, yFraction, this.nx, this.longitudeWrap);
 	}
 
 	getBounds(): Bounds {

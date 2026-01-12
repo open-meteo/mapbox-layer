@@ -1,9 +1,9 @@
-import { GridFactory } from '../grids/index';
-
+import { currentBounds } from './bounds';
 import {
 	DEFAULT_INTERVAL,
 	DEFAULT_RESOLUTION_FACTOR,
 	DEFAULT_TILE_SIZE,
+	RESOLVE_DOMAIN_REGEX,
 	VALID_RESOLUTION_FACTORS,
 	VALID_TILE_SIZES
 } from './constants';
@@ -13,7 +13,6 @@ import { getColorScale, resolveColorScale } from './styling';
 import type {
 	ColorScales,
 	DataIdentityOptions,
-	DimensionRange,
 	Domain,
 	OmProtocolSettings,
 	ParsedRequest,
@@ -29,10 +28,11 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 
 	return {
 		baseUrl: urlComponents.baseUrl,
-		stateKey: urlComponents.stateKey,
+		fileAndVariableKey: urlComponents.fileAndVariableKey,
 		tileIndex: urlComponents.tileIndex,
 		dataOptions,
-		renderOptions
+		renderOptions,
+		clippingOptions: settings.clippingOptions
 	};
 };
 
@@ -57,7 +57,12 @@ const defaultResolveDataIdentity = (
 ): DataIdentityOptions => {
 	const { baseUrl, params } = urlComponents;
 
-	const domainValue = baseUrl.split('/')[4];
+	const match = baseUrl.match(RESOLVE_DOMAIN_REGEX);
+	const domainValue = match?.groups?.domain;
+
+	if (!domainValue) {
+		throw new Error(`Could not parse domain from URL: ${baseUrl}`);
+	}
 	const domain = domainOptions.find((dm) => dm.value === domainValue);
 	if (!domain) {
 		throw new Error(`Invalid domain: ${domainValue}`);
@@ -68,21 +73,9 @@ const defaultResolveDataIdentity = (
 		throw new Error(`Variable is required but not defined`);
 	}
 
-	const partial = params.get('partial') === 'true';
-	const mapBounds = params.get('bounds')?.split(',').map(Number) as number[] | undefined;
+	const mapBounds = currentBounds;
 
-	let ranges: DimensionRange[];
-	if (partial && mapBounds) {
-		const gridGetter = GridFactory.create(domain.grid, null);
-		ranges = gridGetter.getCoveringRanges(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
-	} else {
-		ranges = [
-			{ start: 0, end: domain.grid.ny },
-			{ start: 0, end: domain.grid.nx }
-		];
-	}
-
-	return { domain, variable, ranges };
+	return { domain, variable, bounds: mapBounds };
 };
 
 const defaultResolveRenderOptions = (

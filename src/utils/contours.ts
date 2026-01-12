@@ -1,9 +1,12 @@
 import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
+import inside from 'point-in-polygon-hao';
 
 import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
+
+import { ClippingOptions } from '../types';
 
 // prettier-ignore
 export const CASES: [number, number][][][] = [
@@ -109,6 +112,7 @@ export const generateContours = (
 	z: number,
 	tileSize: number,
 	intervals: number[],
+	clippingOptions: ClippingOptions,
 	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];
@@ -129,10 +133,11 @@ export const generateContours = (
 	for (i = 1 - buffer; i < height + buffer; i++) {
 		const latTop = tile2lat(y + i / height, z);
 		const latBottom = tile2lat(y + (i - 1) / height, z);
-		const lon = tile2lon(x + 0 / height, z);
+		// const lonTop = tile2lon(x + i / width, z);
+		const lonBottom = tile2lon(x + (i - 1) / width, z);
 
-		let trd = grid.getLinearInterpolatedValue(values, latBottom, lon);
-		let brd = grid.getLinearInterpolatedValue(values, latTop, lon);
+		let trd = grid.getLinearInterpolatedValue(values, latBottom, lonBottom);
+		let brd = grid.getLinearInterpolatedValue(values, latTop, lonBottom);
 
 		let minR = Math.min(trd, brd);
 		let maxR = Math.max(trd, brd);
@@ -154,6 +159,18 @@ export const generateContours = (
 				continue;
 			}
 
+			let insideClip = true;
+			if (clippingOptions && clippingOptions.polygons) {
+				for (const polygon of clippingOptions.polygons) {
+					if (!inside([lon, latBottom], polygon)) {
+						insideClip = false;
+					}
+				}
+			}
+			if (!insideClip) {
+				continue;
+			}
+
 			let intervalList;
 			if (intervals.length === 1) {
 				const interval = intervals[0];
@@ -170,10 +187,10 @@ export const generateContours = (
 			}
 
 			for (const threshold of intervalList) {
-				const tl = tld > threshold;
-				const tr = trd > threshold;
-				const bl = bld > threshold;
-				const br = brd > threshold;
+				const tl = tld >= threshold;
+				const tr = trd >= threshold;
+				const bl = bld >= threshold;
+				const br = brd >= threshold;
 				for (const segment of CASES[(tl ? 8 : 0) | (tr ? 4 : 0) | (br ? 2 : 0) | (bl ? 1 : 0)]) {
 					let fragmentByStart = fragmentByStartByLevel.get(threshold);
 					if (!fragmentByStart)

@@ -4,10 +4,10 @@
 		<title>Open-Meteo Mapbox Layer - Grid Points Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.9/dist/index.js"></script>
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.12/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
 		<!--<script src="../../dist/index.js"></script>-->
@@ -28,7 +28,6 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
-				maxZoom: 12,
 				style: {
 					version: 8,
 					sources: {
@@ -64,7 +63,10 @@
 				map.addLayer({
 					id: 'omFileRasterLayer',
 					type: 'raster',
-					source: 'omFileRasterSource'
+					source: 'omFileRasterSource',
+					paint: {
+						'raster-opacity': 0.75
+					}
 				});
 
 				map.addSource('omFileGridSource', {
