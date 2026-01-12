@@ -1,6 +1,6 @@
-import { GridFactory } from '../grids/index';
 import { OMapsFileReader } from '../om-file-reader';
 
+import { currentBounds } from './bounds';
 import {
 	DEFAULT_INTERVAL,
 	DEFAULT_RESOLUTION_FACTOR,
@@ -14,7 +14,6 @@ import { getColorScale, resolveColorScale } from './styling';
 import type {
 	ColorScales,
 	DataIdentityOptions,
-	DimensionRange,
 	OmProtocolSettings,
 	ParsedRequest,
 	ParsedUrlComponents,
@@ -33,10 +32,11 @@ export const parseRequest = async (
 
 	return {
 		baseUrl: urlComponents.baseUrl,
-		stateKey: urlComponents.stateKey,
+		fileAndVariableKey: urlComponents.fileAndVariableKey,
 		tileIndex: urlComponents.tileIndex,
 		dataOptions,
-		renderOptions
+		renderOptions,
+		clippingOptions: settings.clippingOptions
 	};
 };
 
@@ -81,21 +81,9 @@ const defaultResolveDataIdentity = async (
 	await reader.setToOmFile(baseUrl);
 	const grid = await reader.getGridParameters(variable);
 
-	const partial = params.get('partial') === 'true';
-	const mapBounds = params.get('bounds')?.split(',').map(Number) as number[] | undefined;
+	const mapBounds = currentBounds;
 
-	let ranges: DimensionRange[];
-	if (partial && mapBounds) {
-		const gridGetter = GridFactory.create(grid, null);
-		ranges = gridGetter.getCoveringRanges(mapBounds[0], mapBounds[1], mapBounds[2], mapBounds[3]);
-	} else {
-		ranges = [
-			{ start: 0, end: grid.ny },
-			{ start: 0, end: grid.nx }
-		];
-	}
-
-	return { baseUrl, grid, variable, ranges };
+	return { baseUrl, grid, variable, bounds: mapBounds };
 };
 
 const defaultResolveRenderOptions = (

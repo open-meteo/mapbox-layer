@@ -5,9 +5,11 @@ import { RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+	DataIdentityOptions,
 	DimensionRange,
 	GridData,
 	OmProtocolSettings,
+	RenderOptions,
 	ResolvedBreakpointColorScale,
 	TileJSON
 } from '../types';
@@ -102,43 +104,6 @@ describe('Request Resolution', () => {
 			}
 		});
 
-		it('computes partial ranges when partial=true and bounds provided', async () => {
-			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
-			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&partial=true&bounds=0,0,10,10';
-
-			const { dataOptions } = await parseRequest(url, settings, reader);
-			// Ranges should be computed based on bounds overlap with grid
-			expect(dataOptions.ranges).toEqual([
-				{ start: 0, end: 12 },
-				{ start: 0, end: 10 }
-			]);
-		});
-
-		it('uses full grid ranges when partial=false', async () => {
-			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
-			vi.spyOn(reader, 'getGridParameters').mockResolvedValue({
-				type: 'regular',
-				nx: 100,
-				ny: 200,
-				lonMin: 0,
-				latMin: 0,
-				dx: 1,
-				dy: 1
-			});
-
-			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&bounds=0,0,10,10';
-
-			const { dataOptions } = await parseRequest(url, settings, reader);
-			expect(dataOptions.ranges).toEqual([
-				{ start: 0, end: 200 },
-				{ start: 0, end: 100 }
-			]);
-		});
-
 		it('throws for missing variable', async () => {
 			const settings = createTestSettings();
 			const reader = new OMapsFileReader();
@@ -209,29 +174,32 @@ describe('Request Resolution', () => {
 		it('allows custom request resolver', async () => {
 			const { omProtocol } = await import('../om-protocol');
 
-			const customResolver = vi.fn().mockReturnValue({
-				dataOptions: {
-					variable: { value: 'custom_var' },
-					ranges: [
-						{ start: 0, end: 10 },
-						{ start: 0, end: 10 }
-					]
-				},
-				renderOptions: {
-					dark: true,
+			const customResolver = vi.fn().mockImplementation(() => {
+				const renderOptions: RenderOptions = {
 					tileSize: 512,
 					resolutionFactor: 1,
-					makeGrid: false,
-					makeArrows: false,
-					makeContours: false,
-					interval: [2],
+					drawGrid: false,
+					drawArrows: false,
+					drawContours: false,
+					intervals: [2],
 					colorScale: {
+						type: 'rgba',
 						min: 0,
 						max: 100,
 						colors: [],
 						unit: 'C'
 					}
-				}
+				};
+				const dataOptions: DataIdentityOptions = {
+					baseUrl: 'https://example.com/data_spatial/custom_domain',
+					grid: { type: 'regular', ny: 10, nx: 10, lonMin: 0, latMin: 0, dx: 1, dy: 1 },
+					variable: 'custom_var',
+					bounds: undefined
+				};
+				return {
+					dataOptions,
+					renderOptions
+				};
 			});
 
 			const settings = createTestSettings({ resolveRequest: customResolver });

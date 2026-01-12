@@ -75,7 +75,7 @@ describe('URL Parsing', () => {
 			const components2 = parseUrlComponents(url2);
 
 			// Same stateKey despite different tile_size
-			expect(components1.stateKey).toBe(components2.stateKey);
+			expect(components1.fileAndVariableKey).toBe(components2.fileAndVariableKey);
 		});
 
 		it('includes data-affecting params in stateKey', async () => {
@@ -85,7 +85,7 @@ describe('URL Parsing', () => {
 			const components1 = parseUrlComponents(url1);
 			const components2 = parseUrlComponents(url2);
 
-			expect(components1.stateKey).not.toBe(components2.stateKey);
+			expect(components1.fileAndVariableKey).not.toBe(components2.fileAndVariableKey);
 		});
 
 		it('rejects invalid OM protocol URL', async () => {
