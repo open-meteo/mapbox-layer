@@ -11,7 +11,7 @@ export * from './utils/arrows';
 export * from './utils/bounds';
 export * from './grids/index';
 
-export * from './domains';
+// export * from './domains';
 export * from './om-file-reader';
 export * from './om-protocol';
 export * from './om-protocol-state';

@@ -74,7 +74,7 @@ export const getOrCreateState = (
 
 	let ranges: DimensionRange[];
 	if (dataOptions.bounds) {
-		const gridGetter = GridFactory.create(dataOptions.domain.grid, null);
+		const gridGetter = GridFactory.create(dataOptions.grid, null);
 		ranges = gridGetter.getCoveringRanges(
 			dataOptions.bounds[1],
 			dataOptions.bounds[0],
@@ -83,8 +83,8 @@ export const getOrCreateState = (
 		);
 	} else {
 		ranges = [
-			{ start: 0, end: dataOptions.domain.grid.ny },
-			{ start: 0, end: dataOptions.domain.grid.nx }
+			{ start: 0, end: dataOptions.grid.ny },
+			{ start: 0, end: dataOptions.grid.nx }
 		];
 	}
 
@@ -153,7 +153,7 @@ export const getValueFromLatLong = (
 		return { value: NaN };
 	}
 
-	const grid = GridFactory.create(state.dataOptions.domain.grid, state.ranges);
+	const grid = GridFactory.create(state.dataOptions.grid, state.ranges);
 	const lonNormalized = normalizeLon(lon);
 	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
 

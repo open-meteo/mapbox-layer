@@ -6,13 +6,13 @@ import { VECTOR_TILE_EXTENT } from './constants';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
-import { ClippingOptions, DimensionRange, Domain } from '../types';
+import { ClippingOptions, DimensionRange, GridData } from '../types';
 
 export const generateArrows = (
 	pbf: Pbf,
 	values: Float32Array,
 	directions: Float32Array,
-	domain: Domain,
+	gridData: GridData,
 	ranges: DimensionRange[] | null,
 	x: number,
 	y: number,
@@ -32,7 +32,7 @@ export const generateArrows = (
 	const size = extent / arrows;
 
 	let cursor = [0, 0];
-	const grid = GridFactory.create(domain.grid, ranges);
+	const grid = GridFactory.create(gridData, ranges);
 
 	for (let tileY = 0; tileY < extent + 1; tileY += size) {
 		const lat = tile2lat(y + tileY / extent, z);

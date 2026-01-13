@@ -6,8 +6,9 @@ import {
 } from '@openmeteo/file-reader';
 
 import { fastAtan2, radiansToDegrees } from './utils/math';
+import { wktToGridData } from './utils/wkt';
 
-import type { Data, DimensionRange } from './types';
+import type { Data, DimensionRange, GridData } from './types';
 
 /**
  * Configuration options for the OMapsFileReader.
@@ -46,6 +47,32 @@ export class OMapsFileReader {
 
 		// TODO: This could be a combination of user-defined and default derivation rules
 		this.allDerivationRules = DEFAULT_DERIVATION_RULES;
+	}
+
+	async getGridParameters(variable: string): Promise<GridData> {
+		if (!this.reader) {
+			throw new Error('Reader not initialized');
+		}
+
+		const variableReader = await this.reader.getChildByName(variable);
+
+		if (!variableReader) {
+			throw new Error(`Variable ${variable} not found`);
+		}
+
+		const dimensions = variableReader.getDimensions();
+
+		if (dimensions.length !== 2) {
+			throw new Error(`Variable ${variable} does not have 2 dimensions`);
+		}
+
+		const [ny, nx] = dimensions;
+
+		const wkt2Crs = await this.reader.getChildByName('crs_wkt');
+		const wkt = wkt2Crs!.readScalar<string>(OmDataType.String)!;
+		const grid = wktToGridData(wkt, nx, ny);
+		console.log(grid);
+		return grid;
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {
