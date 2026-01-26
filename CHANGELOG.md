@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.14](https://github.com/open-meteo/mapbox-layer/compare/v0.0.13...v0.0.14) (2026-01-26)
+
+
+### Bug Fixes
+
+* bump the openmeteo group across 1 directory with 5 updates ([#156](https://github.com/open-meteo/mapbox-layer/issues/156)) ([0bd4a39](https://github.com/open-meteo/mapbox-layer/commit/0bd4a399f575f4e34a6b8bd77c84b7eb712eedaf))
+
 ## [0.0.13](https://github.com/open-meteo/mapbox-layer/compare/v0.0.12...v0.0.13) (2026-01-15)
 
 
