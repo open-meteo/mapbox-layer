@@ -210,7 +210,7 @@ export const domainOptions: Array<Domain> = [
 	},
 	{
 		value: 'ncep_hgefs025_ensemble_mean',
-		label: 'GFS HGEFS 0.25°',
+		label: 'GFS HGEFS 0.25° Ensemble Mean',
 		grid: {
 			type: 'regular',
 			nx: 1440,
