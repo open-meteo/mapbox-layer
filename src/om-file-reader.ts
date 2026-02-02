@@ -1,4 +1,6 @@
 import {
+	BlockCache,
+	BrowserBlockCache,
 	OmDataType,
 	OmFileReadOptions,
 	type OmFileReader,
@@ -32,13 +34,14 @@ export class OMapsFileReader {
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
+	private cache: BlockCache;
 	readonly config: Required<FileReaderConfig>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 
 	constructor(config: FileReaderConfig = {}) {
 		this.config = {
 			useSAB: false,
-			maxCachedFiles: 50,
+			maxCachedFiles: 120,
 			retries: 2,
 			eTagValidation: false,
 			...config
@@ -46,6 +49,12 @@ export class OMapsFileReader {
 
 		// TODO: This could be a combination of user-defined and default derivation rules
 		this.allDerivationRules = DEFAULT_DERIVATION_RULES;
+		this.cache = new BrowserBlockCache({
+			blockSize: 128 * 1024,
+			cacheName: 'mapbox-layer-cache',
+			memCacheTtlMs: 1000,
+			maxBytes: 1024 * 1024 * 1024 // 1Gib maximum storage
+		});
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {
@@ -60,7 +69,7 @@ export class OMapsFileReader {
 			});
 			this.setCachedBackend(omUrl, s3Backend);
 		}
-		this.reader = await s3Backend.asCachedReader();
+		this.reader = await s3Backend.asCachedReader(this.cache);
 	}
 
 	private setCachedBackend(url: string, backend: OmHttpBackend): void {
@@ -181,6 +190,33 @@ export class OMapsFileReader {
 		} else {
 			return this.readSimpleVariable(variable, ranges);
 		}
+	}
+
+	/**
+	 * Prefetch data for a specific variable and range into the local cache.
+	 * This is useful for warming up the cache for anticipated map movements.
+	 */
+	async prefetchVariable(variable: string, ranges: DimensionRange[] | null = null): Promise<void> {
+		if (!this.reader) return;
+
+		const derivationRule = this.findDerivationRule(variable);
+		const varsToPrefetch = derivationRule ? derivationRule.getSourceVars(variable) : [variable];
+
+		await Promise.all(
+			varsToPrefetch.map(async (v) => {
+				const variableReader = await this.reader!.getChildByName(v);
+				if (!variableReader) return;
+
+				const dimensions = variableReader.getDimensions();
+				const readRanges = this.getRanges(ranges, dimensions);
+
+				// We call read but don't return the data.
+				// The library handles caching the blocks internally.
+				await variableReader.readPrefetch({
+					ranges: readRanges
+				});
+			})
+		);
 	}
 
 	hasFileOpen(omFileUrl: string) {

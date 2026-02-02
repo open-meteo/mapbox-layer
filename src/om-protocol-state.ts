@@ -1,5 +1,3 @@
-import { setupGlobalCache } from '@openmeteo/file-reader';
-
 import { boundsIncluded } from './utils/bounds';
 import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
@@ -22,13 +20,12 @@ import type {
  *
  * This should be as low as possible, but needs to be at least the number of
  * variables that you want to display simultaneously. */
-const MAX_STATES_WITH_DATA = 2;
+const MAX_STATES_WITH_DATA = 1;
 /** 1 minute for hard eviction on new data fetches */
 const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 
 // THIS is shared global state. The protocol can be added only once with different settings!
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
-setupGlobalCache();
 
 export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
 	if (omProtocolInstance) {
