@@ -180,6 +180,23 @@ export const domainOptions: Array<Domain> = [
 		time_interval: 'hourly',
 		model_interval: '3_hourly'
 	},
+	// Not availabe yet
+	// {
+	// 	value: 'dwd_icon_d2_15min',
+	// 	label: 'DWD ICON D2 15min',
+	// 	grid: {
+	// 		type: 'regular',
+	// 		nx: 1215,
+	// 		ny: 746,
+	// 		latMin: 43.18,
+	// 		lonMin: -3.94,
+	// 		dx: 0.02,
+	// 		dy: 0.02,
+	// 		zoom: 5.2
+	// 	},
+	// 	time_interval: '15_minute',
+	// 	model_interval: '3_hourly'
+	// },
 	{
 		value: 'dwd_gwam',
 		label: 'DWD GWAM',
@@ -217,12 +234,12 @@ export const domainOptions: Array<Domain> = [
 		label: 'DWD ICON EPS',
 		grid: {
 			type: 'regular',
-			nx: 2879,
-			ny: 1441,
+			nx: 1439,
+			ny: 721,
 			latMin: -90,
 			lonMin: -180,
-			dx: 0.125,
-			dy: 0.125,
+			dx: 0.25,
+			dy: 0.25,
 			zoom: 1
 		},
 		time_interval: 'hourly',
@@ -233,12 +250,12 @@ export const domainOptions: Array<Domain> = [
 		label: 'DWD ICON EU EPS',
 		grid: {
 			type: 'regular',
-			nx: 1377,
-			ny: 657,
+			nx: 689,
+			ny: 329,
 			latMin: 29.5,
 			lonMin: -23.5,
-			dx: 0.0625,
-			dy: 0.0625,
+			dx: 0.125,
+			dy: 0.125,
 			zoom: 3.2
 		},
 		time_interval: 'hourly',
@@ -249,8 +266,8 @@ export const domainOptions: Array<Domain> = [
 		label: 'DWD ICON D2 EPS',
 		grid: {
 			type: 'regular',
-			nx: 1215,
-			ny: 746,
+			nx: 1214, // Note: -1px difference to use the same weights as official
+			ny: 745, // Note: -1px difference to use the same weights as official
 			latMin: 43.18,
 			lonMin: -3.94,
 			dx: 0.02,
@@ -262,38 +279,6 @@ export const domainOptions: Array<Domain> = [
 	},
 
 	// GFS
-	{
-		value: 'ncep_gefs025',
-		label: 'GEFS 0.25°',
-		grid: {
-			type: 'regular',
-			nx: 1440,
-			ny: 721,
-			latMin: -90,
-			lonMin: -180,
-			dx: 0.25,
-			dy: 0.25,
-			zoom: 1
-		},
-		time_interval: '6_hourly',
-		model_interval: '6_hourly'
-	},
-	{
-		value: 'ncep_gefs05',
-		label: 'GEFS 0.5°',
-		grid: {
-			type: 'regular',
-			nx: 720,
-			ny: 361,
-			latMin: -90,
-			lonMin: -180,
-			dx: 0.5,
-			dy: 0.5,
-			zoom: 1
-		},
-		time_interval: '6_hourly',
-		model_interval: '6_hourly'
-	},
 	{
 		value: 'ncep_gfs025',
 		label: 'GFS Global 0.25°',
@@ -324,6 +309,38 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		model_interval: '6_hourly'
+	},
+	{
+		value: 'ncep_gefs05',
+		label: 'GEFS 0.5°',
+		grid: {
+			type: 'regular',
+			nx: 720,
+			ny: 361,
+			latMin: -90,
+			lonMin: -180,
+			dx: 0.5,
+			dy: 0.5,
+			zoom: 1
+		},
+		time_interval: '6_hourly',
+		model_interval: '6_hourly'
+	},
+	{
+		value: 'ncep_gefs025',
+		label: 'GEFS 0.25°',
+		grid: {
+			type: 'regular',
+			nx: 1440,
+			ny: 721,
+			latMin: -90,
+			lonMin: -180,
+			dx: 0.25,
+			dy: 0.25,
+			zoom: 1
+		},
+		time_interval: '6_hourly',
 		model_interval: '6_hourly'
 	},
 	{
@@ -614,19 +631,20 @@ export const domainOptions: Array<Domain> = [
 		time_interval: 'monthly',
 		model_interval: 'monthly'
 	},
-	{
-		value: 'ecmwf_ec46',
-		label: 'ECMWF EC46',
-		grid: {
-			type: 'gaussian',
-			nx: 421120,
-			ny: 1,
-			zoom: 3.2,
-			gaussianGridLatitudeLines: 320
-		},
-		time_interval: 'daily',
-		model_interval: 'daily'
-	},
+	// Ensemble
+	// {
+	// 	value: 'ecmwf_ec46',
+	// 	label: 'ECMWF EC46',
+	// 	grid: {
+	// 		type: 'gaussian',
+	// 		nx: 421120,
+	// 		ny: 1,
+	// 		zoom: 3.2,
+	// 		gaussianGridLatitudeLines: 320
+	// 	},
+	// 	time_interval: 'daily',
+	// 	model_interval: 'daily'
+	// },
 	{
 		value: 'ecmwf_ec46_ensemble_mean',
 		label: 'ECMWF EC46 Ensemble Mean',
@@ -733,15 +751,15 @@ export const domainOptions: Array<Domain> = [
 	},
 	{
 		value: 'cmc_gem_geps',
-		label: 'GEM Ensemble',
+		label: 'GEM Global Ensemble',
 		grid: {
 			type: 'regular',
-			nx: 2400,
-			ny: 1201,
+			nx: 720,
+			ny: 361,
 			latMin: -90,
 			lonMin: -180,
-			dx: 0.15,
-			dy: 0.15,
+			dx: 0.5,
+			dy: 0.5,
 			zoom: 1
 		},
 		time_interval: '6_hourly',
@@ -804,12 +822,12 @@ export const domainOptions: Array<Domain> = [
 		label: 'JMA MSM Upper Level',
 		grid: {
 			type: 'regular',
-			nx: 481,
-			ny: 505,
+			nx: 241,
+			ny: 253,
 			latMin: 22.4,
 			lonMin: 120,
-			dx: 0.0625,
-			dy: 0.05,
+			dx: 0.125,
+			dy: 0.1,
 			zoom: 1
 		},
 		time_interval: 'hourly',
@@ -944,22 +962,22 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
-		model_interval: '6_hourly'
+		model_interval: 'daily'
 	},
 	{
 		value: 'meteofrance_sea_surface_temperature',
 		label: 'MF Sea Surface Temperature',
 		grid: {
 			type: 'regular',
-			nx: 1440,
-			ny: 721,
-			latMin: -90,
-			lonMin: -180,
-			dx: 0.25,
-			dy: 0.25,
+			nx: 4320,
+			ny: 2041,
+			latMin: -80 + 1 / 24,
+			lonMin: -180 + 1 / 24,
+			dx: 1 / 12,
+			dy: 1 / 12,
 			zoom: 1
 		},
-		time_interval: 'daily',
+		time_interval: '6_hourly',
 		model_interval: 'daily'
 	},
 
