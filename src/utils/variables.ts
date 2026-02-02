@@ -82,7 +82,10 @@ export const variableOptions = [
 
 	{ value: 'nitrogen_dioxide', label: 'Nitrogen Dioxide' },
 	{ value: 'nitrogen_monoxide', label: 'Nitrogen Monoxide' },
-	{ value: 'non_methane_volatile_organic_compounds', label: 'Non Methane Volatile Organic Compounds' },
+	{
+		value: 'non_methane_volatile_organic_compounds',
+		label: 'Non Methane Volatile Organic Compounds'
+	},
 
 	{ value: 'ocean_u_current', label: 'Ocean Current' },
 	{ value: 'ocean_v_current', label: 'Ocean Current' },
