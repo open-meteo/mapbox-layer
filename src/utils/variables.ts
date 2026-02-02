@@ -11,11 +11,15 @@ const heights = [
 ];
 
 export const variableOptions = [
+	{ value: 'aerosol_optical_depth', label: 'Aerosol Optical Depth' },
 	{ value: 'albedo', label: 'Albedo' },
 
 	{ value: 'boundary_layer_height', label: 'Boundary Layer Height' },
 
 	{ value: 'cape', label: 'CAPE' },
+
+	{ value: 'carbon_dioxide', label: 'Carbon Dioxide' },
+	{ value: 'carbon_monoxide', label: 'Carbon Monoxide' },
 
 	{ value: 'categorical_freezing_rain', label: 'Categorical Freezing Rain' },
 
@@ -40,8 +44,12 @@ export const variableOptions = [
 	{ value: 'diffuse_radiation', label: 'Diffuse Radiation' },
 	{ value: 'direct_radiation', label: 'Direct Radiation' },
 
+	{ value: 'dust', label: 'Dust' },
+
 	{ value: 'freezing_level_height', label: 'Freezing Level Height' },
 	{ value: 'freezing_rain_probability', label: 'Freezing Rain Probability' },
+
+	{ value: 'formaldehyde', label: 'Formaldehyde' },
 
 	{ value: 'ice_pellets_probability', label: 'Ice Pellets Probability' },
 
@@ -56,7 +64,14 @@ export const variableOptions = [
 
 	{ value: 'mass_density_8m', label: 'Mass Density (8m)' },
 
+	{ value: 'methane', label: 'Methane' },
+
 	{ value: 'ocean_u_current', label: 'Ocean Current' },
+
+	{ value: 'ozone', label: 'Ozone' },
+
+	{ value: 'pm2_5', label: 'PM2.5' },
+	{ value: 'pm10', label: 'PM10' },
 
 	{ value: 'potential_evapotranspiration', label: 'Potential Evapotranspiration' },
 
