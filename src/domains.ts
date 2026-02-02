@@ -1003,30 +1003,31 @@ export const domainOptions: Array<Domain> = [
 		time_interval: 'hourly',
 		model_interval: '3_hourly'
 	},
-	{
-		value: 'kma_ldps',
-		label: 'KMA LDPS 1.5km',
-		grid: {
-			type: 'projectedFromGeographicOrigin',
-			nx: 602,
-			ny: 781,
-			latitude: 32.2569,
-			longitude: 121.834,
-			dx: 1500,
-			dy: 1500,
-			zoom: 5.5,
-			projection: {
-				λ0: 126,
-				ϕ0: 38,
-				ϕ1: 30,
-				ϕ2: 60,
-				radius: 6371229,
-				name: 'LambertConformalConicProjection'
-			}
-		},
-		time_interval: 'hourly',
-		model_interval: '3_hourly'
-	},
+	// Currently not available
+	// {
+	// 	value: 'kma_ldps',
+	// 	label: 'KMA LDPS 1.5km',
+	// 	grid: {
+	// 		type: 'projectedFromGeographicOrigin',
+	// 		nx: 602,
+	// 		ny: 781,
+	// 		latitude: 32.2569,
+	// 		longitude: 121.834,
+	// 		dx: 1500,
+	// 		dy: 1500,
+	// 		zoom: 5.5,
+	// 		projection: {
+	// 			λ0: 126,
+	// 			ϕ0: 38,
+	// 			ϕ1: 30,
+	// 			ϕ2: 60,
+	// 			radius: 6371229,
+	// 			name: 'LambertConformalConicProjection'
+	// 		}
+	// 	},
+	// 	time_interval: 'hourly',
+	// 	model_interval: '3_hourly'
+	// },
 
 	// KNMI
 	{
