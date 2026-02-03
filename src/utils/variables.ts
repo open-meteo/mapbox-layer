@@ -242,12 +242,10 @@ export const variableOptions = [
 
 	{ value: 'weather_code', label: 'Weather Codes' },
 
-	{ value: 'wind_gusts_10m', label: 'Wind Gusts (10m)' },
-	{ value: 'wind_gusts_10m_spread', label: 'Wind Gusts (10m) Spread' },
-
 	{ value: 'wind_direction', label: 'Wind Direction' },
 	{ value: 'wind_gusts', label: 'Wind Gusts' },
 	{ value: 'wind_gusts_10m', label: 'Wind Gusts (10m)' },
+	{ value: 'wind_gusts_10m_spread', label: 'Wind Gusts (10m) Spread' },
 	{ value: 'wind_speed', label: 'Wind Speed' },
 	{ value: 'wind_u_component', label: 'Wind U Component' },
 	{ value: 'wind_u_component_10m_anomaly', label: 'Wind (10m) Anomaly' },
