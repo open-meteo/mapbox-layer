@@ -256,7 +256,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ range: [0, 0.5], colors: ['#000000', '#87CEFA'] },
 			{ range: [0.5, 10], colors: ['#87CEFA', '#5b95e6'] },
 			{ range: [10, 33], colors: ['#5b95e6', '#FFDD00'] },
-			{ range: [33, 100], colors: ['#FFDD00', '#ff0000'] },
+			{ range: [33, 100], colors: ['#FFDD00', '#ff0000'] }
 		],
 		opacitySegments: [
 			{ range: [0, 1], opacity: [0, 0.2], easing: 'linear' },
