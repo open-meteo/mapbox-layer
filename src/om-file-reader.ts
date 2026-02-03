@@ -59,6 +59,7 @@ export class OMapsFileReader {
 
 	async setToOmFile(omUrl: string): Promise<void> {
 		this.dispose();
+		console.log(omUrl);
 
 		let s3Backend = OMapsFileReader.s3BackendCache.get(omUrl);
 		if (!s3Backend) {
@@ -69,7 +70,7 @@ export class OMapsFileReader {
 			});
 			this.setCachedBackend(omUrl, s3Backend);
 		}
-		this.reader = await s3Backend.asCachedReaderWithString(this.cache);
+		this.reader = await s3Backend.asCachedReader(this.cache);
 	}
 
 	private setCachedBackend(url: string, backend: OmHttpBackend): void {
