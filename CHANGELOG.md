@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.14](https://github.com/open-meteo/mapbox-layer/compare/v0.0.13...v0.0.14) (2026-02-03)
+
+
+### Features
+
+* Add GraphCast AIGFS and HGEFS ([#159](https://github.com/open-meteo/mapbox-layer/issues/159)) ([c93abc5](https://github.com/open-meteo/mapbox-layer/commit/c93abc52d06c9b762429201459cce88a72974d9d))
+* Add missing domains, and variables ([#162](https://github.com/open-meteo/mapbox-layer/issues/162)) ([4b640b7](https://github.com/open-meteo/mapbox-layer/commit/4b640b7d54f9fa4013ef2349305fb69afb5d9b15))
+
+
+### Bug Fixes
+
+* bump globals from 17.0.0 to 17.1.0 in the openmeteo group ([#163](https://github.com/open-meteo/mapbox-layer/issues/163)) ([5814260](https://github.com/open-meteo/mapbox-layer/commit/58142603ead1a3461da713aa7cd81258ad22a0aa))
+* bump the openmeteo group across 1 directory with 5 updates ([#156](https://github.com/open-meteo/mapbox-layer/issues/156)) ([0bd4a39](https://github.com/open-meteo/mapbox-layer/commit/0bd4a399f575f4e34a6b8bd77c84b7eb712eedaf))
+
 ## [0.0.13](https://github.com/open-meteo/mapbox-layer/compare/v0.0.12...v0.0.13) (2026-01-15)
 
 
