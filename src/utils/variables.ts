@@ -255,12 +255,12 @@ export const variableOptions = [
 	{ value: 'wind_u_component_100m_anomaly', label: 'Wind (100m) Anomaly' },
 	{ value: 'wind_u_component_100m_mean', label: 'Wind (100m) Mean' },
 	{ value: 'wind_u_component_200m', label: 'Wind (200m)' },
-	// { value: 'wind_v_component', label: 'Wind V Component' },
-	// { value: 'wind_v_component_10m_anomaly', label: 'Wind (10m) Anomaly' },
-	// { value: 'wind_v_component_10m_mean', label: 'Wind (10m) Mean' },
-	// { value: 'wind_v_component_100m_anomaly', label: 'Wind (100m) Anomaly' },
-	// { value: 'wind_v_component_100m_mean', label: 'Wind (100m) Mean' },
-	// { value: 'wind_v_component_200m', label: 'Wind (200m)' },
+	{ value: 'wind_v_component', label: 'Wind V Component' },
+	{ value: 'wind_v_component_10m_anomaly', label: 'Wind V Component (10m) Anomaly' },
+	{ value: 'wind_v_component_10m_mean', label: 'Wind V Component (10m) Mean' },
+	{ value: 'wind_v_component_100m_anomaly', label: 'Wind V Component (100m) Anomaly' },
+	{ value: 'wind_v_component_100m_mean', label: 'Wind V Component (100m) Mean' },
+	{ value: 'wind_v_component_200m', label: 'Wind V Component (200m)' },
 
 	{ value: 'wind_wave_height', label: 'Wind Wave Height & Direction' }, // combined
 	{ value: 'wind_wave_direction', label: 'Wind Wave Height & Direction' }, // combined
@@ -313,7 +313,6 @@ export const variableOptions = [
 	{ value: 'soil_moisture_729_to_2187cm', label: 'Soil Moisture (729-2187 cm)' },
 	{ value: 'soil_moisture_81_to_243cm', label: 'Soil Moisture (81-243 cm)' },
 
-
 	// spreads
 	{ value: 'geopotential_height_50hPa_spread', label: 'Geopotential Height (50hPa) Spread' },
 	{ value: 'geopotential_height_100hPa_spread', label: 'Geopotential Height (100hPa) Spread' },
@@ -347,9 +346,9 @@ export const variableOptions = [
 	{ value: 'wind_u_component_100m_spread', label: 'Wind (100m) Spread' },
 	{ value: 'wind_u_component_200m_spread', label: 'Wind (200m) Spread' },
 
-	// { value: 'wind_v_component_10m_spread', label: 'Wind (10m) Spread' },
-	// { value: 'wind_v_component_100m_spread', label: 'Wind (100m) Spread' },
-	// { value: 'wind_v_component_200m_spread', label: 'Wind (200m) Spread' },
+	{ value: 'wind_v_component_10m_spread', label: 'Wind V Component (10m) Spread' },
+	{ value: 'wind_v_component_100m_spread', label: 'Wind V Component (100m) Spread' },
+	{ value: 'wind_v_component_200m_spread', label: 'Wind V Component (200m) Spread' },
 
 	{ value: 'wind_u_component_50hPa_spread', label: 'Wind (50hPa) Spread' },
 	{ value: 'wind_u_component_100hPa_spread', label: 'Wind (100hPa) Spread' },
@@ -365,19 +364,19 @@ export const variableOptions = [
 	{ value: 'wind_u_component_925hPa_spread', label: 'Wind (925hPa) Spread' },
 	{ value: 'wind_u_component_1000hPa_spread', label: 'Wind (1000hPa) Spread' },
 
-	// { value: 'wind_v_component_50hPa_spread', label: 'Wind V Component (50hPa) Spread' },
-	// { value: 'wind_v_component_100hPa_spread', label: 'Wind V Component (100hPa) Spread' },
-	// { value: 'wind_v_component_150hPa_spread', label: 'Wind V Component (150hPa) Spread' },
-	// { value: 'wind_v_component_200hPa_spread', label: 'Wind V Component (200hPa) Spread' },
-	// { value: 'wind_v_component_250hPa_spread', label: 'Wind V Component (250hPa) Spread' },
-	// { value: 'wind_v_component_300hPa_spread', label: 'Wind V Component (300hPa) Spread' },
-	// { value: 'wind_v_component_400hPa_spread', label: 'Wind V Component (400hPa) Spread' },
-	// { value: 'wind_v_component_500hPa_spread', label: 'Wind V Component (500hPa) Spread' },
-	// { value: 'wind_v_component_600hPa_spread', label: 'Wind V Component (600hPa) Spread' },
-	// { value: 'wind_v_component_700hPa_spread', label: 'Wind V Component (700hPa) Spread' },
-	// { value: 'wind_v_component_850hPa_spread', label: 'Wind V Component (850hPa) Spread' },
-	// { value: 'wind_v_component_925hPa_spread', label: 'Wind V Component (925hPa) Spread' },
-	// { value: 'wind_v_component_1000hPa_spread', label: 'Wind V Component (1000hPa) Spread' },
+	{ value: 'wind_v_component_50hPa_spread', label: 'Wind V Component (50hPa) Spread' },
+	{ value: 'wind_v_component_100hPa_spread', label: 'Wind V Component (100hPa) Spread' },
+	{ value: 'wind_v_component_150hPa_spread', label: 'Wind V Component (150hPa) Spread' },
+	{ value: 'wind_v_component_200hPa_spread', label: 'Wind V Component (200hPa) Spread' },
+	{ value: 'wind_v_component_250hPa_spread', label: 'Wind V Component (250hPa) Spread' },
+	{ value: 'wind_v_component_300hPa_spread', label: 'Wind V Component (300hPa) Spread' },
+	{ value: 'wind_v_component_400hPa_spread', label: 'Wind V Component (400hPa) Spread' },
+	{ value: 'wind_v_component_500hPa_spread', label: 'Wind V Component (500hPa) Spread' },
+	{ value: 'wind_v_component_600hPa_spread', label: 'Wind V Component (600hPa) Spread' },
+	{ value: 'wind_v_component_700hPa_spread', label: 'Wind V Component (700hPa) Spread' },
+	{ value: 'wind_v_component_850hPa_spread', label: 'Wind V Component (850hPa) Spread' },
+	{ value: 'wind_v_component_925hPa_spread', label: 'Wind V Component (925hPa) Spread' },
+	{ value: 'wind_v_component_1000hPa_spread', label: 'Wind V Component (1000hPa) Spread' },
 
 	// level groups
 	{ value: 'geopotential_height', label: 'Geopotential Height' },
@@ -417,7 +416,7 @@ for (const pl of pressureLevels) {
 	});
 	variableOptions.push({ value: `wind_${pl}hPa`, label: `Wind (${pl}hPa)` });
 	variableOptions.push({ value: `wind_u_component_${pl}hPa`, label: `Wind (${pl}hPa)` });
-	// variableOptions.push({ value: `wind_v_component_${pl}hPa`, label: `Wind (${pl}hPa)` });
+	variableOptions.push({ value: `wind_v_component_${pl}hPa`, label: `Wind (${pl}hPa)` });
 	variableOptions.push({ value: `wind_speed_${pl}hPa`, label: `Wind (${pl}hPa)` });
 }
 for (const height of heights) {
@@ -428,7 +427,7 @@ for (const height of heights) {
 	variableOptions.push({ value: `temperature_${height}m`, label: `Temperature (${height}m)` });
 	variableOptions.push({ value: `wind_${height}m`, label: `Wind (${height}m)` });
 	variableOptions.push({ value: `wind_u_component_${height}m`, label: `Wind (${height}m)` });
-	// variableOptions.push({ value: `wind_v_component_${height}m`, label: `Wind (${height}m)` });
+	variableOptions.push({ value: `wind_v_component_${height}m`, label: `Wind (${height}m)` });
 	variableOptions.push({ value: `wind_speed_${height}m`, label: `Wind (${height}m)` });
 }
 
