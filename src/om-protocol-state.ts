@@ -6,9 +6,11 @@ import { GridFactory } from './grids';
 import { OMapsFileReader } from './om-file-reader';
 
 import type {
+	Bounds,
 	Data,
 	DataIdentityOptions,
 	DimensionRange,
+	GridData,
 	OmProtocolInstance,
 	OmProtocolSettings,
 	OmUrlState,
@@ -47,6 +49,18 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 	return instance;
 };
 
+export const getRanges = (gridData: GridData, bounds: Bounds | undefined): DimensionRange[] => {
+	if (bounds) {
+		const gridGetter = GridFactory.create(gridData, null);
+		return gridGetter.getCoveringRanges(bounds[1], bounds[0], bounds[3], bounds[2]);
+	} else {
+		return [
+			{ start: 0, end: gridData.ny },
+			{ start: 0, end: gridData.nx }
+		];
+	}
+};
+
 export const getOrCreateState = (
 	stateByKey: Map<string, OmUrlState>,
 	stateKey: string,
@@ -69,22 +83,7 @@ export const getOrCreateState = (
 
 	evictStaleStates(stateByKey, stateKey);
 
-	let ranges: DimensionRange[];
-	if (dataOptions.bounds) {
-		const gridGetter = GridFactory.create(dataOptions.domain.grid, null);
-		ranges = gridGetter.getCoveringRanges(
-			dataOptions.bounds[1],
-			dataOptions.bounds[0],
-			dataOptions.bounds[3],
-			dataOptions.bounds[2]
-		);
-	} else {
-		ranges = [
-			{ start: 0, end: dataOptions.domain.grid.ny },
-			{ start: 0, end: dataOptions.domain.grid.nx }
-		];
-	}
-
+	const ranges = getRanges(dataOptions.domain.grid, dataOptions.bounds);
 	const state: OmUrlState = {
 		dataOptions,
 		ranges,

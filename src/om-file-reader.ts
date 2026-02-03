@@ -34,7 +34,7 @@ export class OMapsFileReader {
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
-	private cache: BlockCache;
+	private cache: BlockCache<string>;
 	readonly config: Required<FileReaderConfig>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 
@@ -69,7 +69,7 @@ export class OMapsFileReader {
 			});
 			this.setCachedBackend(omUrl, s3Backend);
 		}
-		this.reader = await s3Backend.asCachedReader(this.cache);
+		this.reader = await s3Backend.asCachedReaderWithString(this.cache);
 	}
 
 	private setCachedBackend(url: string, backend: OmHttpBackend): void {
