@@ -59,7 +59,6 @@ export class OMapsFileReader {
 
 	async setToOmFile(omUrl: string): Promise<void> {
 		this.dispose();
-		console.log(omUrl);
 
 		let s3Backend = OMapsFileReader.s3BackendCache.get(omUrl);
 		if (!s3Backend) {
