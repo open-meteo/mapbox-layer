@@ -31,6 +31,12 @@ export interface FileReaderConfig {
 	cache?: BlockCache<string | bigint>;
 }
 
+export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> = {
+	useSAB: false,
+	retries: 2,
+	eTagValidation: false
+};
+
 /**
  * Convenience class for reading from OM-files implementing some utility conversions during reading.
  *
@@ -44,9 +50,7 @@ export class OMapsFileReader {
 
 	constructor(config: FileReaderConfig = {}) {
 		this.config = {
-			useSAB: false,
-			retries: 2,
-			eTagValidation: false,
+			...defaultFileReaderConfig,
 			...config
 		};
 
