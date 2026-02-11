@@ -197,8 +197,8 @@ export class MapboxLayerFileReader {
 				const dimensions = variableReader.getDimensions();
 				const readRanges = this.getRanges(ranges, dimensions);
 
-				// We call read but don't return the data.
-				// The library handles caching the blocks internally.
+				// readPrefetch warms up the backend cache by requesting the necessary
+				// data blocks without decoding them or copying them to a TypedArray.
 				await variableReader.readPrefetch({
 					prefetchConcurrency: 1000, // concurrency limiting on requests is executed via the BlockCache
 					ranges: readRanges
