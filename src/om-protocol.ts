@@ -1,5 +1,7 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
+import { clippingBounds } from './utils/bounds';
+import { ResolvedClipping } from './utils/clipping';
 import { clipBounds } from './utils/math';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { parseMetaJson } from './utils/parse-url';
@@ -12,7 +14,6 @@ import { capitalize } from './utils';
 import { WorkerPool } from './worker-pool';
 
 import type {
-	ClippingOptions,
 	Data,
 	DataIdentityOptions,
 	DimensionRange,
@@ -47,6 +48,7 @@ export const omProtocol = async (
 
 	const url = await normalizeUrl(params.url);
 	const request = parseRequest(url, settings);
+	clippingBounds = request.clippingOptions?.bounds;
 
 	const state = getOrCreateState(
 		instance.stateByKey,
@@ -131,7 +133,7 @@ const requestTile = async (
 const getTilejson = async (
 	fullUrl: string,
 	dataOptions: DataIdentityOptions,
-	clippingOptions?: ClippingOptions
+	clippingOptions?: ResolvedClipping
 ): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
 	// Also parse ranges here

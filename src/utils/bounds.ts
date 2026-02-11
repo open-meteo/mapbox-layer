@@ -6,8 +6,16 @@ import { Bounds } from '../types';
 export let currentBounds: Bounds | undefined = undefined;
 
 export const updateCurrentBounds = (bounds: LngLatBounds) => {
-	const [minLng, minLat] = bounds.getSouthWest().toArray();
-	const [maxLng, maxLat] = bounds.getNorthEast().toArray();
+	let [minLng, minLat] = bounds.getSouthWest().toArray();
+	let [maxLng, maxLat] = bounds.getNorthEast().toArray();
+
+	if (clippingBounds) {
+		const [clipMinLng, clipMinLat, clipMaxLng, clipMaxLat] = clippingBounds;
+		if (minLng < clipMinLng) minLng = clipMinLng;
+		if (minLat < clipMinLat) minLat = clipMinLat;
+		if (maxLng > clipMaxLng) maxLng = clipMaxLng;
+		if (maxLat > clipMaxLat) maxLat = clipMaxLat;
+	}
 
 	const bbox = tileToBBOX(bboxToTile([minLng, minLat, maxLng, maxLat]));
 

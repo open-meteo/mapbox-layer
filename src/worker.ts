@@ -1,7 +1,7 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
-import { clipRasterToPolygons, resolveClippingOptions } from './utils/clipping';
+import { clipRasterToPolygons } from './utils/clipping';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { checkAgainstBounds, tile2lat, tile2lon } from './utils/math';
@@ -20,7 +20,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
 	const domain = message.data.dataOptions.domain;
 	const colorScale = message.data.renderOptions.colorScale;
-	const clippingOptions = resolveClippingOptions(message.data.clippingOptions);
+	const clippingOptions = message.data.clippingOptions;
 
 	if (!values) {
 		throw new Error('No values provided');

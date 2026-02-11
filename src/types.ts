@@ -1,3 +1,5 @@
+import { ResolvedClipping } from './utils/clipping';
+
 import { OMapsFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
@@ -36,7 +38,7 @@ export interface ParsedRequest {
 	tileIndex: TileIndex | null;
 	renderOptions: RenderOptions; // Only rendering-related params
 	dataOptions: DataIdentityOptions; // Only data-identity params,
-	clippingOptions: ClippingOptions;
+	clippingOptions: ResolvedClipping | undefined;
 }
 
 export interface OmUrlState {
@@ -116,7 +118,7 @@ export interface TileRequest {
 	renderOptions: RenderOptions;
 	dataOptions: DataIdentityOptions;
 	ranges: DimensionRange[];
-	clippingOptions: ClippingOptions;
+	clippingOptions: ResolvedClipping | undefined;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;

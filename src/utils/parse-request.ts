@@ -1,4 +1,5 @@
 import { currentBounds } from './bounds';
+import { resolveClippingOptions } from './clipping';
 import {
 	DEFAULT_INTERVAL,
 	DEFAULT_RESOLUTION_FACTOR,
@@ -32,7 +33,7 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 		tileIndex: urlComponents.tileIndex,
 		dataOptions,
 		renderOptions,
-		clippingOptions: settings.clippingOptions
+		clippingOptions: resolveClippingOptions(settings.clippingOptions)
 	};
 };
 
