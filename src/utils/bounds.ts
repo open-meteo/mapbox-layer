@@ -4,6 +4,11 @@ import { LngLatBounds } from 'maplibre-gl';
 import { Bounds } from '../types';
 
 export let currentBounds: Bounds | undefined = undefined;
+let clippingBounds: Bounds | undefined = undefined;
+
+export const setClippingBounds = (bounds?: Bounds): void => {
+	clippingBounds = bounds;
+};
 
 export const updateCurrentBounds = (bounds: LngLatBounds) => {
 	let [minLng, minLat] = bounds.getSouthWest().toArray();
