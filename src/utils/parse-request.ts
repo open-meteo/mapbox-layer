@@ -1,4 +1,4 @@
-import { currentBounds } from './bounds';
+import { currentBounds, setClippingBounds } from './bounds';
 import { resolveClippingOptions } from './clipping';
 import {
 	DEFAULT_INTERVAL,
@@ -27,13 +27,16 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
 	const { dataOptions, renderOptions } = resolver(urlComponents, settings);
 
+	const resolvedClippingOptions = resolveClippingOptions(settings.clippingOptions);
+	setClippingBounds(resolvedClippingOptions?.bounds);
+
 	return {
 		baseUrl: urlComponents.baseUrl,
 		fileAndVariableKey: urlComponents.fileAndVariableKey,
 		tileIndex: urlComponents.tileIndex,
 		dataOptions,
 		renderOptions,
-		clippingOptions: resolveClippingOptions(settings.clippingOptions)
+		clippingOptions: resolvedClippingOptions
 	};
 };
 

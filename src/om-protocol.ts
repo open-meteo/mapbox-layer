@@ -1,6 +1,5 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { setClippingBounds } from './utils/bounds';
 import { ResolvedClipping } from './utils/clipping';
 import { clipBounds } from './utils/math';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
@@ -48,7 +47,6 @@ export const omProtocol = async (
 
 	const url = await normalizeUrl(params.url);
 	const request = parseRequest(url, settings);
-	setClippingBounds(request.clippingOptions?.bounds);
 
 	const state = getOrCreateState(
 		instance.stateByKey,
