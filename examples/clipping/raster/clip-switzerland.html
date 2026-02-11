@@ -4,14 +4,14 @@
 		<title>Open-Meteo Mapbox Layer - Clipping Raster Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
-		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
+		<script src="https://unpkg.com/@turf/turf@7.3.4/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<!-- <script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script> -->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<script src="../../../dist/index.js"></script>
+		<!-- <script src="../../../dist/index.js"></script> -->
 		<style>
 			html,
 			body,
@@ -69,7 +69,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
