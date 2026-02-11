@@ -8,10 +8,10 @@
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
+		<!-- <script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script> -->
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script src="../../../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -28,24 +28,14 @@
 			fetch('./natural_earth_50m_land_10km_buffer.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
-					const oceansFlatten = turf.flatten(geojson);
-					const oceansDissolve = turf.dissolve(oceansFlatten, { propertyName: 'combine' });
-					const oceansPolygon = turf.union(oceansDissolve);
-
-					const oceansBbox = turf.bbox(oceansPolygon);
-					const simplifiedoceansPolygon = turf.simplify(oceansPolygon, {
+					const simplifiedoceansPolygon = turf.simplify(geojson, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
-					let polygons = [];
-					for (let coords of simplifiedoceansPolygon.geometry.coordinates) {
-						polygons.push(...coords);
-					}
-
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [polygons]
+						geojson: simplifiedoceansPolygon
 					};
 
 					// use the settings as argument for the protocol
@@ -74,6 +64,7 @@
 								}
 							]
 						},
+						zoom: 2,
 						hash: true
 					});
 

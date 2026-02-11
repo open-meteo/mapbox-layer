@@ -2,11 +2,10 @@ import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
 import inside from 'point-in-polygon-hao';
 
+import { ResolvedClipping } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
-
-import { ClippingOptions } from '../types';
 
 // prettier-ignore
 export const CASES: [number, number][][][] = [
@@ -112,7 +111,7 @@ export const generateContours = (
 	z: number,
 	tileSize: number,
 	intervals: number[],
-	clippingOptions: ClippingOptions,
+	clippingOptions: ResolvedClipping | undefined,
 	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];
@@ -160,12 +159,12 @@ export const generateContours = (
 			}
 
 			let insideClip = true;
-			if (clippingOptions && clippingOptions.polygons) {
-				for (const polygon of clippingOptions.polygons) {
-					if (!inside([lon, latBottom], polygon)) {
-						insideClip = false;
-					}
-				}
+			const polygons = clippingOptions?.polygons;
+			if (
+				polygons &&
+				!polygons.some((ring) => !!inside([lon, latBottom], [ring as unknown as number[][]]))
+			) {
+				insideClip = false;
 			}
 			if (!insideClip) {
 				continue;

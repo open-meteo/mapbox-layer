@@ -8,10 +8,10 @@
 		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
+		<!-- <script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script> -->
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script src="../../../dist/index.js"></script>
 		<style>
 			html,
 			body,
@@ -28,21 +28,14 @@
 			fetch('./swissBOUNDARIES3D_1_5_TLM_LANDESGEBIET.geojson')
 				.then((response) => response.json())
 				.then((geojson) => {
-					// optionally use turf to do some simplication and calculate bbox
-					const swissFlatten = turf.flatten(geojson);
-					const swissDissolve = turf.dissolve(swissFlatten, { propertyName: 'combine' });
-
-					const swissPolygon = swissDissolve.features[0];
-					const swissBbox = turf.bbox(swissPolygon);
-					const simplifiedSwissPolygon = turf.simplify(swissPolygon, {
+					const simplifiedSwitzerland = turf.simplify(geojson, {
 						tolerance: 0.00025,
 						highQuality: true
 					});
 
 					const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
-						polygons: [simplifiedSwissPolygon.geometry.coordinates],
-						bounds: swissBbox
+						geojson: simplifiedSwitzerland
 					};
 
 					// use the settings as argument for the protocol
@@ -71,10 +64,12 @@
 								}
 							]
 						},
+						center: [8.2275, 46.8182],
+						zoom: 7,
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m&resolution_factor=0.5`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {

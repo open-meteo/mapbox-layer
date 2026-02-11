@@ -349,4 +349,22 @@ export interface DomainMetaDataJson {
 
 export type ZoomLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-export type ClippingOptions = { polygons: [number, number][][][]; bounds: Bounds } | undefined;
+export type GeoJsonGeometry =
+	| { type: 'Polygon'; coordinates: [number, number][][] }
+	| { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+	| { type: 'GeometryCollection'; geometries: GeoJsonGeometry[] };
+
+export type GeoJsonFeature = {
+	type: 'Feature';
+	geometry: GeoJsonGeometry | null;
+	properties?: Record<string, unknown> | null;
+};
+
+export type GeoJson =
+	| GeoJsonGeometry
+	| GeoJsonFeature
+	| { type: 'FeatureCollection'; features: GeoJsonFeature[] };
+
+export type ClippingOptions =
+	| { polygons?: [number, number][][]; bounds?: Bounds; geojson?: GeoJson }
+	| undefined;
