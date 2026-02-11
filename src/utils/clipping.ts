@@ -1,6 +1,6 @@
 import { lat2tile, lon2tile, normalizeLon } from './math';
 
-import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry } from '../types';
+import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } from '../types';
 
 export type ResolvedClipping = {
 	polygons?: ReadonlyArray<ReadonlyArray<number[]>>;
@@ -12,6 +12,11 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 
 	const polygons: [number, number][][] = [];
 	let bounds = options.bounds;
+
+	const toCoord2 = (position: GeoJsonPosition): [number, number] => [
+		position[0] ?? 0,
+		position[1] ?? 0
+	];
 
 	const samePoint = (a: [number, number], b: [number, number]) => a[0] === b[0] && a[1] === b[1];
 
@@ -112,8 +117,9 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 			if (lat > bounds[3]) bounds[3] = lat;
 		};
 
-		const addRing = (ring: [number, number][]) => {
-			const splitRings = splitRingAtDateline(ring);
+		const addRing = (ring: GeoJsonPosition[]) => {
+			const normalizedRing = ring.map((position) => toCoord2(position));
+			const splitRings = splitRingAtDateline(normalizedRing);
 			for (const splitRing of splitRings) {
 				polygons.push(splitRing);
 				for (const [lon, lat] of splitRing) {
