@@ -67,6 +67,7 @@ export class OMapsFileReader {
 				eTagValidation: this.config.eTagValidation,
 				retries: this.config.retries
 			});
+			console.log(s3Backend);
 			this.setCachedBackend(omUrl, s3Backend);
 		}
 		this.reader = await s3Backend.asCachedReader(this.cache);
