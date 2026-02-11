@@ -27,7 +27,7 @@ const workerPool = new WorkerPool();
 
 export const defaultOmProtocolSettings: OmProtocolSettings = {
 	// static
-	useSAB: false,
+	fileReaderConfig: {},
 
 	// dynamic
 	clippingOptions: undefined,

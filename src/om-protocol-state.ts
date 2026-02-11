@@ -32,7 +32,7 @@ let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
 	if (omProtocolInstance) {
 		// Warn if critical settings differ from initial configuration
-		if (settings.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
+		if (settings.fileReaderConfig.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
 			throw new Error(
 				'omProtocol: useSAB setting differs from initial configuration. ' +
 					'The protocol instance is shared and uses the first settings provided.'
@@ -42,7 +42,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 	}
 
 	const instance = {
-		omFileReader: new OMapsFileReader({ useSAB: settings.useSAB }),
+		omFileReader: new OMapsFileReader(settings.fileReaderConfig),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;

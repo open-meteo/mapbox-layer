@@ -1,4 +1,4 @@
-import { OMapsFileReader } from './om-file-reader';
+import { FileReaderConfig, OMapsFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
 	omFileReader: OMapsFileReader;
@@ -63,7 +63,7 @@ export type PostReadCallback =
 
 export interface OmProtocolSettings {
 	// static
-	useSAB: boolean;
+	fileReaderConfig: FileReaderConfig;
 
 	// dynamic
 	colorScales: ColorScales;

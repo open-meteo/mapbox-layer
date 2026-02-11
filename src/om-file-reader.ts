@@ -1,6 +1,6 @@
 import {
 	BlockCache,
-	BrowserBlockCache,
+	LruBlockCache,
 	OmDataType,
 	OmFileReadOptions,
 	type OmFileReader,
@@ -14,7 +14,7 @@ import type { Data, DimensionRange } from './types';
 /**
  * Configuration options for the OMapsFileReader.
  */
-interface FileReaderConfig {
+export interface FileReaderConfig {
 	/** Whether to use SharedArrayBuffer for data reading. @default false */
 	useSAB?: boolean;
 	/** Maximum number of cached HTTP backends. @default 50 */
@@ -23,6 +23,14 @@ interface FileReaderConfig {
 	retries?: number;
 	/** Whether to validate ETags for cache coherency. @default false */
 	eTagValidation?: boolean;
+
+	/**
+	 * Block cache implementation to use.
+	 * In the browser, pass a `BrowserBlockCache`.
+	 * In Node, pass an `LruBlockCache` or any other `BlockCache<string>`.
+	 * If omitted, falls back to an in-memory LruBlockCache.
+	 */
+	cache?: BlockCache<string | bigint>;
 }
 
 /**
@@ -34,8 +42,8 @@ export class OMapsFileReader {
 	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
 
 	private reader?: OmFileReader;
-	private cache: BlockCache<string>;
-	readonly config: Required<FileReaderConfig>;
+	private cache: BlockCache;
+	readonly config: Required<Omit<FileReaderConfig, 'cache'>>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 
 	constructor(config: FileReaderConfig = {}) {
@@ -49,12 +57,9 @@ export class OMapsFileReader {
 
 		// TODO: This could be a combination of user-defined and default derivation rules
 		this.allDerivationRules = DEFAULT_DERIVATION_RULES;
-		this.cache = new BrowserBlockCache({
-			blockSize: 128 * 1024,
-			cacheName: 'mapbox-layer-cache',
-			memCacheTtlMs: 1000,
-			maxBytes: 1024 * 1024 * 1024 // 1Gib maximum storage
-		});
+
+		// Use the injected cache, or fall back to an in-memory LRU cache
+		this.cache = config.cache ?? new LruBlockCache(64 * 1024, 128);
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {
