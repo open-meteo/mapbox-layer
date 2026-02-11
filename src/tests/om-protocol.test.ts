@@ -20,7 +20,7 @@ vi.mock('../om-file-reader', async () => {
 	const actual = await vi.importActual('../om-file-reader');
 	return {
 		...actual,
-		OMapsFileReader: class {
+		MapboxLayerFileReader: class {
 			config = {};
 			async setToOmFile() {}
 			async readVariable(_variable: string, ranges: DimensionRange[]) {

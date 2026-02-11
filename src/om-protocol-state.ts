@@ -3,7 +3,7 @@ import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
 
 import { GridFactory } from './grids';
-import { OMapsFileReader } from './om-file-reader';
+import { MapboxLayerFileReader } from './om-file-reader';
 
 import type {
 	Bounds,
@@ -42,7 +42,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 	}
 
 	const instance = {
-		omFileReader: new OMapsFileReader(settings.fileReaderConfig),
+		omFileReader: new MapboxLayerFileReader(settings.fileReaderConfig),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;
@@ -99,7 +99,7 @@ export const getOrCreateState = (
 
 export const ensureData = async (
 	state: OmUrlState,
-	omFileReader: OMapsFileReader,
+	omFileReader: MapboxLayerFileReader,
 	postReadCallback: PostReadCallback
 ): Promise<Data> => {
 	if (state.data) return state.data;

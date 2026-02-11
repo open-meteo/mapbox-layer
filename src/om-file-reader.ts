@@ -12,7 +12,7 @@ import { fastAtan2, radiansToDegrees } from './utils/math';
 import type { Data, DimensionRange } from './types';
 
 /**
- * Configuration options for the OMapsFileReader.
+ * Configuration options for the MapboxLayerFileReader.
  */
 export interface FileReaderConfig {
 	/** Whether to use SharedArrayBuffer for data reading. @default false */
@@ -42,7 +42,7 @@ export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> 
  *
  * Caches the backend of recently accessed files.
  */
-export class OMapsFileReader {
+export class MapboxLayerFileReader {
 	private reader?: OmFileReader;
 	private cache: BlockCache;
 	readonly config: Required<Omit<FileReaderConfig, 'cache'>>;
