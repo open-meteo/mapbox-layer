@@ -142,7 +142,11 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 				for (const geom of geometry.geometries) {
 					addGeometry(geom);
 				}
+				return;
 			}
+
+			// Ignore non-polygon geometries for clipping.
+			return;
 		};
 
 		const geojson: GeoJson = options.geojson;
