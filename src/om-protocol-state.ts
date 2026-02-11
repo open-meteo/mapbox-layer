@@ -22,7 +22,7 @@ import type {
  *
  * This should be as low as possible, but needs to be at least the number of
  * variables that you want to display simultaneously. */
-const MAX_STATES_WITH_DATA = 1;
+const MAX_STATES_WITH_DATA = 2;
 /** 1 minute for hard eviction on new data fetches */
 const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 
