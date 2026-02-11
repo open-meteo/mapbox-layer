@@ -1,18 +1,28 @@
 import { bboxToTile, tileToBBOX } from '@mapbox/tilebelt';
-import { LngLatBounds } from 'maplibre-gl';
 
 import { Bounds } from '../types';
 
 export let currentBounds: Bounds | undefined = undefined;
-let clippingBounds: Bounds | undefined = undefined;
 
-export const setClippingBounds = (bounds?: Bounds): void => {
-	clippingBounds = bounds;
+let clippingBounds: Bounds | undefined = undefined;
+export const setClippingBounds = (clipBounds?: Bounds): void => {
+	if (
+		clippingBounds &&
+		clipBounds &&
+		clippingBounds[0] === clipBounds[0] &&
+		clippingBounds[1] === clipBounds[1] &&
+		clippingBounds[2] === clipBounds[2] &&
+		clippingBounds[3] === clipBounds[3]
+	) {
+		// No change in clipping bounds
+		return;
+	}
+	clippingBounds = clipBounds;
+	console.log('Clipping bounds set to', clippingBounds);
 };
 
-export const updateCurrentBounds = (bounds: LngLatBounds) => {
-	let [minLng, minLat] = bounds.getSouthWest().toArray();
-	let [maxLng, maxLat] = bounds.getNorthEast().toArray();
+export const updateCurrentBounds = (bounds: Bounds) => {
+	let [minLng, minLat, maxLng, maxLat] = bounds;
 
 	if (clippingBounds) {
 		const [clipMinLng, clipMinLat, clipMaxLng, clipMaxLat] = clippingBounds;
