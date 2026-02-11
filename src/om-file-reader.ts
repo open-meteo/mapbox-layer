@@ -17,8 +17,6 @@ import type { Data, DimensionRange } from './types';
 export interface FileReaderConfig {
 	/** Whether to use SharedArrayBuffer for data reading. @default false */
 	useSAB?: boolean;
-	/** Maximum number of cached HTTP backends. @default 50 */
-	maxCachedFiles?: number;
 	/** Number of retry attempts for failed requests. @default 2 */
 	retries?: number;
 	/** Whether to validate ETags for cache coherency. @default false */
@@ -39,8 +37,6 @@ export interface FileReaderConfig {
  * Caches the backend of recently accessed files.
  */
 export class OMapsFileReader {
-	private static readonly s3BackendCache = new Map<string, OmHttpBackend>();
-
 	private reader?: OmFileReader;
 	private cache: BlockCache;
 	readonly config: Required<Omit<FileReaderConfig, 'cache'>>;
@@ -49,7 +45,6 @@ export class OMapsFileReader {
 	constructor(config: FileReaderConfig = {}) {
 		this.config = {
 			useSAB: false,
-			maxCachedFiles: 120,
 			retries: 2,
 			eTagValidation: false,
 			...config
@@ -64,30 +59,12 @@ export class OMapsFileReader {
 
 	async setToOmFile(omUrl: string): Promise<void> {
 		this.dispose();
-
-		let s3Backend = OMapsFileReader.s3BackendCache.get(omUrl);
-		if (!s3Backend) {
-			s3Backend = new OmHttpBackend({
-				url: omUrl,
-				eTagValidation: this.config.eTagValidation,
-				retries: this.config.retries
-			});
-			console.log(s3Backend);
-			this.setCachedBackend(omUrl, s3Backend);
-		}
+		const s3Backend = new OmHttpBackend({
+			url: omUrl,
+			eTagValidation: this.config.eTagValidation,
+			retries: this.config.retries
+		});
 		this.reader = await s3Backend.asCachedReader(this.cache);
-	}
-
-	private setCachedBackend(url: string, backend: OmHttpBackend): void {
-		// Implement LRU-like cache management
-		if (OMapsFileReader.s3BackendCache.size >= this.config.maxCachedFiles) {
-			const firstKey = OMapsFileReader.s3BackendCache.keys().next().value;
-			if (firstKey) {
-				OMapsFileReader.s3BackendCache.delete(firstKey);
-			}
-		}
-
-		OMapsFileReader.s3BackendCache.set(url, backend);
 	}
 
 	private getRanges(ranges: DimensionRange[] | null, dimensions: number[]): DimensionRange[] {
@@ -219,18 +196,11 @@ export class OMapsFileReader {
 				// We call read but don't return the data.
 				// The library handles caching the blocks internally.
 				await variableReader.readPrefetch({
+					prefetchConcurrency: 1000, // concurrency limiting on requests is executed via the BlockCache
 					ranges: readRanges
 				});
 			})
 		);
-	}
-
-	hasFileOpen(omFileUrl: string) {
-		if (OMapsFileReader.s3BackendCache.get(omFileUrl)) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	dispose() {
