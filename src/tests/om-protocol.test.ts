@@ -1,4 +1,4 @@
-import { OMapsFileReader } from '../om-file-reader';
+import { MapboxLayerFileReader } from '../om-file-reader';
 import { defaultOmProtocolSettings } from '../om-protocol';
 import { parseRequest } from '../utils/parse-request';
 import { RequestParameters } from 'maplibre-gl';
@@ -19,32 +19,35 @@ const { mockReturnBuffer, mockReadVariableResult } = vi.hoisted(() => ({
 	mockReadVariableResult: { value: null as { values: Float32Array; directions: undefined } | null }
 }));
 
-vi.mock('../om-file-reader', () => ({
-	OMapsFileReader: class {
-		config = { useSAB: false };
-		async setToOmFile(_baseUrl: string) {}
-		async readVariable(_variable: string, ranges: DimensionRange[]) {
-			if (mockReadVariableResult.value) {
-				return mockReadVariableResult.value;
+vi.mock('../om-file-reader', async () => {
+	const actual = await vi.importActual('../om-file-reader');
+	return {
+		...actual,
+		MapboxLayerFileReader: class {
+			config = {};
+			async setToOmFile() {}
+			async readVariable(_variable: string, ranges: DimensionRange[]) {
+				if (mockReadVariableResult.value) {
+					return mockReadVariableResult.value;
+				}
+				const totalValues =
+					ranges?.reduce((acc, range) => acc * (range.end - range.start + 1), 1) || 0;
+				return { values: new Float32Array(totalValues), directions: undefined };
 			}
-			const totalValues =
-				ranges?.reduce((acc, range) => acc * (range.end - range.start + 1), 1) || 0;
-			return { values: new Float32Array(totalValues), directions: undefined };
+			async getGridParameters(_variable: string): Promise<GridData> {
+				return {
+					type: 'regular',
+					nx: 10,
+					ny: 20,
+					lonMin: 0,
+					latMin: 0,
+					dx: 1,
+					dy: 1
+				};
+			}
 		}
-
-		async getGridParameters(_variable: string): Promise<GridData> {
-			return {
-				type: 'regular',
-				nx: 10,
-				ny: 20,
-				lonMin: 0,
-				latMin: 0,
-				dx: 1,
-				dy: 1
-			};
-		}
-	}
-}));
+	};
+});
 
 vi.mock('../worker-pool', () => ({
 	WorkerPool: class {
@@ -72,7 +75,7 @@ describe('Request Resolution', () => {
 	describe('parseRequest', () => {
 		it('resolves data identity and render options from URL', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
@@ -85,7 +88,7 @@ describe('Request Resolution', () => {
 
 		it('can resolve domain from a variety of different urls', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url1 =
 				'om://https://nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
@@ -106,7 +109,7 @@ describe('Request Resolution', () => {
 
 		it('throws for missing variable', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 			const url = 'om://https://example.com/data_spatial/domain1/file.om';
 
 			expect(() => parseRequest(url, settings, reader)).rejects.toThrow(
@@ -116,7 +119,7 @@ describe('Request Resolution', () => {
 
 		it('parses render options with defaults', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url = 'om://https://example.com/data_spatial/domain1/file.om?variable=temp';
 			const { renderOptions } = await parseRequest(url, settings, reader);
@@ -134,7 +137,7 @@ describe('Request Resolution', () => {
 
 		it('parses custom render options', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=512&resolution_factor=2&grid=true&arrows=true&contours=true';
@@ -149,7 +152,7 @@ describe('Request Resolution', () => {
 
 		it('throws for invalid tile size', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
@@ -159,7 +162,7 @@ describe('Request Resolution', () => {
 
 		it('throws for invalid resolution factor', async () => {
 			const settings = createTestSettings();
-			const reader = new OMapsFileReader();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&resolution_factor=3';

@@ -1,4 +1,4 @@
-import { OMapsFileReader } from '../om-file-reader';
+import { MapboxLayerFileReader } from '../om-file-reader';
 
 import { currentBounds } from './bounds';
 import {
@@ -24,7 +24,7 @@ import type {
 export const parseRequest = async (
 	url: string,
 	settings: OmProtocolSettings,
-	reader: OMapsFileReader
+	reader: MapboxLayerFileReader
 ): Promise<ParsedRequest> => {
 	const urlComponents = parseUrlComponents(url);
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
@@ -43,7 +43,7 @@ export const parseRequest = async (
 export const defaultResolveRequest = async (
 	urlComponents: ParsedUrlComponents,
 	settings: OmProtocolSettings,
-	reader: OMapsFileReader
+	reader: MapboxLayerFileReader
 ): Promise<{ dataOptions: DataIdentityOptions; renderOptions: RenderOptions }> => {
 	const dataOptions = await defaultResolveDataIdentity(urlComponents, reader);
 
@@ -58,7 +58,7 @@ export const defaultResolveRequest = async (
 
 const defaultResolveDataIdentity = async (
 	urlComponents: ParsedUrlComponents,
-	reader: OMapsFileReader
+	reader: MapboxLayerFileReader
 ): Promise<DataIdentityOptions> => {
 	const { baseUrl, params } = urlComponents;
 
