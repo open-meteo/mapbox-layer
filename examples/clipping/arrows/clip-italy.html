@@ -46,28 +46,10 @@
 
 					const map = new maplibregl.Map({
 						container: 'map',
-						style: {
-							version: 8,
-							sources: {
-								osm: {
-									type: 'raster',
-									tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-									tileSize: 256,
-									attribution:
-										'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-								}
-							},
-							layers: [
-								{
-									id: 'osm',
-									type: 'raster',
-									source: 'osm'
-								}
-							]
-						},
+						style: 'https://public.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
+						hash: true,
 						center: [12.5674, 41.8719],
-						zoom: 5,
-						hash: true
+						zoom: 5
 					});
 
 					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/italia_meteo_arpae_icon_2i/latest.json?time_step=current_time_1H&variable=wind_speed_10m&tile_size=128&resolution_factor=0.5`;
@@ -79,53 +61,59 @@
 							tileSize: 256,
 							maxzoom: 12
 						});
-						map.addLayer({
-							id: 'omFileLayer',
-							type: 'raster',
-							source: 'omFileSource',
-							paint: {
-								'raster-opacity': 0.75
-							}
-						});
+						map.addLayer(
+							{
+								id: 'omFileLayer',
+								type: 'raster',
+								source: 'omFileSource',
+								paint: {
+									'raster-opacity': 0.75
+								}
+							},
+							'waterway-tunnel'
+						);
 
 						map.addSource('omFileVectorSource', {
 							url: 'om://' + omUrl + '&arrows=true',
 							type: 'vector'
 						});
 
-						map.addLayer({
-							id: 'omFileVectorLayer',
-							type: 'line',
-							source: 'omFileVectorSource',
-							'source-layer': 'wind-arrows',
-							paint: {
-								'line-color': [
-									'case',
-									['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
-									'rgba(0,0,0, 0.6)',
-									[
+						map.addLayer(
+							{
+								id: 'omFileVectorLayer',
+								type: 'line',
+								source: 'omFileVectorSource',
+								'source-layer': 'wind-arrows',
+								paint: {
+									'line-color': [
 										'case',
-										['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
-										'rgba(0,0,0, 0.5)',
+										['boolean', ['>', ['to-number', ['get', 'value']], 5], false],
+										'rgba(0,0,0, 0.6)',
 										[
 											'case',
-											['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
-											'rgba(0,0,0, 0.4)',
+											['boolean', ['>', ['to-number', ['get', 'value']], 4], false],
+											'rgba(0,0,0, 0.5)',
 											[
 												'case',
-												['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
-												'rgba(0,0,0, 0.3)',
-												'rgba(0,0,0, 0.2)'
+												['boolean', ['>', ['to-number', ['get', 'value']], 3], false],
+												'rgba(0,0,0, 0.4)',
+												[
+													'case',
+													['boolean', ['>', ['to-number', ['get', 'value']], 2], false],
+													'rgba(0,0,0, 0.3)',
+													'rgba(0,0,0, 0.2)'
+												]
 											]
 										]
-									]
-								],
-								'line-width': 2
+									],
+									'line-width': 2
+								},
+								layout: {
+									'line-cap': 'round'
+								}
 							},
-							layout: {
-								'line-cap': 'round'
-							}
-						});
+							'place_label_other'
+						);
 					});
 				});
 		</script>

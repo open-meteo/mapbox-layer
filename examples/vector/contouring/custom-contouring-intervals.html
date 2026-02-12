@@ -28,25 +28,7 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
-				style: {
-					version: 8,
-					sources: {
-						osm: {
-							type: 'raster',
-							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-							tileSize: 256,
-							attribution:
-								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-						}
-					},
-					layers: [
-						{
-							id: 'osm',
-							type: 'raster',
-							source: 'osm'
-						}
-					]
-				},
+				style: 'https://public.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
 				hash: true
 			});
 
@@ -60,45 +42,54 @@
 					maxzoom: 12
 				});
 
-				map.addLayer({
-					id: 'omFileRasterLayer',
-					type: 'raster',
-					source: 'omFileRasterSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileRasterLayer',
+						type: 'raster',
+						source: 'omFileRasterSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 
 				map.addSource('omFileVectorSource', {
 					url: 'om://' + omUrl,
 					type: 'vector'
 				});
 
-				map.addLayer({
-					id: 'omFileVectorLayer',
-					type: 'line',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
-					paint: {
-						'line-color': 'rgba(0,0,0,0.85)',
-						'line-width': 1
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileVectorLayer',
+						type: 'line',
+						source: 'omFileVectorSource',
+						'source-layer': 'contours',
+						paint: {
+							'line-color': 'rgba(0,0,0,0.85)',
+							'line-width': 1
+						}
+					},
+					'place_label_other'
+				);
 
-				map.addLayer({
-					id: 'omFileVectorLayerLabels',
-					type: 'symbol',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
-					layout: {
-						'symbol-placement': 'line-center',
-						'symbol-spacing': 1,
-						'text-font': ['Noto Sans Regular'],
-						'text-field': ['to-string', ['get', 'value']],
-						'text-padding': 1,
-						'text-offset': [0, -0.6]
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileVectorLayerLabels',
+						type: 'symbol',
+						source: 'omFileVectorSource',
+						'source-layer': 'contours',
+						layout: {
+							'symbol-placement': 'line-center',
+							'symbol-spacing': 1,
+							'text-font': ['Noto Sans Regular'],
+							'text-field': ['to-string', ['get', 'value']],
+							'text-padding': 1,
+							'text-offset': [0, -0.6]
+						}
+					},
+					'place_label_other'
+				);
 			});
 		</script>
 	</body>

@@ -28,25 +28,7 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
-				style: {
-					version: 8,
-					sources: {
-						osm: {
-							type: 'raster',
-							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-							tileSize: 256,
-							attribution:
-								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-						}
-					},
-					layers: [
-						{
-							id: 'osm',
-							type: 'raster',
-							source: 'osm'
-						}
-					]
-				},
+				style: 'https://public.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
 				hash: true
 			});
 
@@ -60,41 +42,47 @@
 					maxzoom: 12
 				});
 
-				map.addLayer({
-					id: 'omFileRasterLayer',
-					type: 'raster',
-					source: 'omFileRasterSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileRasterLayer',
+						type: 'raster',
+						source: 'omFileRasterSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 
 				map.addSource('omFileGridSource', {
 					url: 'om://' + omUrl + '?grid=true',
 					type: 'vector'
 				});
 
-				map.addLayer({
-					id: 'omFileGridPoints',
-					type: 'circle',
-					source: 'omFileGridSource',
-					'source-layer': 'grid',
-					layout: {},
-					paint: {
-						'circle-radius': [
-							'interpolate',
-							['exponential', 1.5],
-							['zoom'],
-							// zoom is 0 -> circle radius will be 1px
-							0,
-							1,
-							// zoom is 12 (or greater) -> circle radius will be 20px
-							12,
-							20
-						],
-						'circle-color': '#007cbf'
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileGridPoints',
+						type: 'circle',
+						source: 'omFileGridSource',
+						'source-layer': 'grid',
+						layout: {},
+						paint: {
+							'circle-radius': [
+								'interpolate',
+								['exponential', 1.5],
+								['zoom'],
+								// zoom is 0 -> circle radius will be 1px
+								0,
+								1,
+								// zoom is 12 (or greater) -> circle radius will be 20px
+								12,
+								20
+							],
+							'circle-color': '#007cbf'
+						}
+					},
+					'place_label_other'
+				);
 			});
 		</script>
 	</body>
