@@ -59,25 +59,7 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
-				style: {
-					version: 8,
-					sources: {
-						osm: {
-							type: 'raster',
-							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-							tileSize: 256,
-							attribution:
-								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-						}
-					},
-					layers: [
-						{
-							id: 'osm',
-							type: 'raster',
-							source: 'osm'
-						}
-					]
-				},
+				style: 'https://tiles.open-meteo.com/styles/minimal-planet-maps.json',
 				hash: true
 			});
 
@@ -89,8 +71,20 @@
 				const wrapper = document.getElementById('toggle');
 				if (dark) {
 					wrapper.classList.add('dark');
+					map.setStyle('https://tiles.open-meteo.com/styles/minimal-planet-maps-dark.json');
+					map.once('styledata', () => {
+						setTimeout(() => {
+							map.moveLayer('omFileLayer', 'waterway-tunnel');
+						}, 50);
+					});
 				} else {
 					wrapper.classList.remove('dark');
+					map.setStyle('https://tiles.open-meteo.com/styles/minimal-planet-maps.json');
+					map.once('styledata', () => {
+						setTimeout(() => {
+							map.moveLayer('omFileLayer', 'waterway-tunnel');
+						}, 50);
+					});
 				}
 
 				const omUrl = baseOmUrl + (dark ? '&dark=true' : '');
