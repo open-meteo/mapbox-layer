@@ -46,7 +46,7 @@ export class OpenMeteoLeafletLayer extends L.GridLayer {
 				y: coords.y,
 				z: coords.z
 			};
-			requestTile(this.parsedRequest, data, state.ranges, 'image')
+			requestTile(state.omFileUrl, this.parsedRequest, data, state.ranges, 'image')
 				.then((value: TileResponse) => {
 					const imageBitmap = value as ImageBitmap;
 					const ctx = tile.getContext('2d');
