@@ -1,8 +1,9 @@
 import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 
-import { OMapsFileReader } from './om-file-reader';
+import { GridFactory } from './grids';
+import { MapboxLayerFileReader } from './om-file-reader';
 
-import { Domain, Variable } from './types';
+import { Domain } from './types';
 
 export class WebGLWindLayer implements CustomLayerInterface {
 	id: string;
@@ -22,9 +23,9 @@ export class WebGLWindLayer implements CustomLayerInterface {
 	private backgroundIndexBuffer: WebGLBuffer | undefined;
 
 	private omUrl: string;
-	private omFileReader: OMapsFileReader;
+	private omFileReader: MapboxLayerFileReader;
 	private domain: Domain;
-	private variable: Variable;
+	private variable: string;
 	private dataLoaded = false;
 	private backgroundVertexCount = 0;
 
@@ -35,22 +36,17 @@ export class WebGLWindLayer implements CustomLayerInterface {
 	private dropRate = 0.003;
 	private animationTime = 0;
 
-	constructor(id: string, omUrl: string, domain: Domain, variable: Variable) {
+	constructor(id: string, omUrl: string, domain: Domain, variable: string) {
 		this.id = id;
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new OMapsFileReader();
+		this.omFileReader = new MapboxLayerFileReader();
 	}
 
 	private getBounds() {
-		const grid = this.domain.grid;
-		return {
-			minLat: grid.latMin,
-			maxLat: grid.latMin + grid.ny * grid.dy,
-			minLon: grid.lonMin,
-			maxLon: grid.lonMin + grid.nx * grid.dx
-		};
+		const grid = GridFactory.create(this.domain.grid);
+		return grid.getBounds();
 	}
 
 	private createBackgroundMesh(resolution: number = 50): {
@@ -253,7 +249,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 	private async loadWindData(map: Map): Promise<void> {
 		console.log('Loading wind data...');
 
-		const data = await this.omFileReader.readVariable(this.variable.value, [
+		const data = await this.omFileReader.readVariable(this.variable, [
 			{ start: 0, end: this.domain.grid.ny },
 			{ start: 0, end: this.domain.grid.nx }
 		]);
@@ -359,10 +355,10 @@ export class WebGLWindLayer implements CustomLayerInterface {
 		const bounds = this.getBounds();
 		gl.uniform4f(
 			gl.getUniformLocation(this.program!, 'u_bounds'),
-			bounds.minLon,
-			bounds.minLat,
-			bounds.maxLon,
-			bounds.maxLat
+			bounds[0],
+			bounds[1],
+			bounds[2],
+			bounds[3]
 		);
 		const params = this.getZoomAdjustedParameters();
 		gl.uniform1f(gl.getUniformLocation(this.program!, 'u_drop_rate'), params.dropRate);
@@ -410,10 +406,10 @@ export class WebGLWindLayer implements CustomLayerInterface {
 		const bounds = this.getBounds();
 		gl.uniform4f(
 			gl.getUniformLocation(renderProgram, 'u_bounds'),
-			bounds.minLon,
-			bounds.minLat,
-			bounds.maxLon,
-			bounds.maxLat
+			bounds[0],
+			bounds[1],
+			bounds[2],
+			bounds[3]
 		);
 
 		// Bind particle state texture

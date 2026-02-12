@@ -1,8 +1,9 @@
 import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 
-import { OMapsFileReader } from './om-file-reader';
+import { GridFactory } from './grids';
+import { MapboxLayerFileReader } from './om-file-reader';
 
-import { Domain, Variable } from './types';
+import { Domain } from './types';
 
 export class WebGLRasterLayer implements CustomLayerInterface {
 	id: string;
@@ -17,9 +18,9 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 	private buffer: WebGLBuffer | undefined;
 
 	private omUrl: string;
-	private omFileReader: OMapsFileReader;
+	private omFileReader: MapboxLayerFileReader;
 	private domain: Domain;
-	private variable: Variable;
+	private variable: string;
 	private dataLoaded = false;
 	private meshResolution = 50; // Adjustable resolution
 	private indexBuffer: WebGLBuffer | undefined;
@@ -65,7 +66,7 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 		id: string,
 		omUrl: string,
 		domain: Domain,
-		variable: Variable,
+		variable: string,
 		colorScale: {
 			value: number;
 			color: number[];
@@ -75,7 +76,7 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new OMapsFileReader();
+		this.omFileReader = new MapboxLayerFileReader();
 		this.colorScale = colorScale;
 		console.log(colorScale);
 	}
@@ -236,13 +237,13 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 
 	private async loadData(map: Map): Promise<void> {
 		console.log('Loading data...');
-		const data = await this.omFileReader.readVariable(this.variable.value, [
+		const data = await this.omFileReader.readVariable(this.variable, [
 			{ start: 0, end: this.domain.grid.ny },
 			{ start: 0, end: this.domain.grid.nx }
 		]);
 		if (!this.gl || !data.values) return;
 
-		if (this.variable.value.includes('wind')) {
+		if (this.variable.includes('wind')) {
 			for (let i = 0; i < data.values.length; i++) {
 				data.values[i] = Math.sqrt(
 					data.values[i] * data.values[i] + data.directions![i] * data.directions![i]
@@ -281,12 +282,9 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 			return;
 		}
 
-		const grid = this.domain.grid;
+		const grid = GridFactory.create(this.domain.grid);
 
-		const minLat = grid.latMin;
-		const maxLat = grid.latMin + grid.ny * grid.dy;
-		const minLon = grid.lonMin;
-		const maxLon = grid.lonMin + grid.nx * grid.dx;
+		const [minLon, minLat, maxLon, maxLat] = grid.getBounds();
 
 		// Handle world wrapping
 		const map = this.map!;
