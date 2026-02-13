@@ -24,15 +24,17 @@ export const setClippingBounds = (clipBounds?: Bounds): void => {
 export const updateCurrentBounds = (bounds: Bounds) => {
 	let [minLng, minLat, maxLng, maxLat] = bounds;
 
+	let bbox;
 	if (clippingBounds) {
 		const [clipMinLng, clipMinLat, clipMaxLng, clipMaxLat] = clippingBounds;
 		if (minLng < clipMinLng) minLng = clipMinLng;
 		if (minLat < clipMinLat) minLat = clipMinLat;
 		if (maxLng > clipMaxLng) maxLng = clipMaxLng;
 		if (maxLat > clipMaxLat) maxLat = clipMaxLat;
+		bbox = [minLng, minLat, maxLng, maxLat];
+	} else {
+		bbox = tileToBBOX(bboxToTile([minLng, minLat, maxLng, maxLat]));
 	}
-
-	const bbox = tileToBBOX(bboxToTile([minLng, minLat, maxLng, maxLat]));
 
 	currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
 };
