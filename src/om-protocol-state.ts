@@ -17,6 +17,9 @@ import type {
 	PostReadCallback
 } from './types';
 
+const masterControllers = new WeakMap<OmUrlState, AbortController>();
+const subscriberCounts = new WeakMap<OmUrlState, number>();
+
 // Configuration constants - could be made configurable via OmProtocolSettings
 /** Max states that keep data loaded.
  *
@@ -29,12 +32,7 @@ const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 // THIS is shared global state. The protocol can be added only once with different settings!
 let omProtocolInstance: OmProtocolInstance | undefined = undefined;
 
-export const getProtocolInstance = (
-	abortController: AbortController,
-	settings: OmProtocolSettings
-): OmProtocolInstance => {
-	const signal = abortController.signal;
-
+export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolInstance => {
 	if (omProtocolInstance) {
 		// Warn if critical settings differ from initial configuration
 		if (settings.fileReaderConfig.useSAB !== omProtocolInstance.omFileReader.config.useSAB) {
@@ -47,7 +45,7 @@ export const getProtocolInstance = (
 	}
 
 	const instance = {
-		omFileReader: new MapboxLayerFileReader(settings.fileReaderConfig, signal),
+		omFileReader: new MapboxLayerFileReader(settings.fileReaderConfig),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;
@@ -102,6 +100,12 @@ export const getOrCreateState = (
 	return state;
 };
 
+/**
+ * Ensures that data for a given state is loaded.
+ * Handles multiple concurrent requests for the same data by sharing a promise.
+ * Correctly handles AbortSignals by tracking all active subscribers and
+ * only cancelling the underlying fetch if all subscribers have aborted.
+ */
 export const ensureData = async (
 	state: OmUrlState,
 	omFileReader: MapboxLayerFileReader,
@@ -109,34 +113,69 @@ export const ensureData = async (
 	signal?: AbortSignal
 ): Promise<Data> => {
 	if (state.data) return state.data;
-	if (state.dataPromise) return state.dataPromise;
 
-	const promise = (async () => {
-		try {
-			await omFileReader.setToOmFile(state.omFileUrl);
+	if (signal?.aborted) {
+		throw new Error('Request aborted');
+	}
 
-			if (signal?.aborted) {
-				return { values: undefined, directions: undefined } as Data;
-			}
+	const count = (subscriberCounts.get(state) ?? 0) + 1;
+	subscriberCounts.set(state, count);
 
-			const data = await omFileReader.readVariable(state.dataOptions.variable, state.ranges);
+	let finished = false;
+	const cleanup = () => {
+		if (finished) return;
+		finished = true;
 
-			if (postReadCallback) {
-				postReadCallback(omFileReader, data, state);
-			}
-
-			state.data = data;
-			state.dataPromise = null;
-
-			return data;
-		} catch (error) {
-			state.dataPromise = null; // Clear promise so retry is possible
-			throw error;
+		const currentCount = (subscriberCounts.get(state) ?? 1) - 1;
+		if (currentCount === 0) {
+			subscriberCounts.delete(state);
+			masterControllers.get(state)?.abort();
+		} else {
+			subscriberCounts.set(state, currentCount);
 		}
-	})();
+	};
 
-	state.dataPromise = promise;
-	return promise;
+	if (signal) {
+		signal.addEventListener('abort', cleanup, { once: true });
+	}
+
+	try {
+		if (state.dataPromise) {
+			return await state.dataPromise;
+		}
+
+		const masterController = new AbortController();
+		masterControllers.set(state, masterController);
+
+		state.dataPromise = (async () => {
+			try {
+				await omFileReader.setToOmFile(state.omFileUrl);
+
+				const data = await omFileReader.readVariable(
+					state.dataOptions.variable,
+					state.ranges,
+					masterController.signal
+				);
+
+				if (postReadCallback) {
+					postReadCallback(omFileReader, data, state);
+				}
+
+				state.data = data;
+				return data;
+			} finally {
+				state.dataPromise = null;
+				masterControllers.delete(state);
+			}
+		})();
+
+		return await state.dataPromise;
+	} finally {
+		if (signal) {
+			signal.removeEventListener('abort', cleanup);
+		}
+		cleanup();
+	}
 };
 
 export const getValueFromLatLong = (

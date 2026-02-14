@@ -10,135 +10,156 @@ import { GridFactory } from './grids/index';
 
 import { TileRequest } from './types';
 
-// Simple tracking of cancelled requests
+// Simple tracking of active and cancelled requests
+const activeRequests = new Set<string>();
 const cancelledRequests = new Set<string>();
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
+	const key = message.data.key;
+
 	// Handle cancellation messages
 	if (message.data.type === 'cancel') {
-		cancelledRequests.add(message.data.key);
-		console.log(`Cancelled request for tile ${message.data.key}`);
-		postMessage({ type: 'cancelled', key: message.data.key });
+		if (activeRequests.has(key)) {
+			cancelledRequests.add(key);
+		}
+		console.log(`Cancelled request for tile ${key}`);
+		postMessage({ type: 'cancelled', key });
 		return;
 	}
-	const key = message.data.key;
-	const { z, x, y } = message.data.tileIndex;
-	const values = message.data.data.values;
-	const ranges = message.data.ranges;
-	const tileSize =
-		message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
-	const domain = message.data.dataOptions.domain;
-	const colorScale = message.data.renderOptions.colorScale;
-	const clippingOptions = message.data.clippingOptions;
 
-	if (!values) {
-		throw new Error('No values provided');
-	}
+	activeRequests.add(key);
+	try {
+		const { z, x, y } = message.data.tileIndex;
+		const values = message.data.data.values;
+		const ranges = message.data.ranges;
+		const tileSize =
+			message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
+		const domain = message.data.dataOptions.domain;
+		const colorScale = message.data.renderOptions.colorScale;
+		const clippingOptions = message.data.clippingOptions;
 
-	if (message.data.type == 'getImage') {
-		const pixels = tileSize * tileSize;
-		// Initialized with zeros
-		const rgba = new Uint8ClampedArray(pixels * 4);
+		if (!values) {
+			throw new Error('No values provided');
+		}
 
-		const grid = GridFactory.create(domain.grid, ranges);
+		if (message.data.type == 'getImage') {
+			const pixels = tileSize * tileSize;
+			// Initialized with zeros
+			const rgba = new Uint8ClampedArray(pixels * 4);
 
-		for (let i = 0; i < tileSize; i++) {
-			const lat = tile2lat(y + i / tileSize, z);
+			const grid = GridFactory.create(domain.grid, ranges);
 
-			if (clippingOptions?.bounds)
-				if (checkAgainstBounds(lat, clippingOptions.bounds[1], clippingOptions.bounds[3])) continue;
-
-			for (let j = 0; j < tileSize; j++) {
-				const ind = j + i * tileSize;
-				const lon = tile2lon(x + j / tileSize, z);
+			for (let i = 0; i < tileSize; i++) {
+				if (i % 16 === 0 && cancelledRequests.has(key)) {
+					return;
+				}
+				const lat = tile2lat(y + i / tileSize, z);
 
 				if (clippingOptions?.bounds)
-					if (checkAgainstBounds(lon, clippingOptions.bounds[0], clippingOptions.bounds[2]))
+					if (checkAgainstBounds(lat, clippingOptions.bounds[1], clippingOptions.bounds[3]))
 						continue;
 
-				const px = grid.getLinearInterpolatedValue(values, lat, lon);
+				for (let j = 0; j < tileSize; j++) {
+					const ind = j + i * tileSize;
+					const lon = tile2lon(x + j / tileSize, z);
 
-				if (isFinite(px)) {
-					const color = getColor(colorScale, px);
-					rgba[4 * ind] = color[0];
-					rgba[4 * ind + 1] = color[1];
-					rgba[4 * ind + 2] = color[2];
-					rgba[4 * ind + 3] = 255 * color[3];
+					if (clippingOptions?.bounds)
+						if (checkAgainstBounds(lon, clippingOptions.bounds[0], clippingOptions.bounds[2]))
+							continue;
+
+					const px = grid.getLinearInterpolatedValue(values, lat, lon);
+
+					if (isFinite(px)) {
+						const color = getColor(colorScale, px);
+						rgba[4 * ind] = color[0];
+						rgba[4 * ind + 1] = color[1];
+						rgba[4 * ind + 2] = color[2];
+						rgba[4 * ind + 3] = 255 * color[3];
+					}
 				}
 			}
-		}
 
-		const imageData = new ImageData(rgba, tileSize, tileSize);
+			const imageData = new ImageData(rgba, tileSize, tileSize);
 
-		const canvas = new OffscreenCanvas(tileSize, tileSize);
-		const context = canvas.getContext('2d');
+			const canvas = new OffscreenCanvas(tileSize, tileSize);
+			const context = canvas.getContext('2d');
 
-		if (!context) {
-			throw new Error('Could not initialise canvas context');
-		}
-
-		context.putImageData(imageData, 0, 0);
-
-		let blob;
-		if (clippingOptions && clippingOptions.polygons) {
-			// create 2nd OffscreenCanvas to handle clipping
-			const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
-			const clipContext = clipCanvas.getContext('2d');
-
-			if (!clipContext) {
+			if (!context) {
 				throw new Error('Could not initialise canvas context');
 			}
 
-			for (const polygon of clippingOptions.polygons) {
-				clipContext.beginPath();
-				for (const coordinate of polygon) {
-					for (const [index, [polyX, polyY]] of coordinate.entries()) {
-						const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
-						const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
-						if (index === 0) {
-							clipContext.moveTo(polyXtile, polyYtile);
-						} else {
-							clipContext.lineTo(polyXtile, polyYtile);
+			context.putImageData(imageData, 0, 0);
+
+			let blob;
+			if (clippingOptions && clippingOptions.polygons) {
+				// create 2nd OffscreenCanvas to handle clipping
+				const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
+				const clipContext = clipCanvas.getContext('2d');
+
+				if (!clipContext) {
+					throw new Error('Could not initialise canvas context');
+				}
+
+				for (const polygon of clippingOptions.polygons) {
+					clipContext.beginPath();
+					for (const coordinate of polygon) {
+						for (const [index, [polyX, polyY]] of coordinate.entries()) {
+							const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
+							const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+							if (index === 0) {
+								clipContext.moveTo(polyXtile, polyYtile);
+							} else {
+								clipContext.lineTo(polyXtile, polyYtile);
+							}
 						}
 					}
+					clipContext.closePath();
 				}
-				clipContext.closePath();
+
+				clipContext.clip('nonzero');
+				clipContext.drawImage(canvas, 0, 0);
+
+				blob = await clipCanvas.convertToBlob({ type: 'image/png' });
+			} else {
+				blob = await canvas.convertToBlob({ type: 'image/png' });
 			}
 
-			clipContext.clip('nonzero');
-			clipContext.drawImage(canvas, 0, 0);
+			const arrayBuffer = await blob.arrayBuffer();
+			if (cancelledRequests.has(key)) return;
+			postMessage(
+				{ type: 'returnImage', tile: arrayBuffer, key: key },
+				{ transfer: [arrayBuffer] }
+			);
+		} else if (message.data.type == 'getArrayBuffer') {
+			if (cancelledRequests.has(key)) return;
+			const directions = message.data.data.directions;
 
-			blob = await clipCanvas.convertToBlob({ type: 'image/png' });
-		} else {
-			blob = await canvas.convertToBlob({ type: 'image/png' });
-		}
+			const pbf = new Pbf();
 
-		const arrayBuffer = await blob.arrayBuffer();
-		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
-	} else if (message.data.type == 'getArrayBuffer') {
-		const directions = message.data.data.directions;
-
-		const pbf = new Pbf();
-
-		if (message.data.renderOptions.drawGrid) {
-			if (domain.grid.type !== 'regular') {
-				throw new Error('Only regular grid types supported');
+			if (message.data.renderOptions.drawGrid) {
+				if (domain.grid.type !== 'regular') {
+					throw new Error('Only regular grid types supported');
+				}
+				generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
 			}
-			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
-		}
-		if (message.data.renderOptions.drawArrows && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
-		}
-		if (message.data.renderOptions.drawContours) {
-			const intervals = message.data.renderOptions.intervals;
-			const grid = GridFactory.create(domain.grid, ranges);
-			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
-		}
+			if (message.data.renderOptions.drawArrows && directions) {
+				generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
+			}
+			if (message.data.renderOptions.drawContours) {
+				const intervals = message.data.renderOptions.intervals;
+				const grid = GridFactory.create(domain.grid, ranges);
+				generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
+			}
 
-		const arrayBuffer = pbf.finish();
-		postMessage(
-			{ type: 'returnArrayBuffer', tile: arrayBuffer.buffer, key: key },
-			{ transfer: [arrayBuffer.buffer] }
-		);
+			const arrayBuffer = pbf.finish();
+			if (cancelledRequests.has(key)) return;
+			postMessage(
+				{ type: 'returnArrayBuffer', tile: arrayBuffer.buffer, key: key },
+				{ transfer: [arrayBuffer.buffer] }
+			);
+		}
+	} finally {
+		activeRequests.delete(key);
+		cancelledRequests.delete(key);
 	}
 };

@@ -7,13 +7,13 @@ export class WorkerPool {
 	private workers: Worker[] = [];
 	private nextWorker = 0;
 	/** Stores pending tile requests by key to avoid duplicate requests for the same tile */
-	private pendingTiles = new Map<string, TilePromise>();
-
-	/**
-	 * Stores an array of resolve functions for each pending key.
-	 * This allows for multiple subscribers for the same tile key.
-	 */
-	private resolvers = new Map<string, Array<(tile: TileResult) => void>>();
+	private pendingRequests = new Map<
+		string,
+		{
+			resolvers: Array<(tile: TileResult) => void>;
+			worker: Worker;
+		}
+	>();
 
 	constructor() {
 		if (typeof window === 'undefined' || typeof Worker === 'undefined') {
@@ -31,45 +31,35 @@ export class WorkerPool {
 
 	private handleMessage(message: MessageEvent): void {
 		const data = message.data as WorkerResponse;
+		const pending = this.pendingRequests.get(data.key);
+
+		if (!pending) return;
 
 		if (data.type === 'cancelled') {
-			const resolvers = this.resolvers.get(data.key);
-			if (resolvers) {
-				// Resolve with cancelled status
-				resolvers.forEach((resolve) => resolve({ cancelled: true }));
-				this.cleanupRequest(data.key);
-			}
+			pending.resolvers.forEach((resolve) => resolve({ cancelled: true }));
+			this.pendingRequests.delete(data.key);
 			return;
 		}
 
 		if (data.type.startsWith('return')) {
-			const resolveFns = this.resolvers.get(data.key);
+			const originalTile = data.tile;
+			const resolvers = pending.resolvers;
 
-			if (resolveFns && resolveFns.length > 0) {
-				const originalTile = data.tile;
-
+			if (resolvers.length > 0) {
 				// The first subscriber can receive the original (transferred) buffer.
-				const firstResolver = resolveFns.shift()!;
+				const firstResolver = resolvers.shift()!;
 				firstResolver({ data: originalTile, cancelled: false });
 
 				// All other subscribers must receive a clone.
-				resolveFns.forEach((resolve) => {
+				resolvers.forEach((resolve) => {
 					// Create a copy for each subsequent subscriber.
 					// ImageBitmaps are safe to share without cloning.
 					const tile = originalTile instanceof ArrayBuffer ? originalTile.slice(0) : originalTile;
 					resolve({ data: tile, cancelled: false });
 				});
-
-				this.cleanupRequest(data.key);
-			} else {
-				console.error(`Unexpected tile response for ${data.key}. ${data.type}`);
 			}
+			this.pendingRequests.delete(data.key);
 		}
-	}
-
-	private cleanupRequest(key: string): void {
-		this.resolvers.delete(key);
-		this.pendingTiles.delete(key);
 	}
 
 	private handleError(error: ErrorEvent): void {
@@ -86,57 +76,66 @@ export class WorkerPool {
 	}
 
 	public requestTile(request: TileRequest): TilePromise {
-		// Return resolved promise with null/undefined for aborted requests
 		if (request.signal?.aborted) {
 			return Promise.resolve({ cancelled: true });
 		}
 
-		// If a request for this key is already in flight...
-		if (this.pendingTiles.has(request.key)) {
-			return new Promise<TileResult>((resolve, reject) => {
-				this.resolvers.get(request.key)!.push(resolve);
+		const key = request.key;
+		let pending = this.pendingRequests.get(key);
 
-				// Set up abort listener for this specific promise
-				if (request.signal) {
-					const abortHandler = () => {
-						reject(new Error('Request aborted'));
-					};
-					request.signal.addEventListener('abort', abortHandler, { once: true });
+		if (!pending) {
+			const worker = this.getNextWorker();
+			if (!worker) {
+				return Promise.reject(new Error('No workers available (likely running in SSR)'));
+			}
+
+			pending = {
+				resolvers: [],
+				worker
+			};
+			this.pendingRequests.set(key, pending);
+
+			// Don't send the signal object to the worker (it's not transferable)
+			const { signal: _signal, ...requestWithoutSignal } = request;
+			worker.postMessage(requestWithoutSignal);
+		}
+
+		// Save the pending object to a local variable to help TS inference
+		const pData = pending;
+
+		return new Promise<TileResult>((resolve) => {
+			const abortHandler = () => {
+				const p = this.pendingRequests.get(key);
+				if (!p) return;
+
+				// Remove this resolver
+				const idx = p.resolvers.indexOf(resolver);
+				if (idx !== -1) {
+					p.resolvers.splice(idx, 1);
 				}
-			});
-		}
 
-		// This is the first request for this key.
-		const worker = this.getNextWorker();
-		if (!worker) {
-			return Promise.reject(new Error('No workers available (likely running in SSR)'));
-		}
+				// Resolve this specific promise as cancelled
+				resolve({ cancelled: true });
 
-		// Create the promise and store its resolver in a new array.
-		const promise = new Promise<TileResult>((resolve) => {
-			this.resolvers.set(request.key, [resolve]);
+				// If no more subscribers, cancel the worker task
+				if (p.resolvers.length === 0) {
+					p.worker.postMessage({ type: 'cancel', key });
+					this.pendingRequests.delete(key);
+				}
+			};
 
-			// Set up abort listener
+			const resolver = (result: TileResult) => {
+				if (request.signal) {
+					request.signal.removeEventListener('abort', abortHandler);
+				}
+				resolve(result);
+			};
+
+			pData.resolvers.push(resolver);
+
 			if (request.signal) {
-				const abortHandler = () => {
-					// Send cancel message to worker
-					worker.postMessage({
-						type: 'cancel',
-						key: request.key
-					});
-				};
-
 				request.signal.addEventListener('abort', abortHandler, { once: true });
 			}
 		});
-
-		// Store the master promise to indicate a request is in-flight.
-		this.pendingTiles.set(request.key, promise);
-
-		// Don't send the signal object to the worker (it's not transferable)
-		const { signal: _signal, ...requestWithoutSignal } = request;
-		worker.postMessage(requestWithoutSignal);
-
-		return promise;
 	}
 }

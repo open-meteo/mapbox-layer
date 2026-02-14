@@ -53,7 +53,7 @@ export const omProtocol = async (
 		// throw new Error('Request aborted');
 	}
 
-	const instance = getProtocolInstance(controller, settings);
+	const instance = getProtocolInstance(settings);
 
 	const url = await normalizeUrl(params.url);
 	const request = parseRequest(url, settings);
