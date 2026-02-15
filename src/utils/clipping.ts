@@ -7,11 +7,66 @@ export type ResolvedClipping = {
 	bounds?: Bounds;
 };
 
+/** Unwrap a ring's longitudes to be continuous (no jumps > 180°) */
+export const unwrapLongitudes = (ring: [number, number][]): [number, number][] => {
+	if (ring.length < 2) return ring.slice();
+	const result: [number, number][] = [[ring[0][0], ring[0][1]]];
+	let prevLon = ring[0][0];
+	for (let i = 1; i < ring.length; i++) {
+		const [lon, lat] = ring[i];
+		const delta = lon - prevLon;
+		const shift = Math.round(delta / 360) * -360;
+		const adjustedLon = lon + shift;
+		result.push([adjustedLon, lat]);
+		prevLon = adjustedLon;
+	}
+	return result;
+};
+
 export const resolveClippingOptions = (options: ClippingOptions): ResolvedClipping | undefined => {
 	if (!options) return undefined;
 
 	const polygons: [number, number][][] = [];
 	let bounds = options.bounds;
+
+	// Track combined (unwrapped) bounds for dateline-aware auto-computation
+	let combinedMinLon = Infinity;
+	let combinedMaxLon = -Infinity;
+	let combinedMinLat = Infinity;
+	let combinedMaxLat = -Infinity;
+
+	/** Extend the combined bounds with an entire ring, shifting it into the
+	 *  same longitude frame as previously added rings so that rings on opposite
+	 *  sides of the dateline are correctly merged. */
+	const extendBoundsWithRing = (ring: [number, number][]) => {
+		const unwrapped = unwrapLongitudes(ring);
+		if (unwrapped.length === 0) return;
+
+		let ringMinLon = Infinity;
+		let ringMaxLon = -Infinity;
+		for (const [lon, lat] of unwrapped) {
+			if (lon < ringMinLon) ringMinLon = lon;
+			if (lon > ringMaxLon) ringMaxLon = lon;
+			if (lat < combinedMinLat) combinedMinLat = lat;
+			if (lat > combinedMaxLat) combinedMaxLat = lat;
+		}
+
+		if (combinedMinLon === Infinity) {
+			// First ring establishes the reference frame
+			combinedMinLon = ringMinLon;
+			combinedMaxLon = ringMaxLon;
+		} else {
+			// Shift this ring's interval to be closest to the existing midpoint
+			const mid = (combinedMinLon + combinedMaxLon) / 2;
+			const ringMid = (ringMinLon + ringMaxLon) / 2;
+			const shift = Math.round((mid - ringMid) / 360) * 360;
+			ringMinLon += shift;
+			ringMaxLon += shift;
+
+			combinedMinLon = Math.min(combinedMinLon, ringMinLon);
+			combinedMaxLon = Math.max(combinedMaxLon, ringMaxLon);
+		}
+	};
 
 	const toCoord2 = (position: GeoJsonPosition): [number, number] => [
 		position[0] ?? 0,
@@ -35,16 +90,7 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 			points.push([points[0][0], points[0][1]]);
 		}
 
-		const unwrapped: [number, number][] = [[points[0][0], points[0][1]]];
-		let prevLon = points[0][0];
-		for (let i = 1; i < points.length; i++) {
-			const [lon, lat] = points[i];
-			const delta = lon - prevLon;
-			const shift = Math.round(delta / 360) * -360;
-			const adjustedLon = lon + shift;
-			unwrapped.push([adjustedLon, lat]);
-			prevLon = adjustedLon;
-		}
+		const unwrapped = unwrapLongitudes(points);
 
 		let minLon = unwrapped[0][0];
 		let maxLon = unwrapped[0][0];
@@ -103,28 +149,22 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 
 	if (options.polygons) {
 		polygons.push(...options.polygons);
+		if (!bounds) {
+			for (const ring of options.polygons) {
+				extendBoundsWithRing(ring);
+			}
+		}
 	}
 
 	if (options.geojson) {
-		const extendBounds = (lon: number, lat: number) => {
-			if (!bounds) {
-				bounds = [lon, lat, lon, lat];
-				return;
-			}
-			if (lon < bounds[0]) bounds[0] = lon;
-			if (lat < bounds[1]) bounds[1] = lat;
-			if (lon > bounds[2]) bounds[2] = lon;
-			if (lat > bounds[3]) bounds[3] = lat;
-		};
-
 		const addRing = (ring: GeoJsonPosition[]) => {
 			const normalizedRing = ring.map((position) => toCoord2(position));
+			if (!bounds) {
+				extendBoundsWithRing(normalizedRing);
+			}
 			const splitRings = splitRingAtDateline(normalizedRing);
 			for (const splitRing of splitRings) {
 				polygons.push(splitRing);
-				for (const [lon, lat] of splitRing) {
-					extendBounds(lon, lat);
-				}
 			}
 		};
 
@@ -171,18 +211,18 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 		}
 	}
 
-	if (!bounds && polygons.length > 0) {
-		for (const ring of polygons) {
-			for (const [lon, lat] of ring) {
-				if (!bounds) {
-					bounds = [lon, lat, lon, lat];
-					continue;
-				}
-				if (lon < bounds[0]) bounds[0] = lon;
-				if (lat < bounds[1]) bounds[1] = lat;
-				if (lon > bounds[2]) bounds[2] = lon;
-				if (lat > bounds[3]) bounds[3] = lat;
-			}
+	// Finalize auto-computed bounds from unwrapped coordinates
+	if (!bounds && combinedMinLon !== Infinity) {
+		if (combinedMaxLon - combinedMinLon >= 360) {
+			// Polygon spans the entire globe
+			bounds = [-180, combinedMinLat, 180, combinedMaxLat];
+		} else {
+			bounds = [
+				normalizeLon(combinedMinLon),
+				combinedMinLat,
+				normalizeLon(combinedMaxLon),
+				combinedMaxLat
+			];
 		}
 	}
 

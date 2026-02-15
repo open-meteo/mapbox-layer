@@ -1,5 +1,7 @@
 import { bboxToTile, tileToBBOX } from '@mapbox/tilebelt';
 
+import { clipBounds } from './math';
+
 import { Bounds } from '../types';
 
 export let currentBounds: Bounds | undefined = undefined;
@@ -21,21 +23,14 @@ export const setClippingBounds = (clipBounds?: Bounds): void => {
 };
 
 export const updateCurrentBounds = (bounds: Bounds) => {
-	let [minLng, minLat, maxLng, maxLat] = bounds;
-
-	let bbox;
 	if (clippingBounds) {
-		const [clipMinLng, clipMinLat, clipMaxLng, clipMaxLat] = clippingBounds;
-		if (minLng < clipMinLng) minLng = clipMinLng;
-		if (minLat < clipMinLat) minLat = clipMinLat;
-		if (maxLng > clipMaxLng) maxLng = clipMaxLng;
-		if (maxLat > clipMaxLat) maxLat = clipMaxLat;
-		bbox = [minLng, minLat, maxLng, maxLat];
+		const clipped = clipBounds(bounds, clippingBounds);
+		if (!clipped) return;
+		currentBounds = clipped;
 	} else {
-		bbox = tileToBBOX(bboxToTile([minLng, minLat, maxLng, maxLat]));
+		const bbox = tileToBBOX(bboxToTile([bounds[0], bounds[1], bounds[2], bounds[3]]));
+		currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
 	}
-
-	currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
 };
 
 export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolean => {
