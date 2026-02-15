@@ -1,10 +1,10 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
+import { checkAgainstBounds } from './utils/bounds';
 import { clipRasterToPolygons } from './utils/clipping';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { checkAgainstBounds } from './utils/bounds';
 import { tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 

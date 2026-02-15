@@ -1,7 +1,7 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { ResolvedClipping } from './utils/clipping';
 import { constrainBounds } from './utils/bounds';
+import { ResolvedClipping } from './utils/clipping';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { parseMetaJson } from './utils/parse-url';
 import { COLOR_SCALES_WITH_ALIASES as defaultColorScales } from './utils/styling';

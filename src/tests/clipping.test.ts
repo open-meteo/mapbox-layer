@@ -1,6 +1,5 @@
-import { describe, expect, test } from 'vitest';
-
 import { resolveClippingOptions, unwrapLongitudes } from '../utils/clipping';
+import { describe, expect, test } from 'vitest';
 
 describe('unwrapLongitudes', () => {
 	test('no wrapping needed for standard ring', () => {
