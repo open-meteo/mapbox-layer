@@ -11,7 +11,7 @@
 
 ## Overview
 
-This repository serves as a demonstration of the **Open-Meteo File Protocol** (`om://`) with Mapbox / MapLibre GL JS. The `.om` files are hosted on an S3 bucket and can be accessed directly through the protocol handler.
+This repository serves as a demonstration of the **Open-Meteo File Protocol** (`om://`) with Mapbox / MapLibre GL JS. The `om://` scheme is a custom [MapLibre protocol](https://maplibre.org/maplibre-gl-js/docs/API/functions/addProtocol/) registered via `addProtocol`. The `.om` files are hosted on an S3 bucket and can be accessed directly through the protocol handler.
 
 The core weather data generation and API is hosted in the [open-meteo/open-meteo](https://github.com/open-meteo/open-meteo) repository.
 
@@ -61,7 +61,7 @@ For a standalone example, see `examples/temperature.html`.
 
 <!-- x-release-please-start-version -->
 
-```ts
+```html
 ...
 <script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 ...
@@ -69,7 +69,7 @@ For a standalone example, see `examples/temperature.html`.
 
 <!-- x-release-please-end -->
 
-```ts
+```html
 <script>
 	// Standard Mapbox / MapLibre GL JS setup
 	// ...
@@ -118,6 +118,7 @@ The repository contains an `examples` directory with ready-to-run demos:
 - `examples/precipitation.html` – displays precipitation using a similar setup.
 - `examples/wind.html` – displays wind values, for arrows overlay see [Vector sources](#vector-sources).
 - `examples/combined-variables.html` – shows multiple data sources on the same map.
+- `examples/partial-requests.html` – demonstrates partial / incremental data requests.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
@@ -158,7 +159,7 @@ For the vector source examples there is the `examples/vector` sub-directory with
 
 - `examples/vector/contouring/contouring-pressure.html` – shows how to use contouring with a pressure map.
 - `examples/vector/contouring/contouring-on-colorscale.html` – shows how to use contouring to follow the breakpoints in the colorscale.
-- `examples/vector/contouring/custom-contouring-interval.html` – shows how to use contouring a custom contouring interval.
+- `examples/vector/contouring/custom-contouring-intervals.html` – shows how to use contouring with a custom contouring interval.
 
 ### Colors
 
@@ -166,7 +167,7 @@ If you’re rendering tiles on a dark base‑map or simply want to experiment wi
 
 - `examples/colorscales/darkmode.html` – demonstrates the `dark=true` URL parameter, which automatically switches to palettes fine‑tuned for dark backgrounds.
 - `examples/colorscales/custom-rgba.html` – shows how to build a linear gradient from a user‑defined array of RGBA values.
-- `examples/colorscales/custom-breakpoint.html` – demonstrates how to insert your own breakpoints into the scale definitions.
+- `examples/colorscales/custom-breakpoints.html` – demonstrates how to insert your own breakpoints into the scale definitions.
 
 ### Callbacks
 
@@ -185,7 +186,7 @@ maplibregl.addProtocol('om', (params) =>
 );
 ```
 
-An example implementation with a usefull case is available in the `examples/callbacks` sub-directory.
+An example implementation with a useful case is available in the `examples/callbacks` sub-directory.
 
 ### Clipping
 
@@ -194,20 +195,23 @@ To restrict weather data to a geometric boundary, the clipping parameters can be
 ```ts
 const omProtocolOptions = OpenMeteoMapboxLayer.defaultOmProtocolSettings;
 omProtocolOptions.clippingOptions = {
-	polygons: polygonList, // optionally clip raster / vector data to these polygons
+	geojson: polygonList, // optionally clip raster / vector data to these polygons
 	bounds: clipBbox // optionally limit tile generation to these bbox bounds
 };
 ...
 ```
 
+The clipping examples require `npm run serve`, as they load GeoJSON files over HTTP.
+
 - `examples/clipping/raster/clip-switzerland.html` – Demonstrates temperature raster data clipped to the geographical contour of Switzerland.
 - `examples/clipping/arrows/clip-italy.html` – Shows wind velocity raster and vector arrow fields clipped to the contour of Italy.
 - `examples/clipping/contours/clip-france.html` – Illustrates temperature and isocontour overlays confined to the French boundary.
+- `examples/clipping/bounds/clip-germany-bounds.html` – Restricts tile generation to a bounding box around Germany.
 - `examples/clipping/oceans/clip-oceans.html` – Depicts the exclusion of oceanic regions from a global model, thereby hiding weather data on ocean surfaces.
 
 ## Capture API
 
-> **⚠️** Using the Capture API will add 0.5-1s delay for each request
+> **⚠️** Using the Capture API will add 0.5-1s delay for each request, because it must first fetch a metadata JSON file to resolve the latest model run before requesting the actual `.om` tile data.
 
 Because the use of OM files on the S3 storage is often quite ambiguous, a Capture API is added, that will automatically produce the correct file paths for you.
 
@@ -255,9 +259,15 @@ or the 5th index of the `valid_times` array
 
 ### Time Step Modifiers
 
+The modifier suffix on `current_time_` controls the rounding granularity when snapping to the nearest available time step. For example, `current_time_1H` rounds to the nearest hour, while `current_time_30M` rounds to the nearest 30 minutes.
+
 | modifier | Alteration |
 | -------- | ---------- |
 | M        | Minutes    |
 | H        | Hours      |
 | d        | Days       |
 | m        | Months     |
+
+## License
+
+This project is licensed under the [GNU General Public License v2.0](LICENSE).

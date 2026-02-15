@@ -18,7 +18,6 @@ export const setClippingBounds = (clipBounds?: Bounds): void => {
 		return;
 	}
 	clippingBounds = clipBounds;
-	console.log('Clipping bounds set to', clippingBounds);
 };
 
 export const updateCurrentBounds = (bounds: Bounds) => {
