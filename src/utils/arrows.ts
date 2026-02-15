@@ -1,8 +1,7 @@
 import { GridFactory } from '../grids';
 import Pbf from 'pbf';
-import inside from 'point-in-polygon-hao';
 
-import { ResolvedClipping } from './clipping';
+import { ResolvedClipping, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -34,6 +33,7 @@ export const generateArrows = (
 
 	let cursor = [0, 0];
 	const grid = GridFactory.create(domain.grid, ranges);
+	const isInsideClip = createClippingTester(clippingOptions);
 
 	for (let tileY = 0; tileY < extent + 1; tileY += size) {
 		const lat = tile2lat(y + tileY / extent, z);
@@ -45,15 +45,7 @@ export const generateArrows = (
 			const center = [tileX, tileY];
 			const geom = [];
 
-			let insideClip = true;
-			const polygons = clippingOptions?.polygons;
-			if (
-				polygons &&
-				!polygons.some((ring) => !!inside([lon, lat], [ring as unknown as number[][]]))
-			) {
-				insideClip = false;
-			}
-			if (!insideClip) {
+			if (isInsideClip && !isInsideClip(lon, lat)) {
 				continue;
 			}
 

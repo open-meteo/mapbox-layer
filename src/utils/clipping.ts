@@ -1,3 +1,5 @@
+import inside from 'point-in-polygon-hao';
+
 import { lat2tile, lon2tile, normalizeLon } from './math';
 
 import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } from '../types';
@@ -5,6 +7,51 @@ import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } fr
 export type ResolvedClipping = {
 	polygons?: ReadonlyArray<ReadonlyArray<number[]>>;
 	bounds?: Bounds;
+};
+
+/**
+ * Creates a reusable point-in-clipping tester from resolved clipping options.
+ * Pre-computes the wrapped polygon arrays and bounds so the hot loop only
+ * does an O(1) bounds check followed by the point-in-polygon raycast when
+ * actually needed.
+ *
+ * Returns `undefined` when there are no polygon constraints — callers can
+ * skip the test entirely.
+ */
+export const createClippingTester = (
+	clippingOptions: ResolvedClipping | undefined
+): ((lon: number, lat: number) => boolean) | undefined => {
+	const polygons = clippingOptions?.polygons;
+	if (!polygons || polygons.length === 0) return undefined;
+
+	// Pre-wrap each ring into the [ring] shape that point-in-polygon-hao expects,
+	// so we avoid allocating wrapper arrays on every call.
+	const wrappedPolygons = polygons.map((ring) => [ring as unknown as number[][]]);
+
+	// Pre-extract bounds for a fast AABB rejection (O(1) per point).
+	const bounds = clippingOptions?.bounds;
+
+	// Reusable point array to avoid allocating [lon, lat] per call.
+	const point: [number, number] = [0, 0];
+
+	return (lon: number, lat: number): boolean => {
+		// Fast bounds rejection
+		if (bounds) {
+			const [minLon, minLat, maxLon, maxLat] = bounds;
+			if (lat < minLat || lat > maxLat) return false;
+			// Dateline-aware longitude check (same logic as checkAgainstBounds)
+			if (maxLon >= minLon) {
+				if (lon < minLon || lon > maxLon) return false;
+			} else {
+				// Wrapping bounds: valid range is [minLon, 180] ∪ [-180, maxLon]
+				if (lon < minLon && lon > maxLon) return false;
+			}
+		}
+
+		point[0] = lon;
+		point[1] = lat;
+		return wrappedPolygons.some((polygon) => !!inside(point, polygon));
+	};
 };
 
 /** Unwrap a ring's longitudes to be continuous (no jumps > 180°) */

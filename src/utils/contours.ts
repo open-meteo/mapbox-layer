@@ -1,8 +1,7 @@
 import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
-import inside from 'point-in-polygon-hao';
 
-import { ResolvedClipping } from './clipping';
+import { ResolvedClipping, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -129,6 +128,8 @@ export const generateContours = (
 	const fragmentByStartByLevel: Map<number, Map<number, Fragment>> = new Map();
 	const fragmentByEndByLevel: Map<number, Map<number, Fragment>> = new Map();
 
+	const isInsideClip = createClippingTester(clippingOptions);
+
 	for (i = 1 - buffer; i < height + buffer; i++) {
 		const latTop = tile2lat(y + i / height, z);
 		const latBottom = tile2lat(y + (i - 1) / height, z);
@@ -158,15 +159,7 @@ export const generateContours = (
 				continue;
 			}
 
-			let insideClip = true;
-			const polygons = clippingOptions?.polygons;
-			if (
-				polygons &&
-				!polygons.some((ring) => !!inside([lon, latBottom], [ring as unknown as number[][]]))
-			) {
-				insideClip = false;
-			}
-			if (!insideClip) {
+			if (isInsideClip && !isInsideClip(lon, latBottom)) {
 				continue;
 			}
 
