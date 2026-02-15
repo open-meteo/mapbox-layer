@@ -10,7 +10,7 @@
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!-- <script src="../../../dist/index.js"></script> -->
+		<!--<script src="../../../dist/index.js"></script>-->
 		<style>
 			html,
 			body,
@@ -37,25 +37,7 @@
 
 			const map = new maplibregl.Map({
 				container: 'map',
-				style: {
-					version: 8,
-					sources: {
-						osm: {
-							type: 'raster',
-							tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-							tileSize: 256,
-							attribution:
-								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-						}
-					},
-					layers: [
-						{
-							id: 'osm',
-							type: 'raster',
-							source: 'osm'
-						}
-					]
-				},
+				style: 'https://public.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
 				center: [10.4515, 51.1657],
 				zoom: 5,
 				hash: true
