@@ -72,7 +72,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		context.putImageData(imageData, 0, 0);
 
 		let blob;
-		if (false) {
+		if (clippingOptions?.polygons) {
 			blob = await clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions.polygons);
 		} else {
 			blob = await canvas.convertToBlob({ type: 'image/png' });
