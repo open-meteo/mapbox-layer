@@ -114,10 +114,6 @@ export const ensureData = async (
 ): Promise<Data> => {
 	if (state.data) return state.data;
 
-	if (signal?.aborted) {
-		throw new Error('Request aborted');
-	}
-
 	const count = (subscriberCounts.get(state) ?? 0) + 1;
 	subscriberCounts.set(state, count);
 

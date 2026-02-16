@@ -50,7 +50,6 @@ export const omProtocol = async (
 	// Check if already aborted
 	if (signal.aborted) {
 		return { data: null };
-		// throw new Error('Request aborted');
 	}
 
 	const instance = getProtocolInstance(settings);
@@ -70,7 +69,6 @@ export const omProtocol = async (
 	// Check abort status before proceeding
 	if (signal.aborted) {
 		return { data: null };
-		// throw new Error('Request aborted');
 	}
 
 	// Handle TileJSON request
@@ -98,7 +96,6 @@ export const omProtocol = async (
 
 	if (cancelled) {
 		return { data: null };
-		// throw new Error('Request aborted');
 	} else {
 		return { data: tileData! };
 	}

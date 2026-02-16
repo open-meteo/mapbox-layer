@@ -39,10 +39,7 @@ export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> 
 
 /**
  * Convenience class for reading from OM-files implementing some utility conversions during reading.
- *
- * Caches the backend of recently accessed files.
  */
-
 export class MapboxLayerFileReader {
 	private reader?: OmFileReader;
 	private cache: BlockCache;
