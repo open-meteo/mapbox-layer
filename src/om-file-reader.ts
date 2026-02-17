@@ -122,7 +122,7 @@ export class MapboxLayerFileReader {
 			type: OmDataType.FloatArray,
 			ranges: readRanges,
 			intoSAB: this.config.useSAB,
-			signal: signal
+			signal
 		};
 
 		const primaryPromise = primaryReader.read(readOptions);
@@ -157,7 +157,7 @@ export class MapboxLayerFileReader {
 			type: OmDataType.FloatArray,
 			ranges: readRanges,
 			intoSAB: this.config.useSAB,
-			signal: signal
+			signal
 		})) as Float32Array;
 
 		return { values, directions: undefined };
