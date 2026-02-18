@@ -4,7 +4,7 @@
 	"main": "dist/index.cjs",
 	"types": "dist/index.d.ts",
 	"author": "Open-Meteo <info@open-meteo.com>",
-	"version": "0.0.13",
+	"version": "0.0.14",
 	"module": "dist/index.mjs",
 	"repository": {
 		"type": "git",
@@ -32,7 +32,7 @@
 		"build:umd": "vite build --config vite.config.umd.ts",
 		"build": "npm run build:esm && npm run build:cjs && npm run build:umd",
 		"prepare": "npm run build",
-		"serve": "concurrently --kill-others \"npm run dev:umd\" \"serve\""
+		"serve": "concurrently --kill-others \"npm run dev:umd\" \"live-server --port=3000 --host=localhost --ignore=**/src/** --open=./examples/\""
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
@@ -52,13 +52,13 @@
 		"globals": "^17.0.0",
 		"jiti": "^2.6.1",
 		"prettier": "^3.6.2",
-		"serve": "^14.2.5",
 		"tsx": "^4.20.6",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.46.2",
 		"unplugin-dts": "^1.0.0-beta.6",
 		"vite": "^7.1.11",
-		"vitest": "^4.0.4"
+		"vitest": "^4.0.4",
+		"live-server": "^1.2.2"
 	},
 	"dependencies": {
 		"@mapbox/tilebelt": "^2.0.3",
