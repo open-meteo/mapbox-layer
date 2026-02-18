@@ -121,6 +121,10 @@ const requestTile = async (
 		throw new Error('Tile coordinates required for tile request');
 	}
 
+	if (signal?.aborted) {
+		return { data: undefined, cancelled: true };
+	}
+
 	const key = `${type}:${url}`;
 	const tileType = `get${capitalize(type)}` as 'getImage' | 'getArrayBuffer';
 
