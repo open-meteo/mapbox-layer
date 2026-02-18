@@ -100,9 +100,6 @@ export class WorkerPool {
 			worker.postMessage(requestWithoutSignal);
 		}
 
-		// Save the pending object to a local variable to help TS inference
-		const pData = pending;
-
 		return new Promise<TileResult>((resolve) => {
 			const abortHandler = () => {
 				const p = this.pendingRequests.get(key);
@@ -131,7 +128,7 @@ export class WorkerPool {
 				resolve(result);
 			};
 
-			pData.resolvers.push(resolver);
+			pending.resolvers.push(resolver);
 
 			if (request.signal) {
 				request.signal.addEventListener('abort', abortHandler, { once: true });
