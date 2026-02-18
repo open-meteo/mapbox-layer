@@ -12,12 +12,18 @@ import { TileRequest } from './types';
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const key = message.data.key;
+
+	// Handle cancellation messages
+	if (message.data.type === 'cancel') {
+		postMessage({ type: 'cancelled', key });
+		return;
+	}
+
 	const { z, x, y } = message.data.tileIndex;
 	const values = message.data.data.values;
 	const ranges = message.data.ranges;
 	const gridData = message.data.dataOptions.grid;
-	const tileSize =
-		message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
+	const tileSize = message.data.renderOptions.tileSize;
 	const colorScale = message.data.renderOptions.colorScale;
 	const clippingOptions = message.data.clippingOptions;
 

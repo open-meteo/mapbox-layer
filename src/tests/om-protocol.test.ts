@@ -71,7 +71,7 @@ const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProt
 	...overrides
 });
 
-describe('Request Resolution', () => {
+describe('Request Options', () => {
 	describe('parseRequest', () => {
 		it('resolves data identity and render options from URL', async () => {
 			const settings = createTestSettings();
@@ -126,8 +126,7 @@ describe('Request Resolution', () => {
 
 			const colorScale = renderOptions.colorScale as ResolvedBreakpointColorScale;
 
-			expect(renderOptions.tileSize).toBe(256);
-			expect(renderOptions.resolutionFactor).toBe(1);
+			expect(renderOptions.tileSize).toBe(512);
 			expect(renderOptions.drawGrid).toBe(false);
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
@@ -143,8 +142,7 @@ describe('Request Resolution', () => {
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=512&resolution_factor=2&grid=true&arrows=true&contours=true';
 			const { renderOptions } = await parseRequest(url, settings, reader);
 
-			expect(renderOptions.tileSize).toBe(512);
-			expect(renderOptions.resolutionFactor).toBe(2);
+			expect(renderOptions.tileSize).toBe(1024);
 			expect(renderOptions.drawGrid).toBe(true);
 			expect(renderOptions.drawArrows).toBe(true);
 			expect(renderOptions.drawContours).toBe(true);
@@ -159,18 +157,6 @@ describe('Request Resolution', () => {
 
 			expect(() => parseRequest(url, settings, reader)).rejects.toThrow('Invalid tile size');
 		});
-
-		it('throws for invalid resolution factor', async () => {
-			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
-
-			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&resolution_factor=3';
-
-			expect(() => parseRequest(url, settings, reader)).rejects.toThrow(
-				'Invalid resolution factor'
-			);
-		});
 	});
 
 	describe('custom resolver', () => {
@@ -180,7 +166,6 @@ describe('Request Resolution', () => {
 			const customResolver = vi.fn().mockImplementation(() => {
 				const renderOptions: RenderOptions = {
 					tileSize: 512,
-					resolutionFactor: 1,
 					drawGrid: false,
 					drawArrows: false,
 					drawContours: false,
@@ -212,7 +197,7 @@ describe('Request Resolution', () => {
 				type: 'arrayBuffer'
 			};
 
-			await omProtocol(params, undefined, settings);
+			await omProtocol(params, new AbortController(), settings);
 
 			expect(customResolver).toHaveBeenCalled();
 		});
@@ -227,7 +212,11 @@ describe('getValueFromLatLong', () => {
 		// First load data via tile request
 		const url =
 			'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0';
-		await omProtocol({ url, type: 'arrayBuffer' }, undefined, defaultOmProtocolSettings);
+		await omProtocol(
+			{ url, type: 'arrayBuffer' },
+			new AbortController(),
+			defaultOmProtocolSettings
+		);
 
 		// Then query value
 		const result = getValueFromLatLong(0, 0, url);
@@ -257,7 +246,7 @@ describe('getValueFromLatLong', () => {
 				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
 				type: 'arrayBuffer'
 			},
-			undefined,
+			new AbortController(),
 			defaultOmProtocolSettings
 		);
 
@@ -290,7 +279,7 @@ describe('omProtocol', () => {
 				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m',
 				type: 'json'
 			};
-			const result = await omProtocol(params, undefined, defaultOmProtocolSettings);
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
 			const resultData = result.data as TileJSON;
 
 			expect(resultData.tilejson).toBe('2.2.0');
@@ -307,7 +296,7 @@ describe('omProtocol', () => {
 				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m',
 				type: 'json'
 			};
-			const result = await omProtocol(params, undefined, defaultOmProtocolSettings);
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
 			const resultData = result.data as TileJSON;
 
 			// DWD ICON global bounds
@@ -323,7 +312,7 @@ describe('omProtocol', () => {
 				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m/0/0/0',
 				type: 'arrayBuffer'
 			};
-			const result = await omProtocol(params, undefined, defaultOmProtocolSettings);
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
 
 			expect(result.data).toBeInstanceOf(ArrayBuffer);
 			expect(result.data as ArrayBuffer).toEqual(new ArrayBuffer(0));
@@ -337,9 +326,9 @@ describe('omProtocol', () => {
 				type: 'arrayBuffer'
 			};
 
-			await expect(omProtocol(params, undefined, defaultOmProtocolSettings)).rejects.toThrow(
-				'Tile coordinates required'
-			);
+			await expect(
+				omProtocol(params, new AbortController(), defaultOmProtocolSettings)
+			).rejects.toThrow('Tile coordinates required');
 		});
 
 		it('calls postReadCallback after data is loaded', async () => {
@@ -353,7 +342,7 @@ describe('omProtocol', () => {
 				type: 'arrayBuffer'
 			};
 
-			await omProtocol(params, undefined, settings);
+			await omProtocol(params, new AbortController(), settings);
 
 			expect(postReadCallback).toHaveBeenCalledTimes(1);
 			expect(postReadCallback).toHaveBeenCalledWith(

@@ -1,13 +1,7 @@
 import { MapboxLayerFileReader } from '../om-file-reader';
 
 import { currentBounds } from './bounds';
-import {
-	DEFAULT_INTERVAL,
-	DEFAULT_RESOLUTION_FACTOR,
-	DEFAULT_TILE_SIZE,
-	VALID_RESOLUTION_FACTORS,
-	VALID_TILE_SIZES
-} from './constants';
+import { DEFAULT_INTERVAL, DEFAULT_TILE_SIZE, VALID_TILE_SIZES } from './constants';
 import { parseUrlComponents } from './parse-url';
 import { getColorScale, resolveColorScale } from './styling';
 
@@ -102,7 +96,6 @@ const defaultResolveRenderOptions = (
 	}
 
 	const tileSize = parseTileSize(params.get('tile_size'));
-	const resolutionFactor = parseResolutionFactor(params.get('resolution_factor'));
 
 	let intervals = [DEFAULT_INTERVAL];
 	if (params.get('intervals')) {
@@ -120,7 +113,6 @@ const defaultResolveRenderOptions = (
 
 	return {
 		tileSize,
-		resolutionFactor,
 		drawGrid,
 		drawArrows,
 		drawContours,
@@ -135,14 +127,4 @@ const parseTileSize = (value: string | null): 64 | 128 | 256 | 512 | 1024 => {
 		throw new Error(`Invalid tile size, please use one of: ${VALID_TILE_SIZES.join(', ')}`);
 	}
 	return tileSize as 64 | 128 | 256 | 512 | 1024;
-};
-
-const parseResolutionFactor = (value: string | null): 0.5 | 1 | 2 => {
-	const resolutionFactor = value ? Number(value) : DEFAULT_RESOLUTION_FACTOR;
-	if (!VALID_RESOLUTION_FACTORS.includes(resolutionFactor)) {
-		throw new Error(
-			`Invalid resolution factor, please use one of: ${VALID_RESOLUTION_FACTORS.join(', ')}`
-		);
-	}
-	return resolutionFactor as 0.5 | 1 | 2;
 };

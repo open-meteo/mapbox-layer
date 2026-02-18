@@ -15,8 +15,7 @@ export interface DataIdentityOptions {
 }
 
 export interface RenderOptions {
-	tileSize: 64 | 128 | 256 | 512 | 1024;
-	resolutionFactor: 0.5 | 1 | 2;
+	tileSize: 64 | 128 | 256 | 512 | 1024 | 2048;
 	drawGrid: boolean;
 	drawArrows: boolean;
 	drawContours: boolean;
@@ -110,7 +109,7 @@ export type TileIndex = {
 };
 
 export interface TileRequest {
-	type: 'getArrayBuffer' | 'getImage';
+	type: 'getArrayBuffer' | 'getImage' | 'cancel';
 	key: string;
 	data: Data;
 	tileIndex: TileIndex;
@@ -118,13 +117,18 @@ export interface TileRequest {
 	dataOptions: DataIdentityOptions;
 	ranges: DimensionRange[];
 	clippingOptions: ClippingOptions;
+	signal?: AbortSignal;
 }
 
 export type TileResponse = ImageBitmap | ArrayBuffer;
-export type TilePromise = Promise<TileResponse>;
+export interface TileResult {
+	data?: TileResponse;
+	cancelled: boolean;
+}
+export type TilePromise = Promise<TileResult>;
 
 export type WorkerResponse = {
-	type: 'returnImage' | 'returnArrayBuffer';
+	type: 'returnImage' | 'returnArrayBuffer' | 'cancelled';
 	tile: TileResponse;
 	key: string;
 };
