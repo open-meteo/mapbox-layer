@@ -22,7 +22,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const { z, x, y } = message.data.tileIndex;
 	const values = message.data.data.values;
 	const ranges = message.data.ranges;
-	const domain = message.data.dataOptions.domain;
+	const gridData = message.data.dataOptions.grid;
 	const tileSize = message.data.renderOptions.tileSize;
 	const colorScale = message.data.renderOptions.colorScale;
 	const clippingOptions = message.data.clippingOptions;
@@ -36,7 +36,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		// Initialized with zeros
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		const grid = GridFactory.create(domain.grid, ranges);
+		const grid = GridFactory.create(gridData, ranges);
 
 		for (let i = 0; i < tileSize; i++) {
 			const lat = tile2lat(y + i / tileSize, z);
@@ -117,17 +117,17 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const pbf = new Pbf();
 
 		if (message.data.renderOptions.drawGrid) {
-			if (domain.grid.type !== 'regular') {
+			if (gridData.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
-			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
+			generateGridPoints(pbf, values, directions, gridData, x, y, z);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
+			generateArrows(pbf, values, directions, gridData, ranges, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawContours) {
 			const intervals = message.data.renderOptions.intervals;
-			const grid = GridFactory.create(domain.grid, ranges);
+			const grid = GridFactory.create(gridData, ranges);
 			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
 		}
 
