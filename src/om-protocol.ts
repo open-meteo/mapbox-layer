@@ -64,8 +64,6 @@ export const omProtocol = async (
 		request.baseUrl
 	);
 
-	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
-
 	// Check abort status before proceeding
 	if (signal.aborted) {
 		return { data: null };
@@ -75,6 +73,8 @@ export const omProtocol = async (
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, request.dataOptions, settings.clippingOptions) };
 	}
+
+	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
 
 	// Handle tile request
 	if (params.type !== 'image' && params.type !== 'arrayBuffer') {
