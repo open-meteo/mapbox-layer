@@ -41,11 +41,10 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 
 export const omProtocol = async (
 	params: RequestParameters,
-	abortController?: AbortController,
+	abortController: AbortController,
 	settings = defaultOmProtocolSettings
 ): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer | null>> => {
-	const controller = abortController ?? new AbortController();
-	const signal = controller.signal;
+	const signal = abortController.signal;
 
 	// Check if already aborted
 	if (signal.aborted) {
