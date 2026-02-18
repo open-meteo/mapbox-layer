@@ -21,7 +21,8 @@ import type {
 	ParsedRequest,
 	RenderOptions,
 	TileJSON,
-	TilePromise
+	TilePromise,
+	TileResult
 } from './types';
 
 const workerPool = new WorkerPool();
@@ -110,6 +111,9 @@ const normalizeUrl = async (url: string): Promise<string> => {
 	return normalized;
 };
 
+const TILE_ABORTED_RESPONSE: TileResult = { data: undefined, cancelled: true };
+const EMPTY_VECTOR_LAYER_RESPONSE: TileResult = { data: new ArrayBuffer(0), cancelled: false };
+
 const requestTile = async (
 	url: string,
 	request: ParsedRequest,
@@ -123,7 +127,7 @@ const requestTile = async (
 	}
 
 	if (signal?.aborted) {
-		return { data: undefined, cancelled: true };
+		return TILE_ABORTED_RESPONSE;
 	}
 
 	const key = `${type}:${url}`;
@@ -136,7 +140,7 @@ const requestTile = async (
 			!request.renderOptions.drawContours &&
 			!request.renderOptions.drawGrid
 		) {
-			return { data: new ArrayBuffer(0), cancelled: false };
+			return EMPTY_VECTOR_LAYER_RESPONSE;
 		}
 	}
 
