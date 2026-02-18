@@ -1,6 +1,6 @@
 import inside from 'point-in-polygon-hao';
 
-import { lat2tile, lon2tile, normalizeLon } from './math';
+import { normalizeLon, tile2lon } from './math';
 
 import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } from '../types';
 
@@ -130,70 +130,6 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 		return ring;
 	};
 
-	const splitRingAtDateline = (ring: [number, number][]): [number, number][][] => {
-		if (ring.length < 2) return [];
-		const points = ring.slice();
-		if (!samePoint(points[0], points[points.length - 1])) {
-			points.push([points[0][0], points[0][1]]);
-		}
-
-		const unwrapped = unwrapLongitudes(points);
-
-		let minLon = unwrapped[0][0];
-		let maxLon = unwrapped[0][0];
-		for (const [lon] of unwrapped) {
-			if (lon < minLon) minLon = lon;
-			if (lon > maxLon) maxLon = lon;
-		}
-
-		const needsSplitAt180 = maxLon > 180;
-		const needsSplitAtMinus180 = minLon < -180;
-
-		if (!needsSplitAt180 && !needsSplitAtMinus180) {
-			const normalized = unwrapped.map(([lon, lat]) => [normalizeLon(lon), lat]);
-			return [closeRing(normalized as [number, number][])];
-		}
-
-		const splitMeridian = needsSplitAt180 ? 180 : -180;
-		const left: [number, number][] = [];
-		const right: [number, number][] = [];
-
-		for (let i = 1; i < unwrapped.length; i++) {
-			const [lon1, lat1] = unwrapped[i - 1];
-			const [lon2, lat2] = unwrapped[i];
-			const lon1Side = lon1 <= splitMeridian;
-			const lon2Side = lon2 <= splitMeridian;
-
-			const addPoint = (lon: number, lat: number, toLeft: boolean) => {
-				if (toLeft) {
-					left.push([lon, lat]);
-				} else {
-					right.push([lon + (splitMeridian === 180 ? -360 : 360), lat]);
-				}
-			};
-
-			if (i === 1) {
-				addPoint(lon1, lat1, lon1Side);
-			}
-
-			if (lon1Side === lon2Side) {
-				addPoint(lon2, lat2, lon2Side);
-				continue;
-			}
-
-			const t = (splitMeridian - lon1) / (lon2 - lon1);
-			const lat = lat1 + t * (lat2 - lat1);
-			addPoint(splitMeridian, lat, true);
-			addPoint(splitMeridian, lat, false);
-			addPoint(lon2, lat2, lon2Side);
-		}
-
-		const rings: [number, number][][] = [];
-		if (left.length >= 4) rings.push(closeRing(left));
-		if (right.length >= 4) rings.push(closeRing(right));
-		return rings;
-	};
-
 	if (options.polygons) {
 		polygons.push(...options.polygons);
 		if (!bounds) {
@@ -209,10 +145,9 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 			if (!bounds) {
 				extendBoundsWithRing(normalizedRing);
 			}
-			const splitRings = splitRingAtDateline(normalizedRing);
-			for (const splitRing of splitRings) {
-				polygons.push(splitRing);
-			}
+			const unwrapped = unwrapLongitudes(normalizedRing);
+			if (unwrapped.length === 0) return;
+			polygons.push(closeRing(unwrapped));
 		};
 
 		const addGeometry = (geometry: GeoJsonGeometry | null) => {
@@ -278,6 +213,60 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 	return { polygons: polygons.length > 0 ? polygons : undefined, bounds };
 };
 
+// export const clipRasterToPolygons = async (
+// 	canvas: OffscreenCanvas,
+// 	tileSize: number,
+// 	z: number,
+// 	x: number,
+// 	y: number,
+// 	polygons: ReadonlyArray<ReadonlyArray<number[]>>
+// ): Promise<Blob> => {
+// 	console.log('clipRasterToPolygons');
+// 	if (polygons.length === 0) {
+// 		return canvas.convertToBlob({ type: 'image/png' });
+// 	}
+
+// 	const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
+// 	const clipContext = clipCanvas.getContext('2d');
+// 	if (!clipContext) throw new Error('Could not initialise canvas context');
+
+// 	// tile center longitude used to choose best 360° frame for polygons
+// 	const tileCenterLon = tile2lon(x + 0.5, z);
+
+// 	clipContext.beginPath();
+// 	for (const ring of polygons) {
+// 		// compute a representative longitude for the ring (midpoint of min/max)
+// 		let minLon = Infinity,
+// 			maxLon = -Infinity;
+// 		for (const [lon] of ring) {
+// 			if (lon < minLon) minLon = lon;
+// 			if (lon > maxLon) maxLon = lon;
+// 		}
+// 		const ringMidLon = (minLon + maxLon) / 2;
+
+// 		// choose integer multiple of 360 that moves the ring closest to the tile center
+// 		const lonShift = Math.round((tileCenterLon - ringMidLon) / 360) * 360;
+
+// 		for (const [index, [polyX, polyY]] of ring.entries()) {
+// 			// shift the polygon longitude into the tile's frame
+// 			const adjustedLon = polyX + lonShift;
+// 			const polyXtile = (lon2tile(adjustedLon, z) - x) * tileSize;
+// 			const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+// 			if (index === 0) {
+// 				clipContext.moveTo(polyXtile, polyYtile);
+// 			} else {
+// 				clipContext.lineTo(polyXtile, polyYtile);
+// 			}
+// 		}
+// 		clipContext.closePath();
+// 	}
+
+// 	clipContext.clip('evenodd');
+// 	clipContext.drawImage(canvas, 0, 0);
+
+// 	return clipCanvas.convertToBlob({ type: 'image/png' });
+// };
+
 export const clipRasterToPolygons = async (
 	canvas: OffscreenCanvas,
 	tileSize: number,
@@ -286,33 +275,127 @@ export const clipRasterToPolygons = async (
 	y: number,
 	polygons: ReadonlyArray<ReadonlyArray<number[]>>
 ): Promise<Blob> => {
-	if (polygons.length === 0) {
+	if (!polygons || polygons.length === 0) {
 		return canvas.convertToBlob({ type: 'image/png' });
 	}
 
 	const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
-	const clipContext = clipCanvas.getContext('2d');
+	const ctx = clipCanvas.getContext('2d');
+	if (!ctx) throw new Error('Could not initialise canvas context');
 
-	if (!clipContext) {
-		throw new Error('Could not initialise canvas context');
-	}
+	// Precompute constants
+	const nTiles = 1 << z; // 2^z
+	const lonToTileScale = nTiles / 360; // tile units per degree longitude
+	const tileOriginX = x; // tile index of left edge
+	const tileOriginY = y; // tile index of top edge
+	const tileCenterLon = tile2lon(x + 0.5, z);
 
-	clipContext.beginPath();
-	for (const ring of polygons) {
-		for (const [index, [polyX, polyY]] of ring.entries()) {
-			const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
-			const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
-			if (index === 0) {
-				clipContext.moveTo(polyXtile, polyYtile);
-			} else {
-				clipContext.lineTo(polyXtile, polyYtile);
-			}
+	// clip path builder
+	const path = new Path2D();
+
+	// temporary vars reused in loops
+	let ringMinLon: number, ringMaxLon: number, ringMidLon: number, lonShift: number;
+	let minLat: number, maxLat: number;
+	const tilePixelLeft = 0;
+	const tilePixelRight = tileSize;
+	const tilePixelTop = 0;
+	const tilePixelBottom = tileSize;
+
+	// Helper: convert adjustedLon (degrees) -> pixel X within tile
+	// px = ((adjustedLon + 180) * lonToTileScale - tileOriginX) * tileSize
+	// but compute (tileX - x) * tileSize inline to avoid function call.
+	for (let ri = 0; ri < polygons.length; ri++) {
+		const ring = polygons[ri] as [number, number][]; // [lon, lat] pairs
+		if (!ring || ring.length === 0) continue;
+
+		// compute ring lon/lat bbox (cheap index loop)
+		ringMinLon = Infinity;
+		ringMaxLon = -Infinity;
+		minLat = Infinity;
+		maxLat = -Infinity;
+		for (let i = 0; i < ring.length; i++) {
+			const lon = ring[i][0];
+			const lat = ring[i][1];
+			if (lon < ringMinLon) ringMinLon = lon;
+			if (lon > ringMaxLon) ringMaxLon = lon;
+			if (lat < minLat) minLat = lat;
+			if (lat > maxLat) maxLat = lat;
 		}
-		clipContext.closePath();
+
+		// representative midpoint of ring longitudes and shift into tile frame
+		ringMidLon = (ringMinLon + ringMaxLon) / 2;
+		lonShift = Math.round((tileCenterLon - ringMidLon) / 360) * 360;
+
+		// Early reject by projecting ring bbox to tile pixel bbox.
+		// Compute pixel X range for shifted lon bbox:
+		const shiftedMinLon = ringMinLon + lonShift;
+		const shiftedMaxLon = ringMaxLon + lonShift;
+		// tile index (floating) for longitudes
+		const tileXMin = (shiftedMinLon + 180) * lonToTileScale;
+		const tileXMax = (shiftedMaxLon + 180) * lonToTileScale;
+		const pixelXMin = (tileXMin - tileOriginX) * tileSize;
+		const pixelXMax = (tileXMax - tileOriginX) * tileSize;
+
+		const latToTileY = (lat: number) => {
+			const rad = (lat * Math.PI) / 180;
+			const merc = Math.log(Math.tan(rad) + 1 / Math.cos(rad));
+			return ((1 - merc / Math.PI) / 2) * nTiles;
+		};
+
+		const tileYMin = latToTileY(maxLat); // note lat to tile Y inverses (maxLat -> min tileY)
+		const tileYMax = latToTileY(minLat);
+		const pixelYMin = (tileYMin - tileOriginY) * tileSize;
+		const pixelYMax = (tileYMax - tileOriginY) * tileSize;
+
+		// If the ring pixel bbox doesn't intersect tile pixel rectangle, skip.
+		if (
+			pixelXMax < tilePixelLeft ||
+			pixelXMin > tilePixelRight ||
+			pixelYMax < tilePixelTop ||
+			pixelYMin > tilePixelBottom
+		) {
+			continue;
+		}
+
+		// Build path for this ring (index loop, inline transforms)
+		// We assume ring already closed; if not, duplicating the first point is cheap
+		const len = ring.length;
+		if (len === 0) continue;
+
+		// First vertex
+		{
+			const lon = ring[0][0] + lonShift;
+			const lat = ring[0][1];
+			// inline lon->tileX -> pixelX
+			const tileXF = (lon + 180) * lonToTileScale;
+			const px = (tileXF - tileOriginX) * tileSize;
+			// inline lat->tileY -> pixelY
+			const rad = (lat * Math.PI) / 180;
+			const py =
+				(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * nTiles - tileOriginY) *
+				tileSize;
+			path.moveTo(px, py);
+		}
+
+		for (let i = 1; i < len; i++) {
+			const lon = ring[i][0] + lonShift;
+			const lat = ring[i][1];
+			const tileXF = (lon + 180) * lonToTileScale;
+			const px = (tileXF - tileOriginX) * tileSize;
+			const rad = (lat * Math.PI) / 180;
+			const py =
+				(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * nTiles - tileOriginY) *
+				tileSize;
+			path.lineTo(px, py);
+		}
+
+		path.closePath();
 	}
 
-	clipContext.clip('evenodd');
-	clipContext.drawImage(canvas, 0, 0);
+	// Clip once with the constructed path and draw
+	// passing 'evenodd' is optional, keep it if you need that rule
+	ctx.clip(path, 'evenodd');
+	ctx.drawImage(canvas, 0, 0);
 
 	return clipCanvas.convertToBlob({ type: 'image/png' });
 };
