@@ -2,7 +2,7 @@ import type { MapboxLayerFileReader } from '../om-file-reader';
 import { ensureData, getOrCreateState } from '../om-protocol-state';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Data, DataIdentityOptions, Domain, OmUrlState } from '../types';
+import type { Data, DataIdentityOptions, GridData, OmUrlState } from '../types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,16 +24,11 @@ type ReadCall = {
 /** Flush the microtask queue without relying on arbitrary timer durations. */
 const flushMicrotasks = () => new Promise<void>((r) => setTimeout(r, 0));
 
-const makeDomain = (): Domain => ({
-	value: 'd',
-	label: 'd',
-	grid: { type: 'regular', nx: 10, ny: 10, lonMin: 0, latMin: 0, dx: 1, dy: 1 },
-	time_interval: 'hourly',
-	model_interval: '3_hourly'
-});
+const GRID_DATA: GridData = { type: 'regular', nx: 10, ny: 10, lonMin: 0, latMin: 0, dx: 1, dy: 1 };
 
 const makeDataOptions = (overrides: Partial<DataIdentityOptions> = {}): DataIdentityOptions => ({
-	domain: makeDomain(),
+	baseUrl: '',
+	grid: GRID_DATA,
 	variable: 'temp',
 	bounds: undefined,
 	...overrides

@@ -112,7 +112,7 @@ describe('Request Options', () => {
 			const reader = new MapboxLayerFileReader();
 			const url = 'om://https://example.com/data_spatial/domain1/file.om';
 
-			expect(() => parseRequest(url, settings, reader)).rejects.toThrow(
+			await expect(parseRequest(url, settings, reader)).rejects.toThrow(
 				'Variable is required but not defined'
 			);
 		});
@@ -139,7 +139,7 @@ describe('Request Options', () => {
 			const reader = new MapboxLayerFileReader();
 
 			const url =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=512&resolution_factor=2&grid=true&arrows=true&contours=true';
+				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=1024&grid=true&arrows=true&contours=true';
 			const { renderOptions } = await parseRequest(url, settings, reader);
 
 			expect(renderOptions.tileSize).toBe(1024);
@@ -155,7 +155,7 @@ describe('Request Options', () => {
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
 
-			expect(() => parseRequest(url, settings, reader)).rejects.toThrow('Invalid tile size');
+			await expect(parseRequest(url, settings, reader)).rejects.toThrow('Invalid tile size');
 		});
 	});
 
