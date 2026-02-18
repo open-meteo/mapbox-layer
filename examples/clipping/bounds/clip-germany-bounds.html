@@ -10,7 +10,11 @@
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
 		<style>
 			html,
 			body,
@@ -44,23 +48,25 @@
 			});
 
 			const omUrl =
-				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/latest.json?time_step=current_time_1H&variable=temperature_2m&resolution_factor=0.5';
+				'https://map-tiles.open-meteo.com/data_spatial/dwd_icon_d2/latest.json?time_step=current_time_1H&variable=temperature_2m';
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
 					url: 'om://' + omUrl,
 					type: 'raster',
-					tileSize: 256,
 					maxzoom: 12
 				});
-				map.addLayer({
-					id: 'omFileLayer',
-					type: 'raster',
-					source: 'omFileSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileLayer',
+						type: 'raster',
+						source: 'omFileSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 			});
 		</script>
 	</body>
