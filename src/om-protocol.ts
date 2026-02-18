@@ -39,6 +39,8 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
+const ABORT_RESULT: GetResourceResponse<null> = { data: null };
+
 export const omProtocol = async (
 	params: RequestParameters,
 	abortController: AbortController,
@@ -48,7 +50,7 @@ export const omProtocol = async (
 
 	// Check if already aborted
 	if (signal.aborted) {
-		return { data: null };
+		return ABORT_RESULT;
 	}
 
 	const instance = getProtocolInstance(settings);
@@ -65,7 +67,7 @@ export const omProtocol = async (
 
 	// Check abort status before proceeding
 	if (signal.aborted) {
-		return { data: null };
+		return ABORT_RESULT;
 	}
 
 	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
@@ -94,7 +96,7 @@ export const omProtocol = async (
 	);
 
 	if (cancelled) {
-		return { data: null };
+		return ABORT_RESULT;
 	} else {
 		return { data: tileData! };
 	}
