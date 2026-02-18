@@ -4,14 +4,18 @@
 		<title>Open-Meteo Mapbox Layer - Clipping Contours Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
-		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
+		<script src="https://unpkg.com/@turf/turf@7.3.4/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
 		<style>
 			html,
 			body,
@@ -61,87 +65,96 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128&resolution_factor=0.5`;
+					// setting tile_size=128 reduces each tile to 1/4 the width and height of the default 512px. Without it, each tile would contain 4x4 = 16 times as many pixels to compute.
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteofrance_arome_france_hd/latest.json?time_step=current_time_1H&variable=temperature_2m&contours=true&tile_size=128`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
 							url: 'om://' + omUrl,
 							type: 'raster',
-							tileSize: 256,
 							maxzoom: 12
 						});
-						map.addLayer({
-							id: 'omFileLayer',
-							type: 'raster',
-							source: 'omFileSource',
-							paint: {
-								'raster-opacity': 0.75
-							}
-						});
+						map.addLayer(
+							{
+								id: 'omFileLayer',
+								type: 'raster',
+								source: 'omFileSource',
+								paint: {
+									'raster-opacity': 0.75
+								}
+							},
+							'waterway-tunnel'
+						);
 
 						map.addSource('omFileVectorSource', {
 							url: 'om://' + omUrl + '&arrows=true',
 							type: 'vector'
 						});
 
-						map.addLayer({
-							id: 'omFileVectorContourLayer',
-							type: 'line',
-							source: 'omFileVectorSource',
-							'source-layer': 'contours',
-							paint: {
-								'line-color': [
-									'case',
-									['boolean', ['feature-state', 'hover'], false],
-									'red',
-									'black'
-								],
-								'line-width': [
-									'case',
-									['boolean', ['feature-state', 'hover'], false],
-									4,
-									[
+						map.addLayer(
+							{
+								id: 'omFileVectorContourLayer',
+								type: 'line',
+								source: 'omFileVectorSource',
+								'source-layer': 'contours',
+								paint: {
+									'line-color': [
 										'case',
-										['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-										3,
+										['boolean', ['feature-state', 'hover'], false],
+										'red',
+										'black'
+									],
+									'line-width': [
+										'case',
+										['boolean', ['feature-state', 'hover'], false],
+										4,
 										[
 											'case',
-											['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-											2,
+											['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
+											3,
 											[
 												'case',
-												['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
-												1.5,
-												1
+												['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
+												2,
+												[
+													'case',
+													['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
+													1.5,
+													1
+												]
 											]
 										]
 									]
-								]
-							}
-						});
-
-						map.addLayer({
-							id: 'omFileVectorLayerLabels',
-							type: 'symbol',
-							source: 'omFileVectorSource',
-							'source-layer': 'contours',
-							layout: {
-								'symbol-placement': 'line-center',
-								'symbol-spacing': 1,
-								'text-font': ['Noto Sans Regular'],
-								'text-field': ['to-string', ['get', 'value']],
-								'text-padding': 1,
-								'text-offset': [0, -0.6]
+								}
 							},
-							paint: {
-								'text-color': [
-									'case',
-									['boolean', ['feature-state', 'hover'], false],
-									'red',
-									'black'
-								]
-							}
-						});
+							'place_label_other'
+						);
+
+						map.addLayer(
+							{
+								id: 'omFileVectorLayerLabels',
+								type: 'symbol',
+								source: 'omFileVectorSource',
+								'source-layer': 'contours',
+								layout: {
+									'symbol-placement': 'line-center',
+									'symbol-spacing': 1,
+									'text-font': ['Noto Sans Regular'],
+									'text-field': ['to-string', ['get', 'value']],
+									'text-padding': 1,
+									'text-offset': [0, -0.6]
+								},
+								paint: {
+									'text-color': [
+										'case',
+										['boolean', ['feature-state', 'hover'], false],
+										'red',
+										'black'
+									]
+								}
+							},
+							'place_label_other'
+						);
 					});
 				});
 		</script>

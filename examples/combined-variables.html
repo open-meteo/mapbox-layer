@@ -4,13 +4,17 @@
 		<title>Open-Meteo Mapbox Layer - Combined Variables Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../dist/index.js"></script>-->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
 		<style>
 			html,
 			body,
@@ -40,32 +44,36 @@
 				map.addSource('omCloudCoverSource', {
 					url: 'om://' + omCloudCoverUrl,
 					type: 'raster',
-					tileSize: 256,
 					maxzoom: 12
 				});
-				map.addLayer({
-					id: 'omCloudCoverLayer',
-					type: 'raster',
-					source: 'omCloudCoverSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omCloudCoverLayer',
+						type: 'raster',
+						source: 'omCloudCoverSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 
 				map.addSource('omPrecipitationSource', {
 					url: 'om://' + omPrecipitationUrl,
 					type: 'raster',
-					tileSize: 256,
 					maxzoom: 12
 				});
-				map.addLayer({
-					id: 'omPrecipitationLayer',
-					type: 'raster',
-					source: 'omPrecipitationSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omPrecipitationLayer',
+						type: 'raster',
+						source: 'omPrecipitationSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 			});
 		</script>
 	</body>

@@ -4,13 +4,17 @@
 		<title>Open-Meteo Mapbox Layer - Contouring Pressure Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
 		<style>
 			html,
 			body,
@@ -39,74 +43,87 @@
 				map.addSource('omFileRasterSource', {
 					url: 'om://' + omUrl,
 					type: 'raster',
-					tileSize: 256,
 					maxzoom: 12
 				});
 
-				map.addLayer({
-					id: 'omFileRasterLayer',
-					type: 'raster',
-					source: 'omFileRasterSource',
-					paint: {
-						'raster-opacity': 0.75
-					}
-				});
+				map.addLayer(
+					{
+						id: 'omFileRasterLayer',
+						type: 'raster',
+						source: 'omFileRasterSource',
+						paint: {
+							'raster-opacity': 0.75
+						}
+					},
+					'waterway-tunnel'
+				);
 
 				map.addSource('omFileVectorSource', {
 					url: 'om://' + omUrl,
 					type: 'vector'
 				});
 
-				map.addLayer({
-					id: 'omFileVectorLayer',
-					type: 'line',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
-					paint: {
-						'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'red', 'black'],
-						'line-width': [
-							'case',
-							['boolean', ['feature-state', 'hover'], false],
-							4,
-							[
+				map.addLayer(
+					{
+						id: 'omFileVectorLayer',
+						type: 'line',
+						source: 'omFileVectorSource',
+						'source-layer': 'contours',
+						paint: {
+							'line-color': [
 								'case',
-								['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
-								3,
+								['boolean', ['feature-state', 'hover'], false],
+								'red',
+								'black'
+							],
+							'line-width': [
+								'case',
+								['boolean', ['feature-state', 'hover'], false],
+								4,
 								[
 									'case',
-									['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
-									2,
+									['boolean', ['==', ['%', ['to-number', ['get', 'value']], 100], 0], false],
+									3,
 									[
 										'case',
-										['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
-										1.5,
-										1
+										['boolean', ['==', ['%', ['to-number', ['get', 'value']], 50], 0], false],
+										2,
+										[
+											'case',
+											['boolean', ['==', ['%', ['to-number', ['get', 'value']], 10], 0], false],
+											1.5,
+											1
+										]
 									]
 								]
 							]
-						]
-					}
-				});
-
-				map.addLayer({
-					id: 'omFileVectorLayerLabels',
-					type: 'symbol',
-					source: 'omFileVectorSource',
-					'source-layer': 'contours',
-					layout: {
-						'symbol-placement': 'line-center',
-						'symbol-spacing': 1,
-						'text-font': ['Noto Sans Regular'],
-						'text-field': ['to-string', ['get', 'value']],
-						'text-padding': 1,
-						'text-offset': [0, -0.6]
-						//'text-allow-overlap': true,
-						//'text-ignore-placement': true
+						}
 					},
-					paint: {
-						'text-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'red', 'black']
-					}
-				});
+					'place_label_other'
+				);
+
+				map.addLayer(
+					{
+						id: 'omFileVectorLayerLabels',
+						type: 'symbol',
+						source: 'omFileVectorSource',
+						'source-layer': 'contours',
+						layout: {
+							'symbol-placement': 'line-center',
+							'symbol-spacing': 1,
+							'text-font': ['Noto Sans Regular'],
+							'text-field': ['to-string', ['get', 'value']],
+							'text-padding': 1,
+							'text-offset': [0, -0.6]
+							//'text-allow-overlap': true,
+							//'text-ignore-placement': true
+						},
+						paint: {
+							'text-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'red', 'black']
+						}
+					},
+					'place_label_other'
+				);
 
 				let hoveredLevel = 0;
 				map.on('mouseenter', 'omFileVectorLayer', (e) => {

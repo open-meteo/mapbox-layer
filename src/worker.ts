@@ -32,8 +32,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const { z, x, y } = message.data.tileIndex;
 		const values = message.data.data.values;
 		const ranges = message.data.ranges;
-		const tileSize =
-			message.data.renderOptions.tileSize * message.data.renderOptions.resolutionFactor;
+		const tileSize = message.data.renderOptions.tileSize;
 		const domain = message.data.dataOptions.domain;
 		const colorScale = message.data.renderOptions.colorScale;
 		const clippingOptions = message.data.clippingOptions;
