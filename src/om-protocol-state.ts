@@ -17,8 +17,12 @@ import type {
 	PostReadCallback
 } from './types';
 
-const masterControllers = new WeakMap<OmUrlState, AbortController>();
-const subscriberCounts = new WeakMap<OmUrlState, number>();
+interface InflightRequest {
+	controller: AbortController;
+	subscriberCount: number;
+}
+
+const inflightRequests = new WeakMap<OmUrlState, InflightRequest>();
 
 // Configuration constants - could be made configurable via OmProtocolSettings
 /** Max states that keep data loaded.
@@ -115,20 +119,26 @@ export const ensureData = async (
 	if (state.data) return state.data;
 	if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-	const count = (subscriberCounts.get(state) ?? 0) + 1;
-	subscriberCounts.set(state, count);
+	const inflight = inflightRequests.get(state);
+	const subscriberCount = (inflight?.subscriberCount ?? 0) + 1;
+
+	if (inflight) {
+		inflight.subscriberCount = subscriberCount;
+	}
 
 	let finished = false;
 	const cleanup = () => {
 		if (finished) return;
 		finished = true;
 
-		const currentCount = (subscriberCounts.get(state) ?? 1) - 1;
-		if (currentCount === 0) {
-			subscriberCounts.delete(state);
-			masterControllers.get(state)?.abort();
+		const current = inflightRequests.get(state);
+		if (!current) return;
+
+		if (current.subscriberCount <= 1) {
+			inflightRequests.delete(state);
+			current.controller.abort();
 		} else {
-			subscriberCounts.set(state, currentCount);
+			current.subscriberCount -= 1;
 		}
 	};
 
@@ -141,8 +151,8 @@ export const ensureData = async (
 			return await state.dataPromise;
 		}
 
-		const masterController = new AbortController();
-		masterControllers.set(state, masterController);
+		const controller = new AbortController();
+		inflightRequests.set(state, { controller, subscriberCount });
 
 		state.dataPromise = (async () => {
 			try {
@@ -151,18 +161,18 @@ export const ensureData = async (
 				const data = await omFileReader.readVariable(
 					state.dataOptions.variable,
 					state.ranges,
-					masterController.signal
+					controller.signal
 				);
 
-				// if (postReadCallback) {
-				// 	postReadCallback(omFileReader, data, state);
-				// }
+				if (postReadCallback) {
+					postReadCallback(omFileReader, data, state);
+				}
 
 				state.data = data;
 				return data;
 			} finally {
 				state.dataPromise = null;
-				masterControllers.delete(state);
+				inflightRequests.delete(state);
 			}
 		})();
 
