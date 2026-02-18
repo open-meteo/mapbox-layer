@@ -61,7 +61,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/italia_meteo_arpae_icon_2i/latest.json?time_step=current_time_1H&variable=wind_speed_10m&tile_size=128&resolution_factor=0.5`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/italia_meteo_arpae_icon_2i/latest.json?time_step=current_time_1H&variable=wind_speed_10m&tile_size=64`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {

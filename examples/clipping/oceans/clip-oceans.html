@@ -59,7 +59,7 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&resolution_factor=0.5`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&tile_size=64`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {

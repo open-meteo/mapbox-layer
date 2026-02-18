@@ -56,13 +56,12 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m&resolution_factor=0.5`;
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/meteoswiss_icon_ch1/latest.json?time_step=current_time_1H&variable=temperature_2m&tile_size=64`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
 							url: 'om://' + omUrl,
 							type: 'raster',
-							tileSize: 256,
 							maxzoom: 12
 						});
 						map.addLayer(
