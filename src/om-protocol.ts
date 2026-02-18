@@ -68,12 +68,12 @@ export const omProtocol = async (
 		return { data: null };
 	}
 
+	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
+
 	// Handle TileJSON request
 	if (params.type == 'json') {
 		return { data: await getTilejson(params.url, request.dataOptions, settings.clippingOptions) };
 	}
-
-	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
 
 	// Handle tile request
 	if (params.type !== 'image' && params.type !== 'arrayBuffer') {

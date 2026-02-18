@@ -15,7 +15,6 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 	// Handle cancellation messages
 	if (message.data.type === 'cancel') {
-		console.log(`Cancelled request for tile ${key}`);
 		postMessage({ type: 'cancelled', key });
 		return;
 	}

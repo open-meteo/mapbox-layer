@@ -54,6 +54,7 @@ export class WorkerPool {
 				resolvers.forEach((resolve) => {
 					// Create a copy for each subsequent subscriber.
 					// ImageBitmaps are safe to share without cloning.
+					// FIXES: DOMException: Worker.postMessage: attempting to access detached ArrayBuffer
 					const tile = originalTile instanceof ArrayBuffer ? originalTile.slice(0) : originalTile;
 					resolve({ data: tile, cancelled: false });
 				});
