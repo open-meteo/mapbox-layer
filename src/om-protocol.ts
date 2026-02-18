@@ -96,6 +96,8 @@ const requestTile = async (
 		throw new Error('Tile coordinates required for tile request');
 	}
 
+	// console.log('Requesting tile:', { url, tileIndex: request.tileIndex, type });
+
 	const key = `${type}:${url}`;
 	const tileType = `get${capitalize(type)}` as 'getImage' | 'getArrayBuffer';
 
