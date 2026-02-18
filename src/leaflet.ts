@@ -5,7 +5,7 @@ import { parseRequest } from './utils/parse-request';
 import { defaultOmProtocolSettings, requestTile } from './om-protocol';
 import { ensureData, getOrCreateState, getProtocolInstance } from './om-protocol-state';
 
-import { OmProtocolInstance, ParsedRequest, TileResponse } from './types';
+import { OmProtocolInstance, ParsedRequest, TileResult } from './types';
 
 export interface OpenMeteoLeafletLayerOptions extends GridLayerOptions {
 	omUrl: string;
@@ -47,8 +47,8 @@ export class OpenMeteoLeafletLayer extends L.GridLayer {
 				z: coords.z
 			};
 			requestTile(state.omFileUrl, this.parsedRequest, data, state.ranges, 'image')
-				.then((value: TileResponse) => {
-					const imageBitmap = value as ImageBitmap;
+				.then((value: TileResult) => {
+					const imageBitmap = value.data as ImageBitmap;
 					const ctx = tile.getContext('2d');
 					if (ctx) {
 						ctx.drawImage(imageBitmap, 0, 0);

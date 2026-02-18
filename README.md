@@ -40,7 +40,6 @@ map.on('load', () => {
 	map.addSource('omFileSource', {
 		url: 'om://' + omUrl,
 		type: 'raster',
-		tileSize: 256,
 		maxzoom: 12 // tiles look pretty much the same below zoom-level 12, even on the high res models
 	});
 
@@ -63,7 +62,7 @@ For a standalone example, see `examples/temperature.html`.
 
 ```ts
 ...
-<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
+<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.14/dist/index.js"></script>
 ...
 ```
 
@@ -82,7 +81,6 @@ For a standalone example, see `examples/temperature.html`.
 		map.addSource('omFileSource', {
 			url: 'om://' + omUrl,
 			type: 'raster',
-			tileSize: 256,
 			maxzoom: 12 // tiles look pretty much the same below zoom-level 12, even on the high res models
 		});
 
@@ -180,8 +178,8 @@ omProtocolOptions.postReadCallback = (omFileReader, data, state) => {
 	}
 };
 
-maplibregl.addProtocol('om', (params) =>
-	OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+maplibregl.addProtocol('om', (params, abortController) =>
+	OpenMeteoMapboxLayer.omProtocol(params, abortController, omProtocolOptions)
 );
 ```
 
