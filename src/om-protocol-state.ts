@@ -113,6 +113,7 @@ export const ensureData = async (
 	signal?: AbortSignal
 ): Promise<Data> => {
 	if (state.data) return state.data;
+	if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
 	const count = (subscriberCounts.get(state) ?? 0) + 1;
 	subscriberCounts.set(state, count);
@@ -153,9 +154,9 @@ export const ensureData = async (
 					masterController.signal
 				);
 
-				if (postReadCallback) {
-					postReadCallback(omFileReader, data, state);
-				}
+				// if (postReadCallback) {
+				// 	postReadCallback(omFileReader, data, state);
+				// }
 
 				state.data = data;
 				return data;
