@@ -4,14 +4,18 @@
 		<title>Open-Meteo Mapbox Layer - Clip Oceans Example</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
-		<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
-		<script src="https://unpkg.com/@turf/turf@7.3.1/turf.min.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
+		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
+		<script src="https://unpkg.com/@turf/turf@7.3.4/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.14/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
-		<!--<script src="../../../dist/index.js"></script>-->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
 		<style>
 			html,
 			body,
@@ -49,8 +53,8 @@
 					};
 
 					// use the settings as argument for the protocol
-					maplibregl.addProtocol('om', (params) =>
-						OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+					maplibregl.addProtocol('om', (params, abortController) =>
+						OpenMeteoMapboxLayer.omProtocol(params, abortController, omProtocolOptions)
 					);
 
 					const map = new maplibregl.Map({
@@ -59,23 +63,26 @@
 						hash: true
 					});
 
-					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&resolution_factor=0.5`;
+					// setting tile_size=256 reduces each tile to 1/2 the width and height of the default 512px. Without it, each tile would contain 2x2 = 4 times as many pixels to compute.
+					const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&tile_size=256`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
 							url: 'om://' + omUrl,
 							type: 'raster',
-							tileSize: 256,
 							maxzoom: 12
 						});
-						map.addLayer({
-							id: 'omFileLayer',
-							type: 'raster',
-							source: 'omFileSource',
-							paint: {
-								'raster-opacity': 0.75
-							}
-						});
+						map.addLayer(
+							{
+								id: 'omFileLayer',
+								type: 'raster',
+								source: 'omFileSource',
+								paint: {
+									'raster-opacity': 0.75
+								}
+							},
+							'waterway-tunnel'
+						);
 					});
 				});
 		</script>
