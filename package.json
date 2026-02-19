@@ -35,6 +35,7 @@
 		"serve": "concurrently --kill-others \"npm run dev:umd\" \"live-server --port=3000 --host=localhost --ignore=**/src/** --open=./examples/\""
 	},
 	"devDependencies": {
+		"@types/leaflet": "^1.9.21",
 		"@eslint/compat": "^2.0.0",
 		"@eslint/js": "^9.38.0",
 		"@trivago/prettier-plugin-sort-imports": "^6.0.0",
@@ -66,6 +67,7 @@
 		"@openmeteo/file-reader": "^0.0.15",
 		"maplibre-gl": "^5.9.0",
 		"pbf": "^4.0.1",
+		"leaflet": "^1.9.4",
 		"point-in-polygon-hao": "^1.2.4"
 	}
 }
