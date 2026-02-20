@@ -7,7 +7,7 @@
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css" />
 		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.13/dist/index.js"></script>
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.15/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
 		<script>
@@ -76,8 +76,8 @@
 			omProtocolOptions.colorScales = customColorScales;
 
 			// use the settings as argument for the protocol
-			maplibregl.addProtocol('om', (params) =>
-				OpenMeteoMapboxLayer.omProtocol(params, undefined, omProtocolOptions)
+			maplibregl.addProtocol('om', (params, abortController) =>
+				OpenMeteoMapboxLayer.omProtocol(params, abortController, omProtocolOptions)
 			);
 
 			const map = new maplibregl.Map({
