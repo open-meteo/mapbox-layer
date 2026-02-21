@@ -1,9 +1,11 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
+import { checkAgainstBounds } from './utils/bounds';
+import { clipRasterToPolygons } from './utils/clipping';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
-import { checkAgainstBounds, lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
+import { tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
@@ -76,35 +78,8 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		context.putImageData(imageData, 0, 0);
 
 		let blob;
-		if (clippingOptions && clippingOptions.polygons) {
-			// create 2nd OffscreenCanvas to handle clipping
-			const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
-			const clipContext = clipCanvas.getContext('2d');
-
-			if (!clipContext) {
-				throw new Error('Could not initialise canvas context');
-			}
-
-			for (const polygon of clippingOptions.polygons) {
-				clipContext.beginPath();
-				for (const coordinate of polygon) {
-					for (const [index, [polyX, polyY]] of coordinate.entries()) {
-						const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
-						const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
-						if (index === 0) {
-							clipContext.moveTo(polyXtile, polyYtile);
-						} else {
-							clipContext.lineTo(polyXtile, polyYtile);
-						}
-					}
-				}
-				clipContext.closePath();
-			}
-
-			clipContext.clip('nonzero');
-			clipContext.drawImage(canvas, 0, 0);
-
-			blob = await clipCanvas.convertToBlob({ type: 'image/png' });
+		if (clippingOptions?.polygons) {
+			blob = await clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions.polygons);
 		} else {
 			blob = await canvas.convertToBlob({ type: 'image/png' });
 		}
