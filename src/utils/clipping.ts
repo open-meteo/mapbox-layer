@@ -4,9 +4,41 @@ import { normalizeLon, tile2lon } from './math';
 
 import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } from '../types';
 
+/**
+ * Flat representation of clipping polygons.
+ * When `useSAB` is true the backing buffer is a SharedArrayBuffer (zero-copy
+ * across workers); otherwise a regular ArrayBuffer is used.
+ *
+ * `coordinates` holds pairs [lon0, lat0, lon1, lat1, …] for every ring
+ * concatenated together.  `offsets` stores the element-index into
+ * `coordinates` where each ring starts; the final entry equals the total
+ * number of elements so that ring *i* spans
+ * `coordinates[offsets[i]] … coordinates[offsets[i+1]-1]`.
+ */
+export type SharedPolygons = {
+	/** Flat [lon, lat, …] pairs for all rings. */
+	coordinates: Float64Array;
+	/** Ring start indices (element offsets into `coordinates`). Length = numRings + 1. */
+	offsets: Uint32Array;
+};
+
 export type ResolvedClipping = {
-	polygons?: ReadonlyArray<ReadonlyArray<number[]>>;
+	polygons?: SharedPolygons;
 	bounds?: Bounds;
+};
+
+/** Number of rings stored in a SharedPolygons structure. */
+export const sharedPolygonsRingCount = (sp: SharedPolygons): number => sp.offsets.length - 1;
+
+/** Extract ring *i* as a plain `number[][]` (each element `[lon, lat]`). */
+export const sharedPolygonsRing = (sp: SharedPolygons, i: number): number[][] => {
+	const start = sp.offsets[i];
+	const end = sp.offsets[i + 1];
+	const ring: number[][] = [];
+	for (let j = start; j < end; j += 2) {
+		ring.push([sp.coordinates[j], sp.coordinates[j + 1]]);
+	}
+	return ring;
 };
 
 /**
@@ -21,12 +53,17 @@ export type ResolvedClipping = {
 export const createClippingTester = (
 	clippingOptions: ResolvedClipping | undefined
 ): ((lon: number, lat: number) => boolean) | undefined => {
-	const polygons = clippingOptions?.polygons;
-	if (!polygons || polygons.length === 0) return undefined;
+	const sp = clippingOptions?.polygons;
+	if (!sp || sp.offsets.length <= 1) return undefined;
 
-	// Pre-wrap each ring into the [ring] shape that point-in-polygon-hao expects,
+	const numRings = sharedPolygonsRingCount(sp);
+
+	// Pre-extract each ring into the [ring] shape that point-in-polygon-hao expects,
 	// so we avoid allocating wrapper arrays on every call.
-	const wrappedPolygons = polygons.map((ring) => [ring as unknown as number[][]]);
+	const wrappedPolygons: number[][][][] = [];
+	for (let i = 0; i < numRings; i++) {
+		wrappedPolygons.push([sharedPolygonsRing(sp, i)]);
+	}
 
 	// Pre-extract bounds for a fast AABB rejection (O(1) per point).
 	const bounds = clippingOptions?.bounds;
@@ -70,10 +107,14 @@ export const unwrapLongitudes = (ring: [number, number][]): [number, number][] =
 	return result;
 };
 
-export const resolveClippingOptions = (options: ClippingOptions): ResolvedClipping | undefined => {
+export const resolveClippingOptions = (
+	options: ClippingOptions,
+	useSAB = false
+): ResolvedClipping | undefined => {
 	if (!options) return undefined;
 
-	const polygons: [number, number][][] = [];
+	// Collect rings as plain arrays first, then pack into a flat buffer at the end.
+	const rings: [number, number][][] = [];
 	let bounds = options.bounds;
 
 	// Track combined (unwrapped) bounds for dateline-aware auto-computation
@@ -131,11 +172,9 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 	};
 
 	if (options.polygons) {
-		polygons.push(...options.polygons);
-		if (!bounds) {
-			for (const ring of options.polygons) {
-				extendBoundsWithRing(ring);
-			}
+		for (const ring of options.polygons) {
+			rings.push(ring);
+			if (!bounds) extendBoundsWithRing(ring);
 		}
 	}
 
@@ -147,7 +186,7 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 			}
 			const unwrapped = unwrapLongitudes(normalizedRing);
 			if (unwrapped.length === 0) return;
-			polygons.push(closeRing(unwrapped));
+			rings.push(closeRing(unwrapped));
 		};
 
 		const addGeometry = (geometry: GeoJsonGeometry | null) => {
@@ -208,64 +247,38 @@ export const resolveClippingOptions = (options: ClippingOptions): ResolvedClippi
 		}
 	}
 
-	if (!bounds && polygons.length === 0) return undefined;
+	if (!bounds && rings.length === 0) return undefined;
 
-	return { polygons: polygons.length > 0 ? polygons : undefined, bounds };
+	// Pack collected rings into flat typed arrays (SharedArrayBuffer when useSAB is true).
+	let sharedPolygons: SharedPolygons | undefined;
+	if (rings.length > 0) {
+		let totalElements = 0;
+		for (const ring of rings) totalElements += ring.length * 2;
+
+		const coordBytes = totalElements * Float64Array.BYTES_PER_ELEMENT;
+		const offsetBytes = (rings.length + 1) * Uint32Array.BYTES_PER_ELEMENT;
+		const coordBuffer = useSAB ? new SharedArrayBuffer(coordBytes) : new ArrayBuffer(coordBytes);
+		const coordinates = new Float64Array(coordBuffer);
+		const offsetBuffer = useSAB
+			? new SharedArrayBuffer(offsetBytes)
+			: new ArrayBuffer(offsetBytes);
+		const offsets = new Uint32Array(offsetBuffer);
+
+		let idx = 0;
+		for (let r = 0; r < rings.length; r++) {
+			offsets[r] = idx;
+			for (const [lon, lat] of rings[r]) {
+				coordinates[idx++] = lon;
+				coordinates[idx++] = lat;
+			}
+		}
+		offsets[rings.length] = idx;
+
+		sharedPolygons = { coordinates, offsets };
+	}
+
+	return { polygons: sharedPolygons, bounds };
 };
-
-// export const clipRasterToPolygons = async (
-// 	canvas: OffscreenCanvas,
-// 	tileSize: number,
-// 	z: number,
-// 	x: number,
-// 	y: number,
-// 	polygons: ReadonlyArray<ReadonlyArray<number[]>>
-// ): Promise<Blob> => {
-// 	console.log('clipRasterToPolygons');
-// 	if (polygons.length === 0) {
-// 		return canvas.convertToBlob({ type: 'image/png' });
-// 	}
-
-// 	const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
-// 	const clipContext = clipCanvas.getContext('2d');
-// 	if (!clipContext) throw new Error('Could not initialise canvas context');
-
-// 	// tile center longitude used to choose best 360° frame for polygons
-// 	const tileCenterLon = tile2lon(x + 0.5, z);
-
-// 	clipContext.beginPath();
-// 	for (const ring of polygons) {
-// 		// compute a representative longitude for the ring (midpoint of min/max)
-// 		let minLon = Infinity,
-// 			maxLon = -Infinity;
-// 		for (const [lon] of ring) {
-// 			if (lon < minLon) minLon = lon;
-// 			if (lon > maxLon) maxLon = lon;
-// 		}
-// 		const ringMidLon = (minLon + maxLon) / 2;
-
-// 		// choose integer multiple of 360 that moves the ring closest to the tile center
-// 		const lonShift = Math.round((tileCenterLon - ringMidLon) / 360) * 360;
-
-// 		for (const [index, [polyX, polyY]] of ring.entries()) {
-// 			// shift the polygon longitude into the tile's frame
-// 			const adjustedLon = polyX + lonShift;
-// 			const polyXtile = (lon2tile(adjustedLon, z) - x) * tileSize;
-// 			const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
-// 			if (index === 0) {
-// 				clipContext.moveTo(polyXtile, polyYtile);
-// 			} else {
-// 				clipContext.lineTo(polyXtile, polyYtile);
-// 			}
-// 		}
-// 		clipContext.closePath();
-// 	}
-
-// 	clipContext.clip('evenodd');
-// 	clipContext.drawImage(canvas, 0, 0);
-
-// 	return clipCanvas.convertToBlob({ type: 'image/png' });
-// };
 
 export const clipRasterToPolygons = async (
 	canvas: OffscreenCanvas,
@@ -273,11 +286,15 @@ export const clipRasterToPolygons = async (
 	z: number,
 	x: number,
 	y: number,
-	polygons: ReadonlyArray<ReadonlyArray<number[]>>
+	sp: SharedPolygons
 ): Promise<Blob> => {
-	if (!polygons || polygons.length === 0) {
+	const numRings = sharedPolygonsRingCount(sp);
+	if (numRings === 0) {
 		return canvas.convertToBlob({ type: 'image/png' });
 	}
+
+	const coords = sp.coordinates;
+	const offsets = sp.offsets;
 
 	const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
 	const ctx = clipCanvas.getContext('2d');
@@ -301,21 +318,20 @@ export const clipRasterToPolygons = async (
 	const tilePixelTop = 0;
 	const tilePixelBottom = tileSize;
 
-	// Helper: convert adjustedLon (degrees) -> pixel X within tile
-	// px = ((adjustedLon + 180) * lonToTileScale - tileOriginX) * tileSize
-	// but compute (tileX - x) * tileSize inline to avoid function call.
-	for (let ri = 0; ri < polygons.length; ri++) {
-		const ring = polygons[ri] as [number, number][]; // [lon, lat] pairs
-		if (!ring || ring.length === 0) continue;
+	for (let ri = 0; ri < numRings; ri++) {
+		const start = offsets[ri];
+		const end = offsets[ri + 1];
+		const ringElements = end - start; // number of float64 elements (lon,lat pairs × 2)
+		if (ringElements < 4) continue; // need at least 2 points
 
-		// compute ring lon/lat bbox (cheap index loop)
+		// compute ring lon/lat bbox (cheap index loop over flat buffer)
 		ringMinLon = Infinity;
 		ringMaxLon = -Infinity;
 		minLat = Infinity;
 		maxLat = -Infinity;
-		for (let i = 0; i < ring.length; i++) {
-			const lon = ring[i][0];
-			const lat = ring[i][1];
+		for (let j = start; j < end; j += 2) {
+			const lon = coords[j];
+			const lat = coords[j + 1];
 			if (lon < ringMinLon) ringMinLon = lon;
 			if (lon > ringMaxLon) ringMaxLon = lon;
 			if (lat < minLat) minLat = lat;
@@ -327,10 +343,8 @@ export const clipRasterToPolygons = async (
 		lonShift = Math.round((tileCenterLon - ringMidLon) / 360) * 360;
 
 		// Early reject by projecting ring bbox to tile pixel bbox.
-		// Compute pixel X range for shifted lon bbox:
 		const shiftedMinLon = ringMinLon + lonShift;
 		const shiftedMaxLon = ringMaxLon + lonShift;
-		// tile index (floating) for longitudes
 		const tileXMin = (shiftedMinLon + 180) * lonToTileScale;
 		const tileXMax = (shiftedMaxLon + 180) * lonToTileScale;
 		const pixelXMin = (tileXMin - tileOriginX) * tileSize;
@@ -357,19 +371,12 @@ export const clipRasterToPolygons = async (
 			continue;
 		}
 
-		// Build path for this ring (index loop, inline transforms)
-		// We assume ring already closed; if not, duplicating the first point is cheap
-		const len = ring.length;
-		if (len === 0) continue;
-
 		// First vertex
 		{
-			const lon = ring[0][0] + lonShift;
-			const lat = ring[0][1];
-			// inline lon->tileX -> pixelX
+			const lon = coords[start] + lonShift;
+			const lat = coords[start + 1];
 			const tileXF = (lon + 180) * lonToTileScale;
 			const px = (tileXF - tileOriginX) * tileSize;
-			// inline lat->tileY -> pixelY
 			const rad = (lat * Math.PI) / 180;
 			const py =
 				(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * nTiles - tileOriginY) *
@@ -377,9 +384,9 @@ export const clipRasterToPolygons = async (
 			path.moveTo(px, py);
 		}
 
-		for (let i = 1; i < len; i++) {
-			const lon = ring[i][0] + lonShift;
-			const lat = ring[i][1];
+		for (let j = start + 2; j < end; j += 2) {
+			const lon = coords[j] + lonShift;
+			const lat = coords[j + 1];
 			const tileXF = (lon + 180) * lonToTileScale;
 			const px = (tileXF - tileOriginX) * tileSize;
 			const rad = (lat * Math.PI) / 180;
@@ -393,7 +400,6 @@ export const clipRasterToPolygons = async (
 	}
 
 	// Clip once with the constructed path and draw
-	// passing 'evenodd' is optional, keep it if you need that rule
 	ctx.clip(path, 'evenodd');
 	ctx.drawImage(canvas, 0, 0);
 

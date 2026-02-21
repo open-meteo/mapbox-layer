@@ -25,7 +25,10 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
 	const { dataOptions, renderOptions } = resolver(urlComponents, settings);
 
-	const resolvedClippingOptions = resolveClippingOptions(settings.clippingOptions);
+	const resolvedClippingOptions = resolveClippingOptions(
+		settings.clippingOptions,
+		settings.fileReaderConfig.useSAB
+	);
 	setClippingBounds(resolvedClippingOptions?.bounds);
 
 	return {
