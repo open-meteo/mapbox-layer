@@ -259,9 +259,7 @@ export const resolveClippingOptions = (
 		const offsetBytes = (rings.length + 1) * Uint32Array.BYTES_PER_ELEMENT;
 		const coordBuffer = useSAB ? new SharedArrayBuffer(coordBytes) : new ArrayBuffer(coordBytes);
 		const coordinates = new Float64Array(coordBuffer);
-		const offsetBuffer = useSAB
-			? new SharedArrayBuffer(offsetBytes)
-			: new ArrayBuffer(offsetBytes);
+		const offsetBuffer = useSAB ? new SharedArrayBuffer(offsetBytes) : new ArrayBuffer(offsetBytes);
 		const offsets = new Uint32Array(offsetBuffer);
 
 		let idx = 0;
