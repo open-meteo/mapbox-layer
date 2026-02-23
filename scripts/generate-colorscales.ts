@@ -344,20 +344,21 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	temperature: {
 		unit: '°C',
 		breakpoints: [
-			-80, -60, -50, -40, -37.5, -35, -32.5, -30, -27.5, -25, -22.5, -20, -17.5, -15, -12.5, -10,
-			-8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40,
-			42, 44, 46, 48, 50
+			-80, -70, -60, -50, -40, -36, -32, -28, -24, -20, -17.5, -15, -12.5, -10, -8, -6, -4, -2, 0,
+			2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50
 		],
 		colorSegments: [
-			{ range: [-80, -50], colors: ['#1af2dd', '#17658f'] },
-			{ range: [-50, -30], colors: ['#17658f', '#ef07ef'] },
-			{ range: [-30, -10], colors: ['#ef07ef', '#0034ff'] },
+			{ range: [-80, -50], colors: ['#000000', '#ffffff'] },
+			{ range: [-50, -30], colors: ['#ffffff', '#c535dc'] },
+			{ range: [-30, -10], colors: ['#c535dc', '#0034ff'] },
 			{ range: [-10, 0], colors: ['#0034ff', '#a4eef5'] },
-			{ range: [0, 14], colors: ['#7cf57c', 'green'] },
-			{ range: [14, 20], colors: ['green', 'yellow'] },
-			{ range: [20, 28], colors: ['yellow', 'orange'] },
-			{ range: [28, 42], colors: ['orange', 'red'] },
-			{ range: [42, 50], colors: ['red', '#93001a'] }
+			{ range: [0, 8], colors: ['#23ff3e', 'green'] },
+			{ range: [8, 16], colors: ['green', 'yellow'] },
+			// { range: [14, 20], colors: ['green', 'yellow'] },
+			{ range: [16, 24], colors: ['yellow', 'orange'] },
+			{ range: [24, 32], colors: ['orange', 'red'] },
+			{ range: [32, 42], colors: ['red', 'brown'] },
+			{ range: [42, 50], colors: ['brown', 'pink'] }
 		],
 		opacitySegments: [{ range: [-80, 50], opacity: [1, 1], easing: 'linear' }]
 	},
