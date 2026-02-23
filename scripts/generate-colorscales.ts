@@ -234,19 +234,21 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	},
 	precipitation: {
 		unit: 'mm',
-		breakpoints: [0.01, 0.055, 0.11, 0.255, 0.45, 0.95, 2, 3, 4.95, 7.45, 10, 15, 20, 25, 30],
+		breakpoints: [0.01, 0.055, 0.2, 1, 2, 4, 8, 12, 16, 20, 25, 30],
 		colorSegments: [
-			{ range: [0, 0.04], colors: ['#000000', '#87CEFA'] },
-			{ range: [0.04, 2], colors: ['#87CEFA', '#0060e9'] },
-			{ range: [2, 10], colors: ['#0060e9', '#FFDD00'] },
-			{ range: [10, 20], colors: ['#FFDD00', '#ff0000'] },
-			{ range: [20, 30], colors: ['#ff0000', '#af0099'] }
+			{ range: [0, 0.04], colors: ['#d1eeff', '#87cefa'] },
+			{ range: [0.04, 2], colors: ['#87cefa', '#0060e9'] },
+			{ range: [2, 4], colors: ['#0060e9', '#388e3c'] },
+			{ range: [4, 8], colors: ['#388e3c', '#fdff00'] },
+			{ range: [8, 12], colors: ['#fdff00', '#ff8c00'] },
+			{ range: [12, 16], colors: ['#ff8c00', '#ff3131'] },
+			{ range: [16, 30], colors: ['#ff3131', '#9c27b0'] }
 		],
 		opacitySegments: [
 			{ range: [0, 0.055], opacity: [0, 0.5], easing: 'linear' },
 			{ range: [0.055, 0.11], opacity: [0.5, 0.7], easing: 'linear' },
 			{ range: [0.11, 0.95], opacity: [0.7, 0.8], easing: 'linear' },
-			{ range: [0.95, 30], opacity: [0.8, 1], easing: 'power-inverse', exponent: 2 }
+			{ range: [0.95, 2], opacity: [0.8, 1], easing: 'power-inverse', exponent: 2 }
 		]
 	},
 	precipitation_probability: {
