@@ -66,7 +66,6 @@ const transformScale = (
 
 export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...COLOR_SCALES,
-	albedo: COLOR_SCALES['cloud_cover'],
 	boundary_layer_height: transformScale(
 		COLOR_SCALES['convective_cloud_top'] as BreakpointColorScale,
 		(b) => b / 2

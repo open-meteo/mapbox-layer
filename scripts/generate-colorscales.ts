@@ -36,7 +36,7 @@ interface ColorScaleDefinition {
 	unit: string;
 	breakpoints: number[];
 	colorSegments: ColorSegmentsDefinition;
-	opacitySegments: OpacitySegmentsDefinition;
+	opacitySegments?: OpacitySegmentsDefinition;
 }
 
 // Interpolate a color at a specific position within a segment
@@ -101,7 +101,8 @@ function getColorAt(colorSegments: ColorSegment[], value: number): RGB {
 }
 
 // Find the opacity at a given value by finding the appropriate segment
-function getOpacityAt(opacitySegments: OpacitySegment[], value: number): number {
+function getOpacityAt(opacitySegments: OpacitySegment[] | null, value: number): number {
+	if (!opacitySegments) return 1;
 	// Find the segment that contains this value
 	for (const segment of opacitySegments) {
 		if (value >= segment.range[0] && value <= segment.range[1]) {
@@ -126,8 +127,9 @@ function hasColorVariants(
 
 // Check if opacity segments have light/dark variants
 function hasOpacityVariants(
-	segments: OpacitySegmentsDefinition
+	segments?: OpacitySegmentsDefinition
 ): segments is { light: OpacitySegment[]; dark: OpacitySegment[] } {
+	if (!segments) return false;
 	return !Array.isArray(segments) && 'light' in segments && 'dark' in segments;
 }
 
@@ -144,9 +146,10 @@ function getColorSegments(
 
 // Get opacity segments for a specific mode
 function getOpacitySegments(
-	segments: OpacitySegmentsDefinition,
-	mode: 'light' | 'dark'
-): OpacitySegment[] {
+	mode: 'light' | 'dark',
+	segments?: OpacitySegmentsDefinition
+): OpacitySegment[] | null {
+	if (!segments) return null;
 	if (hasOpacityVariants(segments)) {
 		return segments[mode];
 	}
@@ -160,7 +163,7 @@ function generateColorsAtBreakpoints(
 ): RGBA[] {
 	const { breakpoints, colorSegments, opacitySegments } = definition;
 	const colorSegs = getColorSegments(colorSegments, mode);
-	const opacitySegs = getOpacitySegments(opacitySegments, mode);
+	const opacitySegs = getOpacitySegments(mode, opacitySegments);
 
 	return breakpoints.map((value) => {
 		const rgb = getColorAt(colorSegs, value);
@@ -178,6 +181,15 @@ function needsVariants(definition: ColorScaleDefinition): boolean {
 
 // Color scale definitions
 const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
+	albedo: {
+		unit: '%',
+		breakpoints: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+		colorSegments: [
+			{ range: [0, 10], colors: ['#add8e6', '#004011'] },
+			{ range: [10, 25], colors: ['#004011', '#937350'] },
+			{ range: [25, 100], colors: ['#937350', '#ffffff'] }
+		]
+	},
 	cape: {
 		unit: 'J/kg',
 		breakpoints: [0, 50, 150, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000],
