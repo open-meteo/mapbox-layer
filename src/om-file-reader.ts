@@ -8,8 +8,9 @@ import {
 } from '@openmeteo/file-reader';
 
 import { fastAtan2, radiansToDegrees } from './utils/math';
+import { wktToGridData } from './utils/wkt';
 
-import type { Data, DimensionRange } from './types';
+import type { Data, DimensionRange, GridData } from './types';
 
 /**
  * Configuration options for the MapboxLayerFileReader.
@@ -57,6 +58,32 @@ export class MapboxLayerFileReader {
 
 		// Use the injected cache, or fall back to an in-memory LRU cache
 		this.cache = config.cache ?? new LruBlockCache(64 * 1024, 128);
+	}
+
+	async getGridParameters(variable: string): Promise<GridData> {
+		if (!this.reader) {
+			throw new Error('Reader not initialized');
+		}
+
+		const variableReader = await this.reader.getChildByName(variable);
+
+		if (!variableReader) {
+			throw new Error(`Variable ${variable} not found`);
+		}
+
+		const dimensions = variableReader.getDimensions();
+
+		if (dimensions.length !== 2) {
+			throw new Error(`Variable ${variable} does not have 2 dimensions`);
+		}
+
+		const [ny, nx] = dimensions;
+
+		const wkt2Crs = await this.reader.getChildByName('crs_wkt');
+		const wkt = wkt2Crs!.readScalar<string>(OmDataType.String)!;
+		const grid = wktToGridData(wkt, nx, ny);
+		console.log(grid);
+		return grid;
 	}
 
 	async setToOmFile(omUrl: string): Promise<void> {

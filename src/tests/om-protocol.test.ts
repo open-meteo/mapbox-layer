@@ -1,12 +1,15 @@
+import { MapboxLayerFileReader } from '../om-file-reader';
 import { defaultOmProtocolSettings } from '../om-protocol';
 import { parseRequest } from '../utils/parse-request';
 import { RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+	DataIdentityOptions,
 	DimensionRange,
-	Domain,
+	GridData,
 	OmProtocolSettings,
+	RenderOptions,
 	ResolvedBreakpointColorScale,
 	TileJSON
 } from '../types';
@@ -31,6 +34,17 @@ vi.mock('../om-file-reader', async () => {
 					ranges?.reduce((acc, range) => acc * (range.end - range.start + 1), 1) || 0;
 				return { values: new Float32Array(totalValues), directions: undefined };
 			}
+			async getGridParameters(_variable: string): Promise<GridData> {
+				return {
+					type: 'regular',
+					nx: 10,
+					ny: 20,
+					lonMin: 0,
+					latMin: 0,
+					dx: 1,
+					dy: 1
+				};
+			}
 		}
 	};
 });
@@ -52,23 +66,6 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-const createTestDomain = (value: string, grid = {}): Domain => ({
-	value,
-	label: `Test ${value}`,
-	grid: {
-		type: 'regular',
-		nx: 10,
-		ny: 20,
-		lonMin: 0,
-		latMin: 0,
-		dx: 1,
-		dy: 1,
-		...grid
-	},
-	time_interval: 'hourly',
-	model_interval: '3_hourly'
-});
-
 const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProtocolSettings => ({
 	...defaultOmProtocolSettings,
 	...overrides
@@ -77,21 +74,21 @@ const createTestSettings = (overrides: Partial<OmProtocolSettings> = {}): OmProt
 describe('Request Options', () => {
 	describe('parseRequest', () => {
 		it('resolves data identity and render options from URL', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
-			const { dataOptions, renderOptions } = parseRequest(url, settings);
+			const { dataOptions, renderOptions } = await parseRequest(url, settings, reader);
 
-			expect(dataOptions.domain.value).toBe('domain1');
+			expect(dataOptions.baseUrl).toBe('https://example.com/data_spatial/domain1/file.om');
 			expect(dataOptions.variable).toBe('temperature');
 			expect(renderOptions.intervals).toStrictEqual([2]);
 		});
 
 		it('can resolve domain from a variety of different urls', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 
 			const url1 =
 				'om://https://nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
@@ -103,34 +100,29 @@ describe('Request Options', () => {
 				'om://https://example.com/nested/bucket/structure/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
 
 			for (const url of [url1, url2, url3]) {
-				const { dataOptions, renderOptions } = parseRequest(url, settings);
-				expect(dataOptions.domain.value).toBe('domain1');
+				const { dataOptions, renderOptions } = await parseRequest(url, settings, reader);
+				expect(dataOptions.baseUrl).toContain('data_spatial/domain1/file.om');
 				expect(dataOptions.variable).toBe('temperature');
 				expect(renderOptions.intervals).toStrictEqual([2]);
 			}
 		});
 
-		it('throws for invalid domain', async () => {
-			const settings = createTestSettings({ domainOptions: [] });
-			const url = 'om://https://example.com/data_spatial/unknown/file.om?variable=temp';
-
-			expect(() => parseRequest(url, settings)).toThrow('Invalid domain');
-		});
-
 		it('throws for missing variable', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 			const url = 'om://https://example.com/data_spatial/domain1/file.om';
 
-			expect(() => parseRequest(url, settings)).toThrow('Variable is required but not defined');
+			await expect(parseRequest(url, settings, reader)).rejects.toThrow(
+				'Variable is required but not defined'
+			);
 		});
 
 		it('parses render options with defaults', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 
 			const url = 'om://https://example.com/data_spatial/domain1/file.om?variable=temp';
-			const { renderOptions } = parseRequest(url, settings);
+			const { renderOptions } = await parseRequest(url, settings, reader);
 
 			const colorScale = renderOptions.colorScale as ResolvedBreakpointColorScale;
 
@@ -143,12 +135,12 @@ describe('Request Options', () => {
 		});
 
 		it('parses custom render options', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=1024&grid=true&arrows=true&contours=true';
-			const { renderOptions } = parseRequest(url, settings);
+			const { renderOptions } = await parseRequest(url, settings, reader);
 
 			expect(renderOptions.tileSize).toBe(1024);
 			expect(renderOptions.drawGrid).toBe(true);
@@ -157,13 +149,13 @@ describe('Request Options', () => {
 		});
 
 		it('throws for invalid tile size', async () => {
-			const domainOptions = [createTestDomain('domain1')];
-			const settings = createTestSettings({ domainOptions });
+			const settings = createTestSettings();
+			const reader = new MapboxLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
 
-			expect(() => parseRequest(url, settings)).toThrow('Invalid tile size');
+			await expect(parseRequest(url, settings, reader)).rejects.toThrow('Invalid tile size');
 		});
 	});
 
@@ -171,29 +163,31 @@ describe('Request Options', () => {
 		it('allows custom request resolver', async () => {
 			const { omProtocol } = await import('../om-protocol');
 
-			const customResolver = vi.fn().mockReturnValue({
-				dataOptions: {
-					domain: createTestDomain('custom_domain'),
-					variable: { value: 'custom_var' },
-					ranges: [
-						{ start: 0, end: 10 },
-						{ start: 0, end: 10 }
-					]
-				},
-				renderOptions: {
-					dark: true,
+			const customResolver = vi.fn().mockImplementation(() => {
+				const renderOptions: RenderOptions = {
 					tileSize: 512,
-					makeGrid: false,
-					makeArrows: false,
-					makeContours: false,
-					interval: [2],
+					drawGrid: false,
+					drawArrows: false,
+					drawContours: false,
+					intervals: [2],
 					colorScale: {
+						type: 'rgba',
 						min: 0,
 						max: 100,
 						colors: [],
 						unit: 'C'
 					}
-				}
+				};
+				const dataOptions: DataIdentityOptions = {
+					baseUrl: 'https://example.com/data_spatial/custom_domain',
+					grid: { type: 'regular', ny: 10, nx: 10, lonMin: 0, latMin: 0, dx: 1, dy: 1 },
+					variable: 'custom_var',
+					bounds: undefined
+				};
+				return {
+					dataOptions,
+					renderOptions
+				};
 			});
 
 			const settings = createTestSettings({ resolveRequest: customResolver });
@@ -206,89 +200,6 @@ describe('Request Options', () => {
 			await omProtocol(params, new AbortController(), settings);
 
 			expect(customResolver).toHaveBeenCalled();
-		});
-	});
-});
-
-describe('omProtocol', () => {
-	describe('TileJSON requests', () => {
-		it('returns tilejson with correct tiles URL', async () => {
-			const { omProtocol } = await import('../om-protocol');
-			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
-				type: 'json'
-			};
-			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
-			const resultData = result.data as TileJSON;
-
-			expect(resultData.tilejson).toBe('2.2.0');
-			expect(resultData.tiles[0]).toBe(params.url + '/{z}/{x}/{y}');
-			expect(resultData.attribution).toContain('Open-Meteo');
-			expect(resultData.minzoom).toBe(0);
-			expect(resultData.maxzoom).toBe(12);
-			expect(resultData.bounds).toBeDefined();
-		});
-
-		it('returns correct bounds for domain grid', async () => {
-			const { omProtocol } = await import('../om-protocol');
-			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
-				type: 'json'
-			};
-			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
-			const resultData = result.data as TileJSON;
-
-			// DWD ICON global bounds
-			expect(resultData.bounds).toEqual([-180, -90, 179.875, 90.125]);
-		});
-	});
-
-	describe('tile requests', () => {
-		it('early return for vector requests', async () => {
-			const { omProtocol } = await import('../om-protocol');
-
-			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
-				type: 'arrayBuffer'
-			};
-			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
-
-			expect(result.data).toBeInstanceOf(ArrayBuffer);
-			expect(result.data as ArrayBuffer).toEqual(new ArrayBuffer(0));
-		});
-
-		it('throws for tile request without coordinates', async () => {
-			const { omProtocol } = await import('../om-protocol');
-
-			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
-				type: 'arrayBuffer'
-			};
-
-			await expect(
-				omProtocol(params, new AbortController(), defaultOmProtocolSettings)
-			).rejects.toThrow('Tile coordinates required');
-		});
-
-		it('calls postReadCallback after data is loaded', async () => {
-			const { omProtocol } = await import('../om-protocol');
-
-			const postReadCallback = vi.fn();
-			const settings = createTestSettings({ postReadCallback });
-
-			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
-				type: 'arrayBuffer'
-			};
-
-			await omProtocol(params, new AbortController(), settings);
-
-			expect(postReadCallback).toHaveBeenCalledTimes(1);
-			expect(postReadCallback).toHaveBeenCalledWith(
-				expect.anything(), // omFileReader
-				expect.objectContaining({ values: expect.any(Float32Array) }), // data
-				expect.objectContaining({ omFileUrl: expect.stringContaining('map-tiles.open-meteo.com') })
-			);
 		});
 	});
 });
@@ -347,5 +258,98 @@ describe('getValueFromLatLong', () => {
 				'om://https://example.com/data_spatial/dwd_icon/other.om?variable=other'
 			)
 		).toThrow('State not found');
+	});
+});
+
+describe('omProtocol', () => {
+	describe('TileJSON requests', () => {
+		beforeEach(() => {
+			vi.resetModules();
+			// FIXME: This is extremely ugly. Any test after these tests will not have the om-file-reader mock available anymore.
+			vi.doUnmock('../om-file-reader');
+		});
+
+		afterEach(() => {
+			// Re-establish mock for tests outside this block
+			vi.resetModules();
+		});
+		it('returns tilejson with correct tiles URL', async () => {
+			const { omProtocol } = await import('../om-protocol');
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m',
+				type: 'json'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+			const resultData = result.data as TileJSON;
+
+			expect(resultData.tilejson).toBe('2.2.0');
+			expect(resultData.tiles[0]).toBe(params.url + '/{z}/{x}/{y}');
+			expect(resultData.attribution).toContain('Open-Meteo');
+			expect(resultData.minzoom).toBe(0);
+			expect(resultData.maxzoom).toBe(12);
+			expect(resultData.bounds).toBeDefined();
+		});
+
+		it('returns correct bounds for domain grid', async () => {
+			const { omProtocol } = await import('../om-protocol');
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m',
+				type: 'json'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+			const resultData = result.data as TileJSON;
+
+			// DWD ICON global bounds
+			expect(resultData.bounds).toEqual([-180, -90, 179.875, 90.125]);
+		});
+	});
+
+	describe('tile requests', () => {
+		it('early return for vector requests', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m/0/0/0',
+				type: 'arrayBuffer'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+
+			expect(result.data).toBeInstanceOf(ArrayBuffer);
+			expect(result.data as ArrayBuffer).toEqual(new ArrayBuffer(0));
+		});
+
+		it('throws for tile request without coordinates', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m',
+				type: 'arrayBuffer'
+			};
+
+			await expect(
+				omProtocol(params, new AbortController(), defaultOmProtocolSettings)
+			).rejects.toThrow('Tile coordinates required');
+		});
+
+		it('calls postReadCallback after data is loaded', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const postReadCallback = vi.fn();
+			const settings = createTestSettings({ postReadCallback });
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m/0/0/0',
+				type: 'arrayBuffer'
+			};
+
+			await omProtocol(params, new AbortController(), settings);
+
+			expect(postReadCallback).toHaveBeenCalledTimes(1);
+			expect(postReadCallback).toHaveBeenCalledWith(
+				expect.anything(), // omFileReader
+				expect.objectContaining({ values: expect.any(Float32Array) }), // data
+				expect.objectContaining({ omFileUrl: expect.stringContaining('map-tiles.open-meteo.com') })
+			);
+		});
 	});
 });

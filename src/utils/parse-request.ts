@@ -1,17 +1,13 @@
+import { MapboxLayerFileReader } from '../om-file-reader';
+
 import { currentBounds } from './bounds';
-import {
-	DEFAULT_INTERVAL,
-	DEFAULT_TILE_SIZE,
-	RESOLVE_DOMAIN_REGEX,
-	VALID_TILE_SIZES
-} from './constants';
+import { DEFAULT_INTERVAL, DEFAULT_TILE_SIZE, VALID_TILE_SIZES } from './constants';
 import { parseUrlComponents } from './parse-url';
 import { getColorScale, resolveColorScale } from './styling';
 
 import type {
 	ColorScales,
 	DataIdentityOptions,
-	Domain,
 	OmProtocolSettings,
 	ParsedRequest,
 	ParsedUrlComponents,
@@ -19,10 +15,14 @@ import type {
 	RenderableColorScale
 } from '../types';
 
-export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedRequest => {
+export const parseRequest = async (
+	url: string,
+	settings: OmProtocolSettings,
+	reader: MapboxLayerFileReader
+): Promise<ParsedRequest> => {
 	const urlComponents = parseUrlComponents(url);
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
-	const { dataOptions, renderOptions } = resolver(urlComponents, settings);
+	const { dataOptions, renderOptions } = await resolver(urlComponents, settings, reader);
 
 	return {
 		baseUrl: urlComponents.baseUrl,
@@ -34,11 +34,12 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 	};
 };
 
-export const defaultResolveRequest = (
+export const defaultResolveRequest = async (
 	urlComponents: ParsedUrlComponents,
-	settings: OmProtocolSettings
-): { dataOptions: DataIdentityOptions; renderOptions: RenderOptions } => {
-	const dataOptions = defaultResolveDataIdentity(urlComponents, settings.domainOptions);
+	settings: OmProtocolSettings,
+	reader: MapboxLayerFileReader
+): Promise<{ dataOptions: DataIdentityOptions; renderOptions: RenderOptions }> => {
+	const dataOptions = await defaultResolveDataIdentity(urlComponents, reader);
 
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
@@ -49,31 +50,34 @@ export const defaultResolveRequest = (
 	return { dataOptions, renderOptions };
 };
 
-const defaultResolveDataIdentity = (
+const defaultResolveDataIdentity = async (
 	urlComponents: ParsedUrlComponents,
-	domainOptions: Domain[]
-): DataIdentityOptions => {
+	reader: MapboxLayerFileReader
+): Promise<DataIdentityOptions> => {
 	const { baseUrl, params } = urlComponents;
 
-	const match = baseUrl.match(RESOLVE_DOMAIN_REGEX);
-	const domainValue = match?.groups?.domain;
+	// const match = baseUrl.match(RESOLVE_DOMAIN_REGEX);
+	// const domainValue = match?.groups?.domain;
 
-	if (!domainValue) {
-		throw new Error(`Could not parse domain from URL: ${baseUrl}`);
-	}
-	const domain = domainOptions.find((dm) => dm.value === domainValue);
-	if (!domain) {
-		throw new Error(`Invalid domain: ${domainValue}`);
-	}
+	// if (!domainValue) {
+	// 	throw new Error(`Could not parse domain from URL: ${baseUrl}`);
+	// }
+	// const domain = domainOptions.find((dm) => dm.value === domainValue);
+	// if (!domain) {
+	// 	throw new Error(`Invalid domain: ${domainValue}`);
+	// }
 
 	const variable = params.get('variable');
 	if (!variable) {
 		throw new Error(`Variable is required but not defined`);
 	}
 
+	await reader.setToOmFile(baseUrl);
+	const grid = await reader.getGridParameters(variable);
+
 	const mapBounds = currentBounds;
 
-	return { domain, variable, bounds: mapBounds };
+	return { baseUrl, grid, variable, bounds: mapBounds };
 };
 
 const defaultResolveRenderOptions = (
