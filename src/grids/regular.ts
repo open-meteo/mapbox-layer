@@ -1,4 +1,4 @@
-import { GridInterface } from './interface';
+import { GridInterface, GridPoint } from './interface';
 import { interpolateLinear } from './interpolations';
 
 import { Bounds, DimensionRange, RegularGridData } from '../types';
@@ -148,5 +148,16 @@ export class RegularGrid implements GridInterface {
 			{ start: minX, end: maxX }
 		];
 		return ranges;
+	}
+
+	forEachPoint(callback: (point: GridPoint) => void | false): void {
+		for (let j = 0; j < this.ny; j++) {
+			const lat = this.bounds[1] + this.dy * j;
+			for (let i = 0; i < this.nx; i++) {
+				const lon = this.bounds[0] + this.dx * i;
+				const result = callback({ index: j * this.nx + i, lat, lon });
+				if (result === false) return;
+			}
+		}
 	}
 }
