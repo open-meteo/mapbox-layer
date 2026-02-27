@@ -120,7 +120,7 @@ const makeEmptyVectorLayResponse = (): TileResult => {
 	return { data: new ArrayBuffer(0), cancelled: false };
 };
 
-const requestTile = async (
+export const requestTile = async (
 	url: string,
 	request: ParsedRequest,
 	data: Data,
