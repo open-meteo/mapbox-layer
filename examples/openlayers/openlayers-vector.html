@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Open-Meteo Mapbox Layer - OpenLayers Wind Arrows Example</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+		<script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/ol-mapbox-style/dist/olms.js"></script>
+		<!-- x-release-please-start-version -->
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.15/dist/index.js"></script>
+		<!-- x-release-please-end -->
+		<!-- Local development -->
+		<script>
+			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
+				document.write('<script src="/dist/index.js"><\/script>');
+			}
+		</script>
+		<style>
+			html,
+			body,
+			#map {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+		<script>
+			const olAdapter = OpenMeteoMapboxLayer.addOpenLayersProtocolSupport(ol);
+
+			// Register the 'om' protocol handler (same as MapLibre's addProtocol).
+			olAdapter.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
+
+			// Both layers share the same model / time step; only the variable differs.
+			// The vector source appends `&arrows=true` to request PBF arrow tiles.
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=wind_u_component_10m`;
+
+			// Create sources — both are synchronous; TileJSON resolves on first load.
+			const rasterSource = olAdapter.createRasterSource('om://' + omUrl);
+			const vectorSource = olAdapter.createVectorTileSource('om://' + omUrl + '&arrows=true');
+
+			// Mapbox/MapLibre-compatible style used by ol-mapbox-style.
+			// This is the same arrow style as the MapLibre wind-arrows example.
+			const arrowGlStyle = {
+				version: 8,
+				sources: {
+					omVectorSource: { type: 'vector' }
+				},
+				layers: [
+					{
+						id: 'omVectorLayer',
+						type: 'line',
+						source: 'omVectorSource',
+						'source-layer': 'wind-arrows',
+						paint: {
+							'line-color': [
+								'case',
+								['>', ['to-number', ['get', 'value']], 5],
+								'rgba(0,0,0, 0.6)',
+								['>', ['to-number', ['get', 'value']], 4],
+								'rgba(0,0,0, 0.5)',
+								['>', ['to-number', ['get', 'value']], 3],
+								'rgba(0,0,0, 0.4)',
+								['>', ['to-number', ['get', 'value']], 2],
+								'rgba(0,0,0, 0.3)',
+								'rgba(0,0,0, 0.2)'
+							],
+							'line-width': 2
+						},
+						layout: {
+							'line-cap': 'round'
+						}
+					}
+				]
+			};
+
+			// Build the vector layer and apply the Mapbox GL style via ol-mapbox-style.
+			const vectorLayer = new ol.layer.VectorTile({ source: vectorSource });
+			olms.stylefunction(vectorLayer, arrowGlStyle, 'omVectorSource');
+
+			const minimalData = new ol.layer.Group();
+			ol.layer.apply(
+				minimalData,
+				'https://map-assets.open-meteo.com/styles/minimal-planet-maps.json'
+			);
+
+			const map = new ol.Map({
+				target: 'map',
+				layers: [
+					// Base map
+					minimalData,
+					// Raster layer: wind-speed colour fill (DataTile → WebGLTile)
+					new ol.layer.WebGLTile({
+						source: rasterSource,
+						opacity: 0.75
+					}),
+					// Vector layer: wind-arrow lines styled via ol-mapbox-style
+					vectorLayer
+				],
+				view: new ol.View({
+					center: ol.proj.fromLonLat([10, 50]),
+					zoom: 5
+				})
+			});
+		</script>
+	</body>
+</html>

@@ -14,7 +14,9 @@ export * from './grids/index';
 export * from './domains';
 export * from './om-file-reader';
 export * from './om-protocol';
+export * from './om-protocol-leaflet';
 export * from './om-protocol-mapbox';
+export * from './om-protocol-openlayers';
 export * from './om-protocol-state';
 export * from './worker-pool';
 

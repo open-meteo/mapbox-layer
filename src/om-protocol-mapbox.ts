@@ -101,10 +101,25 @@ function extractProtocol(url: string): string | null {
 /**
  * Convert the data returned by a protocol handler into an object URL that
  * Mapbox can load as an image tile.
+ *
+ * Prefers `OffscreenCanvas` when available to avoid DOM canvas creation
+ * overhead (no layout, no GC of DOM nodes).
  */
 async function dataToObjectUrl(data: unknown): Promise<string> {
 	if (data instanceof ImageBitmap) {
-		// Draw the ImageBitmap onto a canvas and export as a blob.
+		// Prefer OffscreenCanvas for ImageBitmap → Blob conversion (no DOM overhead).
+		if (typeof OffscreenCanvas !== 'undefined') {
+			const oc = new OffscreenCanvas(data.width, data.height);
+			const ctx = oc.getContext('2d');
+			if (!ctx) {
+				throw new Error('[om-protocol-mapbox] Could not obtain OffscreenCanvas 2D context');
+			}
+			ctx.drawImage(data, 0, 0);
+			const blob = await oc.convertToBlob({ type: 'image/png' });
+			return URL.createObjectURL(blob);
+		}
+
+		// Fallback to DOM canvas for older browsers.
 		return new Promise<string>((resolve, reject) => {
 			const canvas = document.createElement('canvas');
 			canvas.width = data.width;
