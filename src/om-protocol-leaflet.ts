@@ -89,15 +89,6 @@ export type LeafletVectorStyleFn = (
 export interface VectorTileLayerOptions {
 	/** Style function called for each feature. */
 	style?: LeafletVectorStyleFn;
-	/**
-	 * Skip factor for feature rendering.  Only every Nth feature is drawn
-	 * (using a checkerboard-like modulo on the feature index).  This reduces
-	 * arrow density without changing the PBF data.  Defaults to `4` which
-	 * shows roughly 1/4 of all features.
-	 *
-	 * Set to `1` to draw every feature.
-	 */
-	featureSkip?: number;
 	/** Extra options forwarded to L.GridLayer. */
 	[key: string]: unknown;
 }
@@ -249,16 +240,40 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		vectorTile: any,
 		tileSize: number,
-		styleFn: LeafletVectorStyleFn,
-		featureSkip: number = 1
+		styleFn: LeafletVectorStyleFn
 	): void {
 		const scale = tileSize / VECTOR_TILE_EXTENT;
 
 		for (const layerName of Object.keys(vectorTile.layers)) {
 			const layer = vectorTile.layers[layerName];
+
+			// Detect whether this layer is an N×N square-grid arrow layer.
+			// For those we apply a 2×2 checkerboard skip (¼ density) and scale
+			// each surviving arrow 2× around its own center so it fills the
+			// larger cell.  Any overflow is hidden with a clip rect.
+			const gridN = Math.round(Math.sqrt(layer.length));
+			const isArrowGrid = gridN >= 2 && gridN * gridN === layer.length;
+			const cellSize = isArrowGrid ? VECTOR_TILE_EXTENT / gridN : 0;
+
+			if (isArrowGrid) {
+				ctx.save();
+				ctx.beginPath();
+				ctx.rect(0, 0, tileSize, tileSize);
+				ctx.clip();
+			}
+
 			for (let i = 0; i < layer.length; i++) {
-				// Skip features for density reduction (checkerboard-like pattern).
-				if (featureSkip > 1 && i % featureSkip !== 0) continue;
+				// Checkerboard skip — only for arrow grid layers.
+				if (isArrowGrid) {
+					const gridRow = Math.floor(i / gridN);
+					const gridCol = i % gridN;
+					// Keep parity-1 rows/cols (1,3,5,...) rather than parity-0.
+					// Row/col 0 and N-1 are always skipped so no kept arrow ever
+					// has its center on the tile boundary — 2× scaling can never
+					// produce a half-clipped arrowhead at a tile seam.
+					if (gridRow % 2 !== 1 || gridCol % 2 !== 1) continue;
+				}
+
 				const feature = layer.feature(i);
 				const props = feature.properties;
 				const style = styleFn(props, layerName);
@@ -271,7 +286,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 					typeof style.strokeStyle === 'function'
 						? style.strokeStyle(value)
 						: (style.strokeStyle ?? 'rgba(0, 0, 0, 0.4)');
-				const lineWidth =
+				const rawLineWidth =
 					typeof style.lineWidth === 'function' ? style.lineWidth(value) : (style.lineWidth ?? 1.5);
 				const lineCap = style.lineCap ?? 'round';
 				const globalAlpha =
@@ -280,11 +295,20 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 						: (style.globalAlpha ?? 1);
 
 				ctx.strokeStyle = strokeStyle;
-				ctx.lineWidth = lineWidth;
+				// Scale lineWidth 2× for arrow-grid layers to match the larger cell.
+				ctx.lineWidth = isArrowGrid ? rawLineWidth * 2 : rawLineWidth;
 				ctx.lineCap = lineCap;
 				ctx.globalAlpha = globalAlpha;
 
 				const geometry = feature.loadGeometry();
+
+				// For arrow-grid layers, scale geometry 2× around the arrow's
+				// center (gridCol*cellSize, gridRow*cellSize) so arrows visually
+				// fill the space made available by the checkerboard skip.
+				const gridRow = isArrowGrid ? Math.floor(i / gridN) : 0;
+				const gridCol = isArrowGrid ? i % gridN : 0;
+				const centerX = gridCol * cellSize;
+				const centerY = gridRow * cellSize;
 
 				// Determine rendering type from actual geometry.
 				// If any ring has >1 point, render as line (handles arrows
@@ -303,12 +327,18 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 					ctx.beginPath();
 					for (const ring of geometry) {
 						for (let j = 0; j < ring.length; j++) {
-							const px = ring[j].x * scale;
-							const py = ring[j].y * scale;
+							// Apply 2× scale around the arrow center for grid layers,
+							// otherwise use the raw coordinate.
+							const sx = isArrowGrid
+								? ((ring[j].x - centerX) * 2 + centerX) * scale
+								: ring[j].x * scale;
+							const sy = isArrowGrid
+								? ((ring[j].y - centerY) * 2 + centerY) * scale
+								: ring[j].y * scale;
 							if (j === 0) {
-								ctx.moveTo(px, py);
+								ctx.moveTo(sx, sy);
 							} else {
-								ctx.lineTo(px, py);
+								ctx.lineTo(sx, sy);
 							}
 						}
 						if (renderType === 3) {
@@ -324,11 +354,15 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 					for (const ring of geometry) {
 						for (const pt of ring) {
 							ctx.beginPath();
-							ctx.arc(pt.x * scale, pt.y * scale, lineWidth * 1.5, 0, Math.PI * 2);
+							ctx.arc(pt.x * scale, pt.y * scale, rawLineWidth * 1.5, 0, Math.PI * 2);
 							ctx.fill();
 						}
 					}
 				}
+			}
+
+			if (isArrowGrid) {
+				ctx.restore();
 			}
 		}
 
@@ -464,10 +498,9 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 		},
 
 		createVectorTileLayer(tileJsonUrl, options = {}) {
-			const { style: userStyle, featureSkip: userSkip, ...restOptions } = options;
+			const { style: userStyle, ...restOptions } = options;
 			const styleFn: LeafletVectorStyleFn =
 				(userStyle as LeafletVectorStyleFn) ?? defaultVectorStyle;
-			const featureSkip = typeof userSkip === 'number' && userSkip >= 1 ? Math.round(userSkip) : 4;
 			const resolve = makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
@@ -516,7 +549,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 
 							const ctx = canvas.getContext('2d');
 							if (ctx) {
-								renderVectorFeatures(ctx, vectorTile, tileSize, styleFn, featureSkip);
+								renderVectorFeatures(ctx, vectorTile, tileSize, styleFn);
 							}
 
 							done(null as unknown as Error, canvas);

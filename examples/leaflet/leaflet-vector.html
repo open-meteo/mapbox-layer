@@ -69,16 +69,17 @@
 				.addTo(map);
 
 			// Vector layer: wind-arrow lines drawn on canvas tiles.
-			// The style function controls colour/opacity based on wind speed.
 			leafletAdapter
 				.createVectorTileLayer('om://' + omUrl + '&arrows=true', {
 					style: function (properties) {
 						const value = parseFloat(properties.value) || 0;
 						const alpha =
 							value > 5 ? 0.6 : value > 4 ? 0.5 : value > 3 ? 0.4 : value > 2 ? 0.3 : 0.2;
+
+						const lineWidth = 1; // value > 10 ? 2.5 : value > 5 ? 2 : 1.5;
 						return {
 							strokeStyle: 'rgba(0, 0, 0, ' + alpha + ')',
-							lineWidth: 1,
+							lineWidth: lineWidth,
 							lineCap: 'round'
 						};
 					}
