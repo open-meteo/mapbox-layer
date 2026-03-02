@@ -74,7 +74,10 @@
 				);
 				// Clamp to valid lon range — the view may extend past ±180° when wrapping.
 				OpenMeteoMapboxLayer.updateCurrentBounds([
-					Math.max(minLng, -180), minLat, Math.min(maxLng, 180), maxLat
+					Math.max(minLng, -180),
+					minLat,
+					Math.min(maxLng, 180),
+					maxLat
 				]);
 			}
 			map.on('moveend', updateBounds);
