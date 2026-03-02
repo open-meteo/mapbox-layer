@@ -50,7 +50,10 @@
 			);
 
 			map.on('dataloading', () => {
-				OpenMeteoMapboxLayer.updateCurrentBounds(map.getBounds());
+				const bounds = map.getBounds();
+				const [minLng, minLat] = bounds.getSouthWest().toArray();
+				const [maxLng, maxLat] = bounds.getNorthEast().toArray();
+				OpenMeteoMapboxLayer.updateCurrentBounds([minLng, minLat, maxLng, maxLat]);
 			});
 
 			// below url is used to request 'latest.json' and get the nearest timestep to "current local time" + 1 hour
