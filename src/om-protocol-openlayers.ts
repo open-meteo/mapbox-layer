@@ -45,6 +45,54 @@
  */
 import type { OmProtocolSettings } from './types';
 
+/* ── Minimal OpenLayers type surface used by this adapter ────────────── */
+
+/** Tile grid with extent lookup (ol.tilegrid.TileGrid). */
+interface OlTileGrid {
+	getTileCoordExtent(tileCoord: number[]): number[];
+}
+
+/** MVT format instance (ol.format.MVT). */
+interface OlMVTFormat {
+	readFeatures(
+		source: unknown,
+		options: { extent: number[]; featureProjection: unknown }
+	): unknown[];
+	readProjection(source: unknown): unknown;
+}
+
+/** Common surface shared by DataTile and VectorTile sources. */
+interface OlSourceBase {
+	setAttributions(attributions: string): void;
+}
+
+/** ol.source.VectorTile instance (only the properties this adapter uses). */
+interface OlVectorTileSource extends OlSourceBase {
+	getTileGrid(): OlTileGrid;
+	getProjection(): unknown;
+	on(event: 'tileloaderror', listener: (evt: { tile: OlVectorTileTile }) => void): void;
+	on(event: 'clear', listener: () => void): void;
+}
+
+/** A single OL vector tile object passed to tileLoadFunction. */
+interface OlVectorTileTile {
+	getTileCoord(): number[];
+	setFeatures(features: unknown[]): void;
+	onLoad(features: unknown[], projection: unknown): void;
+	setState(state: number): void;
+}
+
+/** The subset of the OpenLayers namespace this adapter consumes. */
+export interface OlLib {
+	source: {
+		DataTile: new (options: Record<string, unknown>) => OlSourceBase;
+		VectorTile: new (options: Record<string, unknown>) => OlVectorTileSource;
+	};
+	format?: {
+		MVT: new () => OlMVTFormat;
+	};
+}
+
 /**
  * Protocol handler signature – identical to MapLibre's addProtocol handler so
  * that `omProtocol` can be passed directly.
@@ -96,8 +144,7 @@ export interface OpenLayersProtocolAdapter {
 	 * @param tileJsonUrl - The `om://` TileJSON URL.
 	 * @param olOptions   - Extra options forwarded to `ol.source.DataTile` constructor.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	createRasterSource: (tileJsonUrl: string, olOptions?: Record<string, unknown>) => any;
+	createRasterSource: (tileJsonUrl: string, olOptions?: Record<string, unknown>) => OlSourceBase;
 
 	/**
 	 * Create a vector tile source backed by the registered protocol handler.
@@ -110,8 +157,10 @@ export interface OpenLayersProtocolAdapter {
 	 * @param tileJsonUrl - The `om://` TileJSON URL.
 	 * @param olOptions   - Extra options forwarded to `ol.source.VectorTile`.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	createVectorTileSource: (tileJsonUrl: string, olOptions?: Record<string, unknown>) => any;
+	createVectorTileSource: (
+		tileJsonUrl: string,
+		olOptions?: Record<string, unknown>
+	) => OlVectorTileSource;
 }
 
 /**
@@ -122,8 +171,7 @@ export interface OpenLayersProtocolAdapter {
  * @returns An `OpenLayersProtocolAdapter` with `addProtocol`, `removeProtocol`,
  *          `createRasterSource`, and `createVectorTileSource`.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter {
+export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapter {
 	if (!ol?.source?.DataTile || !ol?.source?.VectorTile) {
 		throw new Error(
 			'[om-protocol-openlayers] ol.source.DataTile and ol.source.VectorTile must be available. ' +
@@ -204,51 +252,82 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 		createRasterSource(tileJsonUrl, olOptions = {}) {
 			const resolve = makeTileJsonResolver(tileJsonUrl);
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const source: any = new ol.source.DataTile({
+			// Track in-flight AbortControllers per tile key for cancellation.
+			const inflight = new Map<string, AbortController>();
+			let attributionSet = false;
+
+			const source = new ol.source.DataTile({
 				/**
 				 * OL calls this for every visible tile.  The first call also resolves
 				 * TileJSON and updates source metadata (attribution, zoom range).
 				 *
 				 * We return `ImageBitmap` directly — OL's DataTile + WebGLTile pipeline
 				 * accepts it natively and uploads it to the GPU without re-encoding.
+				 *
+				 * OL 9+ passes a 4th `options` parameter with a `signal` property
+				 * that fires when the tile is no longer needed.  We use it when
+				 * available and fall back to our own controller otherwise.
 				 */
-				loader: async (z: number, x: number, y: number) => {
-					const { tileTemplate, tileJson } = await resolve();
-
-					// Update source metadata once on first successful TileJSON fetch.
-					if (tileJson['attribution'] && !source._omAttributionSet) {
-						source._omAttributionSet = true;
-						source.setAttributions(tileJson['attribution'] as string);
-					}
-
-					const url = buildTileUrl(tileTemplate, z, x, y);
-					const tileProtocol = extractProtocol(url) ?? extractProtocol(tileJsonUrl)!;
-					const { handler, settings } = getRegistered(tileProtocol);
+				loader: async (z: number, x: number, y: number, options?: { signal?: AbortSignal }) => {
+					const tileKey = `${z}/${x}/${y}`;
 					const abortController = new AbortController();
+					inflight.set(tileKey, abortController);
 
-					const response = await handler({ url, type: 'image' }, abortController, settings);
-					const data = response?.data;
-
-					if (!data) {
-						// Empty tile — return a transparent 1×1 pixel so OL marks it LOADED.
-						return new ImageData(1, 1);
+					// If OL provides a signal (OL 9+), wire it to our controller.
+					const externalSignal = options?.signal as AbortSignal | undefined;
+					if (externalSignal) {
+						if (externalSignal.aborted) {
+							abortController.abort();
+						} else {
+							externalSignal.addEventListener('abort', () => abortController.abort(), {
+								once: true
+							});
+						}
 					}
 
-					if (data instanceof ImageBitmap) {
-						// Fast path: hand ImageBitmap directly to OL's WebGL pipeline.
-						return data;
-					}
+					try {
+						const { tileTemplate, tileJson } = await resolve();
 
-					if (data instanceof ArrayBuffer) {
-						// ArrayBuffer = raw encoded PNG bytes — decode into ImageBitmap.
-						return createImageBitmap(new Blob([new Uint8Array(data)], { type: 'image/png' }));
-					}
+						if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-					throw new Error(
-						`[om-protocol-openlayers] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
-					);
+						// Update source metadata once on first successful TileJSON fetch.
+						if (tileJson['attribution'] && !attributionSet) {
+							attributionSet = true;
+							source.setAttributions(tileJson['attribution'] as string);
+						}
+
+						const url = buildTileUrl(tileTemplate, z, x, y);
+						const tileProtocol = extractProtocol(url) ?? extractProtocol(tileJsonUrl)!;
+						const { handler, settings } = getRegistered(tileProtocol);
+
+						const response = await handler({ url, type: 'image' }, abortController, settings);
+						const data = response?.data;
+
+						if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+						if (!data) {
+							// Empty tile — return a transparent 1×1 pixel so OL marks it LOADED.
+							return new ImageData(1, 1);
+						}
+
+						if (data instanceof ImageBitmap) {
+							// Fast path: hand ImageBitmap directly to OL's WebGL pipeline.
+							return data;
+						}
+
+						if (data instanceof ArrayBuffer) {
+							// ArrayBuffer = raw encoded PNG bytes — decode into ImageBitmap.
+							return createImageBitmap(new Blob([new Uint8Array(data)], { type: 'image/png' }));
+						}
+
+						throw new Error(
+							`[om-protocol-openlayers] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
+						);
+					} finally {
+						inflight.delete(tileKey);
+					}
 				},
+				wrapX: true,
 				tileSize: 256,
 				...olOptions
 			});
@@ -266,11 +345,13 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 
 			const resolve = makeTileJsonResolver(tileJsonUrl);
 			const baseProtocol = extractProtocol(tileJsonUrl)!;
-			const format = (olOptions['format'] as unknown) ?? new ol.format.MVT();
+			const format = (olOptions['format'] as OlMVTFormat | undefined) ?? new ol.format.MVT();
 			const { format: _unusedFormat, ...restOlOptions } = olOptions;
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const source: any = new ol.source.VectorTile({
+			// Track in-flight AbortControllers per tile key for cancellation.
+			const inflight = new Map<string, AbortController>();
+
+			const source = new ol.source.VectorTile({
 				format,
 
 				// A placeholder URL with {z}/{x}/{y} is required so OL enters
@@ -285,20 +366,31 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 				 * 3. Hand the features to tile.onLoad() for native OL
 				 *    vector rendering (projection, styling, hit-detection).
 				 */
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				tileLoadFunction: (tile: any, _placeholderUrl: string) => {
+				tileLoadFunction: (tile: OlVectorTileTile, _placeholderUrl: string) => {
 					const tileCoord = tile.getTileCoord();
 					const [z, x, y] = tileCoord;
+					const tileKey = `${z}/${x}/${y}`;
+
+					// Abort any previous in-flight request for the same tile key.
+					const prev = inflight.get(tileKey);
+					if (prev) prev.abort();
+
+					const abortController = new AbortController();
+					inflight.set(tileKey, abortController);
 
 					resolve()
 						.then(({ tileTemplate }) => {
+							if (abortController.signal.aborted) return;
+
 							const url = buildTileUrl(tileTemplate, z, x, y);
 							const tileProtocol = extractProtocol(url) ?? baseProtocol;
 							const { handler, settings } = getRegistered(tileProtocol);
 
-							return handler({ url, type: 'arrayBuffer' }, new AbortController(), settings);
+							return handler({ url, type: 'arrayBuffer' }, abortController, settings);
 						})
 						.then((response) => {
+							if (abortController.signal.aborted) return;
+
 							const data = response?.data;
 
 							// Determine the tile's map-coordinate extent and
@@ -315,25 +407,48 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 
 							// Parse the PBF with OL's MVT format and hand
 							// features to the tile for native vector rendering.
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							const features = (format as any).readFeatures(data, {
+							const features = format.readFeatures(data, {
 								extent: tileExtent,
 								featureProjection: projection
 							});
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							const dataProjection = (format as any).readProjection(data);
+							const dataProjection = format.readProjection(data);
 							tile.onLoad(features, dataProjection);
 						})
 						.catch((err: unknown) => {
-							if ((err as Error).name !== 'AbortError') {
+							if ((err as Error).name !== 'AbortError' && !abortController.signal.aborted) {
 								console.error('[om-protocol-openlayers] Vector tile error:', err);
 							}
 							// Signal error state so OL doesn't keep retrying.
-							tile.setState(3); // TileState.ERROR
+							if (!abortController.signal.aborted) {
+								tile.setState(3); // TileState.ERROR
+							}
+						})
+						.finally(() => {
+							// Clean up the inflight entry if it still points to this controller.
+							if (inflight.get(tileKey) === abortController) {
+								inflight.delete(tileKey);
+							}
 						});
 				},
 
+				wrapX: true,
 				...restOlOptions
+			});
+
+			// When tiles are no longer needed (e.g. zoom change clears the source
+			// cache), abort all in-flight requests.
+			source.on('tileloaderror', (evt) => {
+				const [z2, x2, y2] = evt.tile.getTileCoord();
+				const key = `${z2}/${x2}/${y2}`;
+				const ctrl = inflight.get(key);
+				if (ctrl) {
+					ctrl.abort();
+					inflight.delete(key);
+				}
+			});
+			source.on('clear', () => {
+				for (const controller of inflight.values()) controller.abort();
+				inflight.clear();
 			});
 
 			// Eagerly kick off TileJSON resolution so the first tiles don't

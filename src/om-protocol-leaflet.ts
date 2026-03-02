@@ -45,6 +45,25 @@ import Pbf from 'pbf';
 
 import type { OmProtocolSettings } from './types';
 
+/* ── Minimal Leaflet type surface used by this adapter ────────────── */
+
+/** Leaflet GridLayer instance (only the properties this adapter uses). */
+interface LeafletGridLayerInstance {
+	getTileSize(): { x: number; y: number };
+}
+
+/** The subset of the Leaflet namespace this adapter consumes. */
+export interface LeafletLib {
+	GridLayer: {
+		extend(
+			proto: Record<string, unknown>
+		): new (options: Record<string, unknown>) => LeafletGridLayerInstance;
+		prototype: {
+			_removeTile(this: unknown, key: string): void;
+		};
+	};
+}
+
 /**
  * Protocol handler signature – identical to MapLibre's addProtocol handler so
  * that `omProtocol` can be passed directly.
@@ -123,8 +142,7 @@ export interface LeafletProtocolAdapter {
 	 * @param tileJsonUrl   - The `om://` TileJSON URL.
 	 * @param leafletOptions - Extra options forwarded to `L.GridLayer`.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	createTileLayer: (tileJsonUrl: string, leafletOptions?: Record<string, unknown>) => any;
+	createTileLayer: (tileJsonUrl: string, leafletOptions?: Record<string, unknown>) => unknown;
 
 	/**
 	 * Create a vector tile layer backed by the registered protocol handler.
@@ -136,8 +154,7 @@ export interface LeafletProtocolAdapter {
 	 * @param tileJsonUrl   - The `om://` TileJSON URL.
 	 * @param options        - Style function and extra `L.GridLayer` options.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	createVectorTileLayer: (tileJsonUrl: string, options?: VectorTileLayerOptions) => any;
+	createVectorTileLayer: (tileJsonUrl: string, options?: VectorTileLayerOptions) => unknown;
 }
 
 /** The default vector tile extent used by the PBF encoder. */
@@ -162,8 +179,7 @@ const defaultVectorStyle: LeafletVectorStyleFn = (properties) => {
  * @returns A `LeafletProtocolAdapter` with `addProtocol`, `removeProtocol`,
  *          `createTileLayer`, and `createVectorTileLayer`.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
+export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter {
 	if (!L?.GridLayer) {
 		throw new Error(
 			'[om-protocol-leaflet] L.GridLayer is not available. ' +
@@ -237,8 +253,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 	 */
 	function renderVectorFeatures(
 		ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		vectorTile: any,
+		vectorTile: VectorTile,
 		tileSize: number,
 		styleFn: LeafletVectorStyleFn
 	): void {
@@ -396,6 +411,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 
 			const OmRasterGridLayer = L.GridLayer.extend({
 				createTile(
+					this: LeafletGridLayerInstance,
 					coords: { x: number; y: number; z: number },
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {
@@ -508,6 +524,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 
 			const OmVectorGridLayer = L.GridLayer.extend({
 				createTile(
+					this: LeafletGridLayerInstance,
 					coords: { x: number; y: number; z: number },
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {

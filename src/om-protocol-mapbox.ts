@@ -228,13 +228,9 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 			});
 	}
 
-	// ── Raster source ────────────────────────────────────────────────────────
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const RasterTileSource: new (...args: any[]) => any = mapboxgl.Style.getSourceType('raster');
 
 	class OmRasterSource extends RasterTileSource {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		constructor(...args: any[]) {
 			super(...args);
 		}
