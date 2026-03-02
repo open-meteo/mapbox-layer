@@ -36,6 +36,39 @@
  */
 import type { OmProtocolSettings } from './types';
 
+/** Minimal representation of a Mapbox tile object passed to loadTile(). */
+interface MapboxTile {
+	tileID: {
+		canonical: {
+			url: (tiles: string[], scheme: string) => string;
+		};
+	};
+	state: string;
+	request?: { cancel: () => void };
+}
+
+/** Minimal interface for Mapbox tile source instances (raster or vector). */
+interface MapboxSourceInstance {
+	_options?: Record<string, unknown>;
+	options?: Record<string, unknown>;
+	url?: string;
+	tiles?: string[];
+	scheme?: string;
+	fire?(event: string, data?: unknown): void;
+	load(): void;
+	loadTile(tile: MapboxTile, callback: (err?: Error | null) => void): void;
+}
+
+/** Constructor type for dynamically-obtained Mapbox source classes. */
+type MapboxSourceConstructor = new (...args: unknown[]) => MapboxSourceInstance;
+
+/** The subset of the Mapbox GL JS namespace this adapter consumes. */
+export interface MapboxLib {
+	Style: {
+		getSourceType(type: 'raster' | 'vector'): MapboxSourceConstructor;
+	};
+}
+
 /**
  * Protocol handler signature – identical to MapLibre's addProtocol handler so
  * that `omProtocol` can be passed directly.
@@ -75,21 +108,18 @@ export interface MapboxProtocolAdapter {
 	/**
 	 * Custom raster source class – pass to `map.addSourceType('raster-om', adapter.rasterSourceType, cb)`.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	rasterSourceType: new (...args: any[]) => unknown;
+	rasterSourceType: MapboxSourceConstructor;
 
 	/**
 	 * Custom vector source class – pass to `map.addSourceType('vector-om', adapter.vectorSourceType, cb)`.
 	 * Required for vector tile layers (arrows, contours, grids, …).
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	vectorSourceType: new (...args: any[]) => unknown;
+	vectorSourceType: MapboxSourceConstructor;
 
 	/**
 	 * @deprecated Use `rasterSourceType` instead. Kept for backward compatibility.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	sourceType: new (...args: any[]) => unknown;
+	sourceType: MapboxSourceConstructor;
 }
 
 /** Extract the protocol prefix from a URL, e.g. "om" from "om://…". Returns null if not found. */
@@ -164,8 +194,7 @@ async function dataToObjectUrl(data: unknown): Promise<string> {
  * @throws If `mapboxgl.Style` is not available (i.e., the library is not fully
  *         loaded when this function is called).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
+export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAdapter {
 	if (!mapboxgl?.Style?.getSourceType) {
 		throw new Error(
 			'[om-protocol-mapbox] mapboxgl.Style.getSourceType is not available. ' +
@@ -184,8 +213,7 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 	 *   2. Patch `this._options` in-place: remove `url`, inject `tiles` + metadata.
 	 *   3. Call `super.load()` – now `loadTileJSON` sees no URL, uses `tiles` directly.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	function omLoad(this: any, superLoad: () => void): void {
+	function omLoad(this: MapboxSourceInstance, superLoad: () => void): void {
 		const optionsObj: Record<string, unknown> | undefined = this._options ?? this.options;
 		const originalUrl: string | undefined =
 			(optionsObj?.['url'] as string) ?? (this.url as string | undefined);
@@ -228,10 +256,10 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 			});
 	}
 
-	const RasterTileSource: new (...args: any[]) => any = mapboxgl.Style.getSourceType('raster');
+	const RasterTileSource = mapboxgl.Style.getSourceType('raster');
 
 	class OmRasterSource extends RasterTileSource {
-		constructor(...args: any[]) {
+		constructor(...args: unknown[]) {
 			super(...args);
 		}
 
@@ -247,14 +275,11 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 		 * a Blob URL, and delegate to the parent `loadTile()` with that Blob URL so
 		 * that Mapbox can decode and display the tile normally.
 		 */
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		loadTile(tile: any, callback: (err?: Error | null) => void): void {
-			const self = this as Record<string, unknown>;
-
+		loadTile(tile: MapboxTile, callback: (err?: Error | null) => void): void {
 			// Reconstruct the tile URL from the tile coordinate and the source's tile templates.
 			const rawUrl: string =
 				typeof tile.tileID?.canonical?.url === 'function'
-					? tile.tileID.canonical.url(self.tiles, self.scheme)
+					? tile.tileID.canonical.url(this.tiles ?? [], this.scheme ?? 'xyz')
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
@@ -324,12 +349,10 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 
 	// ── Vector source ────────────────────────────────────────────────────────
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const VectorTileSource: new (...args: any[]) => any = mapboxgl.Style.getSourceType('vector');
+	const VectorTileSource = mapboxgl.Style.getSourceType('vector');
 
 	class OmVectorSource extends VectorTileSource {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		constructor(...args: any[]) {
+		constructor(...args: unknown[]) {
 			super(...args);
 		}
 
@@ -338,7 +361,7 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 		}
 
 		/**
-		 * Override `loadTile()` for vector (PBF) tiles.
+		 * override `loadTile()` for vector (PBF) tiles.
 		 *
 		 * Mapbox serializes `tile.tileID` (including `tileID.canonical`) via its own
 		 * structured-clone mechanism to send to the web worker. Patching
@@ -360,14 +383,10 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 		 *      from workers), parses the PBF, and returns the tile data normally.
 		 *   7. Revoke the blob URL in the callback once the worker is done.
 		 */
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		loadTile(tile: any, callback: (err?: Error | null) => void): void {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const self = this as any;
-
+		loadTile(tile: MapboxTile, callback: (err?: Error | null) => void): void {
 			const rawUrl: string =
 				typeof tile.tileID?.canonical?.url === 'function'
-					? tile.tileID.canonical.url(self.tiles, self.scheme)
+					? tile.tileID.canonical.url(this.tiles ?? [], this.scheme ?? 'xyz')
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
@@ -397,15 +416,15 @@ export function addMapboxProtocolSupport(mapboxgl: any): MapboxProtocolAdapter {
 					const objectUrl = URL.createObjectURL(blob);
 
 					// Swap tiles, dispatch (synchronous URL resolution), restore – atomically.
-					const savedTiles = self.tiles;
-					self.tiles = [objectUrl];
+					const savedTiles = this.tiles;
+					this.tiles = [objectUrl];
 					try {
 						super.loadTile(tile, (err?: Error | null) => {
 							URL.revokeObjectURL(objectUrl);
 							callback(err);
 						});
 					} finally {
-						self.tiles = savedTiles;
+						this.tiles = savedTiles;
 					}
 				})
 				.catch((err: Error) => {
