@@ -38,18 +38,16 @@
 
 			const rasterSource = olAdapter.createRasterSource('om://' + omUrl);
 
-			// DataTile sources are used with ol.layer.WebGLTile for GPU-accelerated rendering. ImageBitmap tiles are uploaded directly without re-encoding.
 			const map = new ol.Map({
 				target: 'map',
 				layers: [
-					// Base map
+					// CARTO base map
 					new ol.layer.Tile({
 						source: new ol.source.XYZ({
-							url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+							url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
 							attributions:
 								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-								'&copy; <a href="https://carto.com/attributions">CARTO</a>',
-							maxZoom: 19
+								'&copy; <a href="https://carto.com/attributions">CARTO</a>'
 						})
 					}),
 					// Weather raster layer — use WebGLTile to render DataTile sources
@@ -63,6 +61,21 @@
 					zoom: 5
 				})
 			});
+
+			// Keep the protocol informed of the current viewport bounds.
+			function updateBounds() {
+				const size = map.getSize();
+				if (!size) return;
+				const extent = map.getView().calculateExtent(size);
+				const [minLng, minLat, maxLng, maxLat] = ol.proj.transformExtent(
+					extent,
+					'EPSG:3857',
+					'EPSG:4326'
+				);
+				OpenMeteoMapboxLayer.updateCurrentBounds([minLng, minLat, maxLng, maxLat]);
+			}
+			map.on('moveend', updateBounds);
+			map.once('postrender', updateBounds);
 		</script>
 	</body>
 </html>

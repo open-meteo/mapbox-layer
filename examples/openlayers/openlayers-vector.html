@@ -6,7 +6,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
 		<script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/ol-mapbox-style/dist/olms.js"></script>
 		<!-- x-release-please-start-version -->
 		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.15/dist/index.js"></script>
 		<!-- x-release-please-end -->
@@ -42,69 +41,68 @@
 			const rasterSource = olAdapter.createRasterSource('om://' + omUrl);
 			const vectorSource = olAdapter.createVectorTileSource('om://' + omUrl + '&arrows=true');
 
-			// Mapbox/MapLibre-compatible style used by ol-mapbox-style.
-			// This is the same arrow style as the MapLibre wind-arrows example.
-			const arrowGlStyle = {
-				version: 8,
-				sources: {
-					omVectorSource: { type: 'vector' }
-				},
-				layers: [
-					{
-						id: 'omVectorLayer',
-						type: 'line',
-						source: 'omVectorSource',
-						'source-layer': 'wind-arrows',
-						paint: {
-							'line-color': [
-								'case',
-								['>', ['to-number', ['get', 'value']], 5],
-								'rgba(0,0,0, 0.6)',
-								['>', ['to-number', ['get', 'value']], 4],
-								'rgba(0,0,0, 0.5)',
-								['>', ['to-number', ['get', 'value']], 3],
-								'rgba(0,0,0, 0.4)',
-								['>', ['to-number', ['get', 'value']], 2],
-								'rgba(0,0,0, 0.3)',
-								'rgba(0,0,0, 0.2)'
-							],
-							'line-width': 2
-						},
-						layout: {
-							'line-cap': 'round'
-						}
-					}
-				]
-			};
-
-			// Build the vector layer and apply the Mapbox GL style via ol-mapbox-style.
-			const vectorLayer = new ol.layer.VectorTile({ source: vectorSource });
-			olms.stylefunction(vectorLayer, arrowGlStyle, 'omVectorSource');
-
-			const minimalData = new ol.layer.Group();
-			ol.layer.apply(
-				minimalData,
-				'https://map-assets.open-meteo.com/styles/minimal-planet-maps.json'
-			);
+			// OL native vector style for wind arrows.
+			const arrowStyle = new ol.style.Style({
+				stroke: new ol.style.Stroke({
+					color: 'rgba(0, 0, 0, 0.4)',
+					width: 2,
+					lineCap: 'round'
+				})
+			});
 
 			const map = new ol.Map({
 				target: 'map',
 				layers: [
-					// Base map
-					minimalData,
+					// CARTO base map
+					new ol.layer.Tile({
+						source: new ol.source.XYZ({
+							url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+							attributions:
+								'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+								'&copy; <a href="https://carto.com/attributions">CARTO</a>'
+						})
+					}),
 					// Raster layer: wind-speed colour fill (DataTile → WebGLTile)
 					new ol.layer.WebGLTile({
 						source: rasterSource,
 						opacity: 0.75
 					}),
-					// Vector layer: wind-arrow lines styled via ol-mapbox-style
-					vectorLayer
+					// Vector layer: wind-arrow lines via OL native VectorTile rendering
+					new ol.layer.VectorTile({
+						source: vectorSource,
+						style: function (feature) {
+							const value = parseFloat(feature.get('value')) || 0;
+							const alpha =
+								value > 5 ? 0.6 : value > 4 ? 0.5 : value > 3 ? 0.4 : value > 2 ? 0.3 : 0.2;
+							arrowStyle.getStroke().setColor('rgba(0, 0, 0, ' + alpha + ')');
+							arrowStyle.getStroke().setWidth(value > 10 ? 2.5 : value > 5 ? 2 : 1.5);
+							return arrowStyle;
+						}
+					})
 				],
 				view: new ol.View({
 					center: ol.proj.fromLonLat([10, 50]),
 					zoom: 5
 				})
 			});
+
+			// Keep the protocol informed of the current viewport bounds.
+			function updateBounds() {
+				const size = map.getSize();
+				if (!size) return;
+				const extent = map.getView().calculateExtent(size);
+				const [minLng, minLat, maxLng, maxLat] = ol.proj.transformExtent(
+					extent,
+					'EPSG:3857',
+					'EPSG:4326'
+				);
+				OpenMeteoMapboxLayer.updateCurrentBounds([minLng, minLat, maxLng, maxLat]);
+			}
+			map.on('moveend', updateBounds);
+			map.once('postrender', updateBounds);
+		</script>
+	</body>
+</html>
 		</script>
 	</body>
 </html>

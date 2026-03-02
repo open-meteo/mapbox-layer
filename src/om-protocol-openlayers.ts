@@ -10,10 +10,9 @@
  *     Use with `new ol.layer.WebGLTile({ source })`.
  *
  *   - `createVectorTileSource(tileJsonUrl, options?)` — an `ol.source.VectorTile`
- *     with a custom `tileLoadFunction` that fetches PBF bytes through the
- *     protocol handler, parses the MVT features, and sets them on the tile
- *     directly — no `tile.setLoader()` (which is a no-op in OL v7+).
- *     Use with `new ol.layer.VectorTile({ source })`.
+ *     that fetches PBF bytes through the protocol handler, converts them to
+ *     a blob URL, and feeds them to OL's native MVT pipeline for true vector
+ *     rendering.  Use with `new ol.layer.VectorTile({ source, style })`.
  *
  * Both sources are created synchronously. The TileJSON is resolved lazily on
  * the first tile load, so the map can be set up before the protocol resolves.
@@ -23,10 +22,10 @@
  * ```ts
  * import { omProtocol, addOpenLayersProtocolSupport } from '@openmeteo/mapbox-layer';
  *
- * // 1. Create the adapter, passing the OpenLayers global (or namespace object).
+ * // 1. Create the adapter, passing the OpenLayers global.
  * const olAdapter = addOpenLayersProtocolSupport(ol);
  *
- * // 2. Register your protocol handler (same signature as MapLibre's addProtocol).
+ * // 2. Register your protocol handler.
  * olAdapter.addProtocol('om', omProtocol);
  *
  * // 3. Create sources — synchronous, TileJSON resolved on first tile load.
@@ -38,7 +37,7 @@
  *   target: 'map',
  *   layers: [
  *     new ol.layer.WebGLTile({ source: rasterSource, opacity: 0.75 }),
- *     new ol.layer.VectorTile({ source: vectorSource, style: myStyle }),
+ *     new ol.layer.VectorTile({ source: vectorSource }),
  *   ],
  *   view: new ol.View({ center: ol.proj.fromLonLat([10, 50]), zoom: 5 }),
  * });
@@ -104,12 +103,12 @@ export interface OpenLayersProtocolAdapter {
 	 * Create a vector tile source backed by the registered protocol handler.
 	 *
 	 * Returns an `ol.source.VectorTile` (MVT format) with a custom
-	 * `tileLoadFunction` that fetches PBF bytes through omProtocol.
-	 * Use with `new ol.layer.VectorTile({ source })`.
+	 * `tileLoadFunction` that fetches PBF bytes through omProtocol and
+	 * feeds them to OL's native MVT parser via a blob URL.
+	 * Use with `new ol.layer.VectorTile({ source, style })`.
 	 *
 	 * @param tileJsonUrl - The `om://` TileJSON URL.
-	 * @param olOptions   - Extra options forwarded to `ol.source.VectorTile` constructor.
-	 *                      Pass `format` here to use a different OL format class.
+	 * @param olOptions   - Extra options forwarded to `ol.source.VectorTile`.
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	createVectorTileSource: (tileJsonUrl: string, olOptions?: Record<string, unknown>) => any;
@@ -128,7 +127,7 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 	if (!ol?.source?.DataTile || !ol?.source?.VectorTile) {
 		throw new Error(
 			'[om-protocol-openlayers] ol.source.DataTile and ol.source.VectorTile must be available. ' +
-				'OpenLayers 6.6+ is required.'
+				'OpenLayers 7.5+ is required.'
 		);
 	}
 
@@ -268,94 +267,69 @@ export function addOpenLayersProtocolSupport(ol: any): OpenLayersProtocolAdapter
 			const resolve = makeTileJsonResolver(tileJsonUrl);
 			const baseProtocol = extractProtocol(tileJsonUrl)!;
 			const format = (olOptions['format'] as unknown) ?? new ol.format.MVT();
-			// Remove format from extra options to avoid passing it twice.
 			const { format: _unusedFormat, ...restOlOptions } = olOptions;
 
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const source: any = new ol.source.VectorTile({
 				format,
 
-				// A placeholder URL is required so that OL enters its tile-loading
-				// pipeline for every tile coordinate.  Without `url`, OL would
-				// never call `tileLoadFunction`.  The actual tile URL is computed
-				// inside `tileLoadFunction` once TileJSON has been resolved.
+				// A placeholder URL with {z}/{x}/{y} is required so OL enters
+				// its tile-loading pipeline for every tile coordinate.
 				url: 'om://placeholder/{z}/{x}/{y}',
 
 				/**
-				 * Custom tile load function.
+				 * Custom tile load function:
 				 *
-				 * IMPORTANT: In modern OpenLayers (v7+), calling `tile.setLoader(fn)`
-				 * inside `tileLoadFunction` does NOT work — the new async function is
-				 * never invoked because OL's own internal loader wrapper that called
-				 * `tileLoadFunction` has already been entered and will not re-enter.
-				 *
-				 * Instead we fetch the PBF bytes directly in a promise chain and call
-				 * `tile.setFeatures(features)` when done, which transitions the tile
-				 * to LOADED state.
+				 * 1. Fetch PBF bytes through omProtocol.
+				 * 2. Parse them with ol.format.MVT.readFeatures().
+				 * 3. Hand the features to tile.onLoad() for native OL
+				 *    vector rendering (projection, styling, hit-detection).
 				 */
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				tileLoadFunction: (tile: any, _placeholderUrl: string) => {
-					const abortController = new AbortController();
-
-					// Abort in-flight requests when OL disposes the tile
-					// (e.g. the tile scrolls out of view).
-					if (typeof tile.addEventListener === 'function') {
-						tile.addEventListener('change', () => {
-							// OL tile states: EMPTY=4, ABORT=5
-							const state = tile.getState?.();
-							if (state === 4 || state === 5) {
-								abortController.abort();
-							}
-						});
-					}
+					const tileCoord = tile.getTileCoord();
+					const [z, x, y] = tileCoord;
 
 					resolve()
 						.then(({ tileTemplate }) => {
-							if (abortController.signal.aborted) return null;
-
-							// In modern OL (v7+) with the default XYZ tile grid,
-							// tile.getTileCoord() returns [z, x, y] with standard
-							// positive y (0 at top, increasing downward).
-							const [z, x, y] = tile.getTileCoord();
 							const url = buildTileUrl(tileTemplate, z, x, y);
-
 							const tileProtocol = extractProtocol(url) ?? baseProtocol;
 							const { handler, settings } = getRegistered(tileProtocol);
 
-							return handler({ url, type: 'arrayBuffer' }, abortController, settings);
+							return handler({ url, type: 'arrayBuffer' }, new AbortController(), settings);
 						})
 						.then((response) => {
-							if (!response || abortController.signal.aborted) {
-								tile.setFeatures([]);
-								return;
-							}
+							const data = response?.data;
 
-							const data = response.data;
-							if (!data || (data instanceof ArrayBuffer && data.byteLength === 0)) {
-								// Empty tile (e.g. ocean with no arrows).
-								tile.setFeatures([]);
-								return;
-							}
-
-							// Compute the tile's geographic extent from the source's
-							// tile grid so that features are projected correctly.
+							// Determine the tile's map-coordinate extent and
+							// projection so MVT coordinates are scaled correctly.
 							const tileGrid = source.getTileGrid();
-							const tileCoord = tile.getTileCoord();
-							const extent = tileGrid?.getTileCoordExtent(tileCoord) ?? tile.extent_;
-							const projection = source.getProjection?.() ?? tile.projection_ ?? 'EPSG:3857';
+							const tileExtent = tileGrid.getTileCoordExtent(tileCoord);
+							const projection = source.getProjection() || 'EPSG:3857';
 
+							if (!data || (data instanceof ArrayBuffer && data.byteLength === 0)) {
+								// Empty tile — signal no features.
+								tile.setFeatures([]);
+								return;
+							}
+
+							// Parse the PBF with OL's MVT format and hand
+							// features to the tile for native vector rendering.
 							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							const features = (format as any).readFeatures(data as ArrayBuffer, {
-								extent,
+							const features = (format as any).readFeatures(data, {
+								extent: tileExtent,
 								featureProjection: projection
 							});
-							tile.setFeatures(features);
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
+							const dataProjection = (format as any).readProjection(data);
+							tile.onLoad(features, dataProjection);
 						})
 						.catch((err: unknown) => {
-							if ((err as Error).name !== 'AbortError' && !abortController.signal.aborted) {
+							if ((err as Error).name !== 'AbortError') {
 								console.error('[om-protocol-openlayers] Vector tile error:', err);
 							}
-							tile.setFeatures([]);
+							// Signal error state so OL doesn't keep retrying.
+							tile.setState(3); // TileState.ERROR
 						});
 				},
 

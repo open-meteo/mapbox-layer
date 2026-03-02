@@ -37,6 +37,19 @@
 			// Create the map with a standard base layer.
 			const map = L.map('map').setView([50, 10], 5);
 
+			// Keep the protocol informed of the current viewport bounds.
+			function updateBounds() {
+				const b = map.getBounds();
+				OpenMeteoMapboxLayer.updateCurrentBounds([
+					b.getWest(),
+					b.getSouth(),
+					b.getEast(),
+					b.getNorth()
+				]);
+			}
+			map.on('moveend', updateBounds);
+			updateBounds();
+
 			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 				attribution:
 					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +

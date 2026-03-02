@@ -89,6 +89,15 @@ export type LeafletVectorStyleFn = (
 export interface VectorTileLayerOptions {
 	/** Style function called for each feature. */
 	style?: LeafletVectorStyleFn;
+	/**
+	 * Skip factor for feature rendering.  Only every Nth feature is drawn
+	 * (using a checkerboard-like modulo on the feature index).  This reduces
+	 * arrow density without changing the PBF data.  Defaults to `4` which
+	 * shows roughly 1/4 of all features.
+	 *
+	 * Set to `1` to draw every feature.
+	 */
+	featureSkip?: number;
 	/** Extra options forwarded to L.GridLayer. */
 	[key: string]: unknown;
 }
@@ -143,19 +152,11 @@ export interface LeafletProtocolAdapter {
 /** The default vector tile extent used by the PBF encoder. */
 const VECTOR_TILE_EXTENT = 4096;
 
-/**
- * Number of extra pixels added on each side of every canvas tile.
- * This creates a tiny overlap between adjacent tiles, eliminating the
- * hairline white stripes caused by sub-pixel rendering gaps when the
- * browser applies CSS transforms during zoom / pan.
- */
-const TILE_OVERLAP = 1;
-
 /** Default arrow style: semi-transparent dark lines, width based on wind speed. */
 const defaultVectorStyle: LeafletVectorStyleFn = (properties) => {
 	const value = Number(properties['value']) || 0;
 	const alpha = value > 5 ? 0.6 : value > 4 ? 0.5 : value > 3 ? 0.4 : value > 2 ? 0.3 : 0.2;
-	const width = value > 10 ? 2.5 : value > 5 ? 2 : 1.5;
+	const width = value > 10 ? 3.5 : value > 5 ? 3 : 2;
 	return {
 		strokeStyle: `rgba(0, 0, 0, ${alpha})`,
 		lineWidth: width,
@@ -244,17 +245,20 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 	 * Handles line (type 2) and polygon (type 3) geometries.
 	 */
 	function renderVectorFeatures(
-		ctx: CanvasRenderingContext2D,
+		ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		vectorTile: any,
 		tileSize: number,
-		styleFn: LeafletVectorStyleFn
+		styleFn: LeafletVectorStyleFn,
+		featureSkip: number = 1
 	): void {
 		const scale = tileSize / VECTOR_TILE_EXTENT;
 
 		for (const layerName of Object.keys(vectorTile.layers)) {
 			const layer = vectorTile.layers[layerName];
 			for (let i = 0; i < layer.length; i++) {
+				// Skip features for density reduction (checkerboard-like pattern).
+				if (featureSkip > 1 && i % featureSkip !== 0) continue;
 				const feature = layer.feature(i);
 				const props = feature.properties;
 				const style = styleFn(props, layerName);
@@ -282,8 +286,20 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 
 				const geometry = feature.loadGeometry();
 
-				// Feature type: 1 = point, 2 = line, 3 = polygon
-				if (feature.type === 2 || feature.type === 3) {
+				// Determine rendering type from actual geometry.
+				// If any ring has >1 point, render as line (handles arrows
+				// which may be typed as point but contain line geometry).
+				let renderType = feature.type;
+				if (renderType === 1) {
+					for (const ring of geometry) {
+						if (ring.length > 1) {
+							renderType = 2;
+							break;
+						}
+					}
+				}
+
+				if (renderType === 2 || renderType === 3) {
 					ctx.beginPath();
 					for (const ring of geometry) {
 						for (let j = 0; j < ring.length; j++) {
@@ -295,16 +311,16 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 								ctx.lineTo(px, py);
 							}
 						}
-						if (feature.type === 3) {
+						if (renderType === 3) {
 							ctx.closePath();
 						}
 					}
 					ctx.stroke();
-					if (feature.type === 3 && style.strokeStyle) {
+					if (renderType === 3 && style.strokeStyle) {
 						ctx.fill();
 					}
-				} else if (feature.type === 1) {
-					// Point features — draw small circles.
+				} else if (renderType === 1) {
+					// True point features — draw small circles.
 					for (const ring of geometry) {
 						for (const pt of ring) {
 							ctx.beginPath();
@@ -350,16 +366,9 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {
 					const tileSize: number = this.getTileSize().x;
-					// Expand the canvas by TILE_OVERLAP on every side so adjacent
-					// tiles overlap, eliminating sub-pixel white-stripe gaps.
-					const drawSize = tileSize + TILE_OVERLAP * 2;
 					const canvas = document.createElement('canvas') as HTMLCanvasElement;
-					canvas.width = drawSize;
-					canvas.height = drawSize;
-					canvas.style.width = `${drawSize}px`;
-					canvas.style.height = `${drawSize}px`;
-					canvas.style.marginLeft = `-${TILE_OVERLAP}px`;
-					canvas.style.marginTop = `-${TILE_OVERLAP}px`;
+					canvas.width = tileSize;
+					canvas.height = tileSize;
 
 					const tileKey = `${coords.z}/${coords.x}/${coords.y}`;
 					const abortController = new AbortController();
@@ -391,7 +400,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 							if (data instanceof ImageBitmap) {
 								const ctx = canvas.getContext('2d');
 								if (ctx) {
-									ctx.drawImage(data, 0, 0, drawSize, drawSize);
+									ctx.drawImage(data, 0, 0, tileSize, tileSize);
 									data.close();
 								}
 								done(null as unknown as Error, canvas);
@@ -404,7 +413,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 									.then((bmp) => {
 										const ctx = canvas.getContext('2d');
 										if (ctx) {
-											ctx.drawImage(bmp, 0, 0, drawSize, drawSize);
+											ctx.drawImage(bmp, 0, 0, tileSize, tileSize);
 											bmp.close();
 										}
 										done(null as unknown as Error, canvas);
@@ -455,9 +464,10 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 		},
 
 		createVectorTileLayer(tileJsonUrl, options = {}) {
-			const { style: userStyle, ...restOptions } = options;
+			const { style: userStyle, featureSkip: userSkip, ...restOptions } = options;
 			const styleFn: LeafletVectorStyleFn =
 				(userStyle as LeafletVectorStyleFn) ?? defaultVectorStyle;
+			const featureSkip = typeof userSkip === 'number' && userSkip >= 1 ? Math.round(userSkip) : 4;
 			const resolve = makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
@@ -469,14 +479,9 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {
 					const tileSize: number = this.getTileSize().x;
-					const drawSize = tileSize + TILE_OVERLAP * 2;
 					const canvas = document.createElement('canvas') as HTMLCanvasElement;
-					canvas.width = drawSize;
-					canvas.height = drawSize;
-					canvas.style.width = `${drawSize}px`;
-					canvas.style.height = `${drawSize}px`;
-					canvas.style.marginLeft = `-${TILE_OVERLAP}px`;
-					canvas.style.marginTop = `-${TILE_OVERLAP}px`;
+					canvas.width = tileSize;
+					canvas.height = tileSize;
 
 					const tileKey = `${coords.z}/${coords.x}/${coords.y}`;
 					const abortController = new AbortController();
@@ -511,10 +516,7 @@ export function addLeafletProtocolSupport(L: any): LeafletProtocolAdapter {
 
 							const ctx = canvas.getContext('2d');
 							if (ctx) {
-								// Shift the drawing origin so the extra overlap
-								// pixels surround the tile content symmetrically.
-								ctx.translate(TILE_OVERLAP, TILE_OVERLAP);
-								renderVectorFeatures(ctx, vectorTile, tileSize, styleFn);
+								renderVectorFeatures(ctx, vectorTile, tileSize, styleFn, featureSkip);
 							}
 
 							done(null as unknown as Error, canvas);
