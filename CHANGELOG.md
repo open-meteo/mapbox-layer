@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.16](https://github.com/open-meteo/mapbox-layer/compare/v0.0.15...v0.0.16) (2026-03-03)
+
+
+### Bug Fixes
+
+* ecmwf_ifs model_interval definition ([7943ef3](https://github.com/open-meteo/mapbox-layer/commit/7943ef32a6f5774b85446d53b4a7cbaed4017027))
+* extract maplibre object from `bounds.ts` ([#196](https://github.com/open-meteo/mapbox-layer/issues/196)) ([0cda83c](https://github.com/open-meteo/mapbox-layer/commit/0cda83c44f9f0a0ba2de3b2707268dcdb0524a8f))
+* update eslint config to v10 ([#203](https://github.com/open-meteo/mapbox-layer/issues/203)) ([f4e106e](https://github.com/open-meteo/mapbox-layer/commit/f4e106ea7aad61e9231ac47aa1f038a793c9708e))
+
 ## [0.0.15](https://github.com/open-meteo/mapbox-layer/compare/v0.0.14...v0.0.15) (2026-02-18)
 
 
