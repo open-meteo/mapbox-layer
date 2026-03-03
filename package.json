@@ -35,8 +35,6 @@
 		"serve": "concurrently --kill-others \"npm run dev:umd\" \"live-server --port=3000 --host=localhost --ignore=**/src/** --open=./examples/\""
 	},
 	"devDependencies": {
-		"@eslint/compat": "^2.0.0",
-		"@eslint/js": "^10.0.1",
 		"@trivago/prettier-plugin-sort-imports": "^6.0.0",
 		"@types/d3-interpolate": "^3.0.4",
 		"@types/geojson": "^7946.0.16",
@@ -50,7 +48,6 @@
 		"eslint": "^10.0.1",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^17.0.0",
-		"jiti": "^2.6.1",
 		"prettier": "^3.6.2",
 		"tsx": "^4.20.6",
 		"typescript": "^5.9.3",
