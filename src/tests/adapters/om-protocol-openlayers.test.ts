@@ -7,6 +7,7 @@
 import type { OlLib } from '../../adapters/om-protocol-openlayers';
 import { addOpenLayersProtocolSupport } from '../../adapters/om-protocol-openlayers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { OmProtocolSettings } from '../../types';
 
 /** Shape of the mock DataTile/VectorTile instances so tests can inspect stored state. */
@@ -216,7 +217,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			adapter.addProtocol('om', createMockHandler());
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			expect(source._options.wrapX).toBe(true);
 			expect(source._options.tileSize).toBe(256);
 		});
@@ -225,7 +228,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			adapter.addProtocol('om', createMockHandler());
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			expect(typeof source._options.loader).toBe('function');
 		});
 
@@ -244,7 +249,9 @@ describe('addOpenLayersProtocolSupport', () => {
 				});
 			adapter.addProtocol('om', handler);
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			// Stub ImageBitmap (not available in Node) and createImageBitmap
@@ -298,7 +305,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			adapter.addProtocol('om', createMockHandler());
 
-			const source = adapter.createVectorTileSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createVectorTileSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			expect(typeof source._options.tileLoadFunction).toBe('function');
 		});
 
@@ -306,7 +315,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			adapter.addProtocol('om', createMockHandler());
 
-			const source = adapter.createVectorTileSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createVectorTileSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			expect(source._options.url).toBe('om://placeholder/{z}/{x}/{y}');
 		});
 
@@ -314,7 +325,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			adapter.addProtocol('om', createMockHandler());
 
-			const source = adapter.createVectorTileSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createVectorTileSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 
 			expect(source._listeners.has('tileloaderror')).toBe(true);
 			expect(source._listeners.has('clear')).toBe(true);
@@ -325,7 +338,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const handler = createMockHandler({ attribution: '© Eager Test' });
 			adapter.addProtocol('om', handler);
 
-			const source = adapter.createVectorTileSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createVectorTileSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 
 			// Wait for the eager TileJSON resolution
 			await vi.waitFor(() => {
@@ -369,7 +384,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			});
 			adapter.addProtocol('om', handler);
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			// First call triggers TileJSON fetch
@@ -395,7 +412,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			// Don't register a protocol
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			await expect(loader(1, 0, 0, {})).rejects.toThrow('No handler registered for protocol: "om"');
@@ -406,7 +425,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const handler = vi.fn().mockResolvedValue({ data: { tiles: [] } });
 			adapter.addProtocol('om', handler);
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			await expect(loader(1, 0, 0, {})).rejects.toThrow('TileJSON contains no tile URLs');
@@ -417,7 +438,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			const handler = vi.fn().mockResolvedValue({ data: null });
 			adapter.addProtocol('om', handler);
 
-			const source = adapter.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			await expect(loader(1, 0, 0, {})).rejects.toThrow(
@@ -437,7 +460,9 @@ describe('addOpenLayersProtocolSupport', () => {
 			adapter1.addProtocol('om', handler);
 
 			// adapter2 should not have access to adapter1's protocol
-			const source = adapter2.createRasterSource('om://example.com/tiles.json') as unknown as MockSourceInstance;
+			const source = adapter2.createRasterSource(
+				'om://example.com/tiles.json'
+			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			await expect(loader(1, 0, 0, {})).rejects.toThrow('No handler registered');
