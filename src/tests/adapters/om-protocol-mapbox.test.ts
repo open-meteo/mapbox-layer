@@ -8,6 +8,8 @@ import type { MapboxLib } from '../../adapters/om-protocol-mapbox';
 import { addMapboxProtocolSupport } from '../../adapters/om-protocol-mapbox';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { OmProtocolSettings } from '../../types';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -45,8 +47,9 @@ function createMockMapbox(): MapboxLib {
 	return {
 		Style: {
 			getSourceType(type: 'raster' | 'vector') {
-				if (type === 'vector') return MockVectorSource as any;
-				return MockRasterSource as any;
+				if (type === 'vector')
+					return MockVectorSource as unknown as ReturnType<MapboxLib['Style']['getSourceType']>;
+				return MockRasterSource as unknown as ReturnType<MapboxLib['Style']['getSourceType']>;
 			}
 		}
 	};
@@ -147,7 +150,7 @@ describe('addMapboxProtocolSupport', () => {
 		it('stores optional OmProtocolSettings', () => {
 			const adapter = addMapboxProtocolSupport(mapboxgl);
 			const handler = createMockHandler();
-			const settings = { domainOptions: [], colorScales: {} } as any;
+			const settings = { domainOptions: [], colorScales: {} } as unknown as OmProtocolSettings;
 
 			expect(() => adapter.addProtocol('om', handler, settings)).not.toThrow();
 		});

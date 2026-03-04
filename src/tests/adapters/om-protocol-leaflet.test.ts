@@ -8,6 +8,13 @@ import type { LeafletLib } from '../../adapters/om-protocol-leaflet';
 import { addLeafletProtocolSupport } from '../../adapters/om-protocol-leaflet';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { OmProtocolSettings } from '../../types';
+
+/** Shape exposed by the mock GridLayer so tests can inspect stored options. */
+interface MockLayerInstance {
+	_options: Record<string, unknown>;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -49,25 +56,6 @@ function createMockHandler(overrides: Record<string, unknown> = {}) {
 	};
 
 	return vi.fn().mockResolvedValue({ data: tileJson });
-}
-
-/** Create a mock image handler that returns an ImageBitmap-like object. */
-function createMockImageHandler(tileJsonOverrides: Record<string, unknown> = {}) {
-	const tileJson = {
-		tiles: ['om://example.com/{z}/{x}/{y}.png'],
-		attribution: '© Open-Meteo',
-		...tileJsonOverrides
-	};
-
-	let callCount = 0;
-	return vi.fn().mockImplementation(({ type }: { type: string }) => {
-		callCount++;
-		if (type === 'json') {
-			return Promise.resolve({ data: tileJson });
-		}
-		// Return a basic ArrayBuffer for image requests
-		return Promise.resolve({ data: new ArrayBuffer(16) });
-	});
 }
 
 // ---------------------------------------------------------------------------
@@ -143,10 +131,15 @@ describe('addLeafletProtocolSupport', () => {
 			const handler = createMockHandler();
 
 			// An object without domainOptions or colorScales should be ignored
-			adapter.addProtocol('om', handler, { returnImageBitmap: true } as any);
+			adapter.addProtocol('om', handler, {
+				returnImageBitmap: true
+			} as unknown as OmProtocolSettings);
 
 			// Valid settings with domainOptions should be kept
-			const validSettings = { domainOptions: [], colorScales: {} } as any;
+			const validSettings = {
+				domainOptions: [],
+				colorScales: {}
+			} as unknown as OmProtocolSettings;
 			adapter.addProtocol('om2', handler, validSettings);
 
 			// We can't directly inspect the stored settings, but we verify no errors
@@ -172,7 +165,7 @@ describe('addLeafletProtocolSupport', () => {
 			const layer = adapter.createTileLayer('om://example.com/tiles.json', {
 				opacity: 0.5,
 				zIndex: 10
-			}) as any;
+			}) as unknown as MockLayerInstance;
 
 			// The mock GridLayer stores options in _options
 			expect(layer._options.tileSize).toBe(256);
@@ -186,7 +179,7 @@ describe('addLeafletProtocolSupport', () => {
 
 			const layer = adapter.createTileLayer('om://example.com/tiles.json', {
 				tileSize: 512
-			}) as any;
+			}) as unknown as MockLayerInstance;
 
 			expect(layer._options.tileSize).toBe(512);
 		});
@@ -211,7 +204,7 @@ describe('addLeafletProtocolSupport', () => {
 			const layer = adapter.createVectorTileLayer('om://example.com/tiles.json', {
 				style: customStyle,
 				opacity: 0.8
-			}) as any;
+			}) as unknown as MockLayerInstance;
 
 			// style should not be forwarded to GridLayer options
 			expect(layer._options.style).toBeUndefined();
