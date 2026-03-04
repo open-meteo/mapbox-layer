@@ -43,9 +43,7 @@
 import { VectorTile } from '@mapbox/vector-tile';
 import Pbf from 'pbf';
 
-import type { OmProtocolSettings } from './types';
-
-/* ── Minimal Leaflet type surface used by this adapter ────────────── */
+import type { OmProtocolSettings } from '../types';
 
 /** Leaflet GridLayer instance (only the properties this adapter uses). */
 interface LeafletGridLayerInstance {

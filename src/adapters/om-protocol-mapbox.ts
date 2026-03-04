@@ -34,7 +34,7 @@
  * });
  * ```
  */
-import type { OmProtocolSettings } from './types';
+import type { OmProtocolSettings } from '../types';
 
 /** Minimal representation of a Mapbox tile object passed to loadTile(). */
 interface MapboxTile {

@@ -43,7 +43,7 @@
  * });
  * ```
  */
-import type { OmProtocolSettings } from './types';
+import type { OmProtocolSettings } from '../types';
 
 /* ── Minimal OpenLayers type surface used by this adapter ────────────── */
 
