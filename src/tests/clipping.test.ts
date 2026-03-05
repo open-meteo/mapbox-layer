@@ -56,30 +56,42 @@ describe('unwrapLongitudes', () => {
 describe('resolveClippingOptions - bounds computation', () => {
 	test('non-crossing polygon produces standard bounds', () => {
 		const result = resolveClippingOptions({
-			polygons: [
-				[
-					[10, 50],
-					[20, 50],
-					[20, 60],
-					[10, 60],
-					[10, 50]
-				]
-			]
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[10, 50],
+							[20, 50],
+							[20, 60],
+							[10, 60],
+							[10, 50]
+						]
+					]
+				}
+			}
 		});
 		expect(result?.bounds).toEqual([10, 50, 20, 60]);
 	});
 
 	test('dateline-crossing polygon produces wrapped bounds (minLon > maxLon)', () => {
 		const result = resolveClippingOptions({
-			polygons: [
-				[
-					[170, 50],
-					[175, 50],
-					[-175, 50],
-					[-170, 50],
-					[170, 50]
-				]
-			]
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[170, 50],
+							[175, 50],
+							[-175, 50],
+							[-170, 50],
+							[170, 50]
+						]
+					]
+				}
+			}
 		});
 		expect(result?.bounds).toBeDefined();
 		const [minLon, minLat, maxLon, maxLat] = result!.bounds!;
@@ -156,15 +168,21 @@ describe('resolveClippingOptions - bounds computation', () => {
 	test('explicit bounds are preserved when polygons are also provided', () => {
 		const result = resolveClippingOptions({
 			bounds: [0, 0, 10, 10],
-			polygons: [
-				[
-					[170, 50],
-					[175, 50],
-					[-175, 50],
-					[-170, 50],
-					[170, 50]
-				]
-			]
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[170, 50],
+							[175, 50],
+							[-175, 50],
+							[-170, 50],
+							[170, 50]
+						]
+					]
+				}
+			}
 		});
 		expect(result?.bounds).toEqual([0, 0, 10, 10]);
 	});
@@ -172,21 +190,27 @@ describe('resolveClippingOptions - bounds computation', () => {
 	test('global-spanning polygon produces full globe bounds', () => {
 		// A polygon that wraps entirely around the globe
 		const result = resolveClippingOptions({
-			polygons: [
-				[
-					[-180, -60],
-					[-90, -60],
-					[0, -60],
-					[90, -60],
-					[180, -60],
-					[180, 60],
-					[90, 60],
-					[0, 60],
-					[-90, 60],
-					[-180, 60],
-					[-180, -60]
-				]
-			]
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[-180, -60],
+							[-90, -60],
+							[0, -60],
+							[90, -60],
+							[180, -60],
+							[180, 60],
+							[90, 60],
+							[0, 60],
+							[-90, 60],
+							[-180, 60],
+							[-180, -60]
+						]
+					]
+				}
+			}
 		});
 		expect(result?.bounds).toBeDefined();
 		const [minLon, minLat, maxLon, maxLat] = result!.bounds!;
