@@ -134,25 +134,6 @@ export type WorkerResponse = {
 	key: string;
 };
 
-export type Bbox = [number, number, number, number];
-
-export type Location = {
-	latitude: number;
-	longitude: number;
-};
-
-export type LatLonZoom = {
-	zoom: number;
-	latitude: number;
-	longitude: number;
-};
-
-export type TilePixel = {
-	row: number;
-	column: number;
-	tileIndex: TileIndex;
-};
-
 // Simple RGB color
 export type RGB = [number, number, number];
 export type RGBA = [number, number, number, number];
@@ -196,14 +177,6 @@ export type RenderableColorScale = RGBAColorScale | ResolvedBreakpointColorScale
 
 // Dictionary of color scales
 export type ColorScales = Record<string, ColorScale>;
-
-export type Interpolator = (
-	values: Float32Array<ArrayBufferLike>,
-	index: number,
-	xFraction: number,
-	yFraction: number,
-	ranges: DimensionRange[]
-) => number;
 
 interface BaseGridData {
 	nx: number;
@@ -377,6 +350,4 @@ export type GeoJson =
 	| GeoJsonFeature
 	| { type: 'FeatureCollection'; features: GeoJsonFeature[] };
 
-export type ClippingOptions =
-	| { polygons?: [number, number][][]; bounds?: Bounds; geojson?: GeoJson }
-	| undefined;
+export type ClippingOptions = { geojson?: GeoJson; bounds?: Bounds } | undefined;
