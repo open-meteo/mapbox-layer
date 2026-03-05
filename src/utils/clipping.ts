@@ -8,12 +8,6 @@ import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } fr
  * Flat representation of clipping polygons.
  * When `useSAB` is true the backing buffer is a SharedArrayBuffer (zero-copy
  * across workers); otherwise a regular ArrayBuffer is used.
- *
- * `coordinates` holds pairs [lon0, lat0, lon1, lat1, …] for every ring
- * concatenated together.  `offsets` stores the element-index into
- * `coordinates` where each ring starts; the final entry equals the total
- * number of elements so that ring *i* spans
- * `coordinates[offsets[i]] … coordinates[offsets[i+1]-1]`.
  */
 export type SharedPolygons = {
 	/** Flat [lon, lat, …] pairs for all rings. */
@@ -170,13 +164,6 @@ export const resolveClippingOptions = (
 		if (!samePoint(first, last)) ring.push([first[0], first[1]]);
 		return ring;
 	};
-
-	if (options.polygons) {
-		for (const ring of options.polygons) {
-			rings.push(ring);
-			if (!bounds) extendBoundsWithRing(ring);
-		}
-	}
 
 	if (options.geojson) {
 		const addRing = (ring: GeoJsonPosition[]) => {
