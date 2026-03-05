@@ -347,8 +347,6 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 		}
 	}
 
-	// ── Vector source ────────────────────────────────────────────────────────
-
 	const VectorTileSource = mapboxgl.Style.getSourceType('vector');
 
 	class OmVectorSource extends VectorTileSource {
