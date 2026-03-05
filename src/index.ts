@@ -9,12 +9,19 @@ export * from './utils/styling';
 export * from './utils/variables';
 export * from './utils/arrows';
 export * from './utils/bounds';
+
 export * from './grids/index';
 
-export * from './domains';
+export * from './adapters/om-protocol-leaflet';
+export * from './adapters/om-protocol-mapbox';
+export * from './adapters/om-protocol-openlayers';
+
 export * from './om-file-reader';
 export * from './om-protocol';
 export * from './om-protocol-state';
+
+export * from './domains';
+
 export * from './worker-pool';
 
 export * from './types';
