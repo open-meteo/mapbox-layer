@@ -385,7 +385,7 @@ export const clipRasterToPolygons = async (
 	}
 
 	// Clip once with the constructed path and draw
-	ctx.clip(path, 'evenodd');
+	ctx.clip(path);
 	ctx.drawImage(canvas, 0, 0);
 
 	return clipCanvas.convertToBlob({ type: 'image/png' });
