@@ -385,17 +385,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 
 	return {
 		addProtocol(protocol, handler, settings) {
-			// Only store settings if it looks like a valid OmProtocolSettings object.
-			// This guards against callers accidentally passing non-settings objects
-			// (e.g. `{ returnImageBitmap: true }`), which would replace the handler's
-			// built-in defaults and cause runtime errors.
-			const validSettings =
-				settings &&
-				typeof settings === 'object' &&
-				('domainOptions' in settings || 'colorScales' in settings)
-					? settings
-					: undefined;
-			protocols.set(protocol, { handler, settings: validSettings });
+			protocols.set(protocol, { handler, settings: settings });
 		},
 		removeProtocol(protocol) {
 			protocols.delete(protocol);
