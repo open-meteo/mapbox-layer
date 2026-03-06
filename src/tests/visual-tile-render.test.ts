@@ -12,24 +12,23 @@
  * To regenerate baselines after an intentional visual change, delete
  * the `__snapshots__` directory and re-run the tests.
  */
+import { RegularGrid } from '../grids/regular';
+import { tile2lat, tile2lon } from '../utils/math';
+import { getColor, getColorScale } from '../utils/styling';
+import {
+	FileBackend,
+	OmDataType,
+	OmFileReader,
+	type OmFileReaderBackend,
+	initWasm
+} from '@openmeteo/file-reader';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-import {
-	FileBackend,
-	initWasm,
-	OmDataType,
-	OmFileReader,
-	type OmFileReaderBackend
-} from '@openmeteo/file-reader';
 import { PNG } from 'pngjs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { RegularGrid } from '../grids/regular';
-import type { DimensionRange, RegularGridData, RenderableColorScale } from '../types';
-import { tile2lat, tile2lon } from '../utils/math';
-import { getColor, getColorScale } from '../utils/styling';
+import type { RegularGridData, RenderableColorScale } from '../types';
 
 // ────────────────────────────────────────────────────────────
 // Paths
@@ -206,7 +205,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
 	reader?.dispose();
-	await (backend as any)?.close?.();
+	await (backend as FileBackend)?.close?.();
 });
 
 // ────────────────────────────────────────────────────────────
