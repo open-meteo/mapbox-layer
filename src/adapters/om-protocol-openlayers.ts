@@ -46,6 +46,7 @@
 import { buildTileUrl, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
+import { ProtocolHandler, RegisteredProtocol } from './types';
 
 /* ── Minimal OpenLayers type surface used by this adapter ────────────── */
 
@@ -93,21 +94,6 @@ export interface OlLib {
 	format?: {
 		MVT: new () => OlMVTFormat;
 	};
-}
-
-/**
- * Protocol handler signature – similar to MapLibre's addProtocol handler so
- * that `omProtocol` can be passed directly.
- */
-type ProtocolHandler = (
-	params: { url: string; type: string; headers?: Record<string, string> },
-	abortController: AbortController,
-	settings?: OmProtocolSettings
-) => Promise<{ data: unknown }>;
-
-interface RegisteredProtocol {
-	handler: ProtocolHandler;
-	settings?: OmProtocolSettings;
 }
 
 /**

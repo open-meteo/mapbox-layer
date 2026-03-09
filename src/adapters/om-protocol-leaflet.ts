@@ -46,6 +46,7 @@ import Pbf from 'pbf';
 import { buildTileUrl, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
+import { ProtocolHandler, RegisteredProtocol } from './types';
 
 /** Leaflet GridLayer instance (only the properties this adapter uses). */
 interface LeafletGridLayerInstance {
@@ -62,21 +63,6 @@ export interface LeafletLib {
 			_removeTile(this: unknown, key: string): void;
 		};
 	};
-}
-
-/**
- * Protocol handler signature – identical to MapLibre's addProtocol handler so
- * that `omProtocol` can be passed directly.
- */
-type ProtocolHandler = (
-	params: { url: string; type: string; headers?: Record<string, string> },
-	abortController: AbortController,
-	settings?: OmProtocolSettings
-) => Promise<{ data: unknown }>;
-
-interface RegisteredProtocol {
-	handler: ProtocolHandler;
-	settings?: OmProtocolSettings;
 }
 
 /**

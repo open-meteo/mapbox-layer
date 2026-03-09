@@ -37,6 +37,7 @@
 import { extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
+import { ProtocolHandler, RegisteredProtocol } from './types';
 
 /** Minimal representation of a Mapbox tile object passed to loadTile(). */
 interface MapboxTile {
@@ -69,21 +70,6 @@ export interface MapboxLib {
 	Style: {
 		getSourceType(type: 'raster' | 'vector'): MapboxSourceConstructor;
 	};
-}
-
-/**
- * Protocol handler signature – identical to MapLibre's addProtocol handler so
- * that `omProtocol` can be passed directly.
- */
-type ProtocolHandler = (
-	params: { url: string; type: string; headers?: Record<string, string> },
-	abortController: AbortController,
-	settings?: OmProtocolSettings
-) => Promise<{ data: unknown }>;
-
-interface RegisteredProtocol {
-	handler: ProtocolHandler;
-	settings?: OmProtocolSettings;
 }
 
 /**
