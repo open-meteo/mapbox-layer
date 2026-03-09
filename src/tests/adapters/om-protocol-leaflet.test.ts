@@ -8,8 +8,6 @@ import type { LeafletLib } from '../../adapters/om-protocol-leaflet';
 import { addLeafletProtocolSupport } from '../../adapters/om-protocol-leaflet';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { OmProtocolSettings } from '../../types';
-
 /** Shape exposed by the mock GridLayer so tests can inspect stored options. */
 interface MockLayerInstance {
 	_options: Record<string, unknown>;

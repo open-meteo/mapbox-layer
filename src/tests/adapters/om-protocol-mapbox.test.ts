@@ -8,8 +8,6 @@ import type { MapboxLib } from '../../adapters/om-protocol-mapbox';
 import { addMapboxProtocolSupport } from '../../adapters/om-protocol-mapbox';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { OmProtocolSettings } from '../../types';
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

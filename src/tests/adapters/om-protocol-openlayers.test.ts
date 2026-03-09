@@ -8,8 +8,6 @@ import type { OlLib } from '../../adapters/om-protocol-openlayers';
 import { addOpenLayersProtocolSupport } from '../../adapters/om-protocol-openlayers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { OmProtocolSettings } from '../../types';
-
 /** Shape of the mock DataTile/VectorTile instances so tests can inspect stored state. */
 interface MockSourceInstance {
 	_options: Record<string, unknown>;
