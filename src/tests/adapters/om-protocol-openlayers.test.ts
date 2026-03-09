@@ -195,11 +195,12 @@ describe('addOpenLayersProtocolSupport', () => {
 			adapter.addProtocol('om', createMockHandler());
 
 			const source = adapter.createRasterSource('om://example.com/tiles.json', {
-				transition: 200
+				transition: 200,
+				tileSize: 512
 			}) as unknown as MockSourceInstance;
 
 			expect(source._options.transition).toBe(200);
-			expect(source._options.tileSize).toBe(256);
+			expect(source._options.tileSize).toBe(512);
 			expect(source._options.wrapX).toBe(true);
 		});
 
