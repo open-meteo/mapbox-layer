@@ -43,6 +43,8 @@
 import { VectorTile } from '@mapbox/vector-tile';
 import Pbf from 'pbf';
 
+import { extractProtocol } from './helpers';
+
 import type { OmProtocolSettings } from '../types';
 
 /** Leaflet GridLayer instance (only the properties this adapter uses). */
@@ -75,12 +77,6 @@ type ProtocolHandler = (
 interface RegisteredProtocol {
 	handler: ProtocolHandler;
 	settings?: OmProtocolSettings;
-}
-
-/** Extract the protocol prefix from a URL, e.g. "om" from "om://…". Returns null if not found. */
-function extractProtocol(url: string): string | null {
-	const idx = url.indexOf('://');
-	return idx !== -1 ? url.substring(0, idx) : null;
 }
 
 /**
@@ -140,7 +136,10 @@ export interface LeafletProtocolAdapter {
 	 * @param tileJsonUrl   - The `om://` TileJSON URL.
 	 * @param leafletOptions - Extra options forwarded to `L.GridLayer`.
 	 */
-	createTileLayer: (tileJsonUrl: string, leafletOptions?: Record<string, unknown>) => unknown;
+	createTileLayer: (
+		tileJsonUrl: string,
+		leafletOptions?: Record<string, unknown>
+	) => LeafletGridLayerInstance;
 
 	/**
 	 * Create a vector tile layer backed by the registered protocol handler.
@@ -152,7 +151,10 @@ export interface LeafletProtocolAdapter {
 	 * @param tileJsonUrl   - The `om://` TileJSON URL.
 	 * @param options        - Style function and extra `L.GridLayer` options.
 	 */
-	createVectorTileLayer: (tileJsonUrl: string, options?: VectorTileLayerOptions) => unknown;
+	createVectorTileLayer: (
+		tileJsonUrl: string,
+		options?: VectorTileLayerOptions
+	) => LeafletGridLayerInstance;
 }
 
 /** The default vector tile extent used by the PBF encoder. */

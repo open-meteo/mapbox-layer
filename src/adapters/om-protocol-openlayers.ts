@@ -43,6 +43,8 @@
  * });
  * ```
  */
+import { extractProtocol } from './helpers';
+
 import type { OmProtocolSettings } from '../types';
 
 /* ── Minimal OpenLayers type surface used by this adapter ────────────── */
@@ -94,7 +96,7 @@ export interface OlLib {
 }
 
 /**
- * Protocol handler signature – identical to MapLibre's addProtocol handler so
+ * Protocol handler signature – similar to MapLibre's addProtocol handler so
  * that `omProtocol` can be passed directly.
  */
 type ProtocolHandler = (
@@ -106,12 +108,6 @@ type ProtocolHandler = (
 interface RegisteredProtocol {
 	handler: ProtocolHandler;
 	settings?: OmProtocolSettings;
-}
-
-/** Extract the protocol prefix from a URL, e.g. "om" from "om://…". Returns null if not found. */
-function extractProtocol(url: string): string | null {
-	const idx = url.indexOf('://');
-	return idx !== -1 ? url.substring(0, idx) : null;
 }
 
 /**

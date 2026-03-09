@@ -34,6 +34,8 @@
  * });
  * ```
  */
+import { extractProtocol } from './helpers';
+
 import type { OmProtocolSettings } from '../types';
 
 /** Minimal representation of a Mapbox tile object passed to loadTile(). */
@@ -122,12 +124,6 @@ export interface MapboxProtocolAdapter {
 	sourceType: MapboxSourceConstructor;
 }
 
-/** Extract the protocol prefix from a URL, e.g. "om" from "om://…". Returns null if not found. */
-function extractProtocol(url: string): string | null {
-	const idx = url.indexOf('://');
-	return idx !== -1 ? url.substring(0, idx) : null;
-}
-
 /**
  * Convert the data returned by a protocol handler into an object URL that
  * Mapbox can load as an image tile.
@@ -148,24 +144,6 @@ async function dataToObjectUrl(data: unknown): Promise<string> {
 			const blob = await oc.convertToBlob({ type: 'image/png' });
 			return URL.createObjectURL(blob);
 		}
-
-		// Fallback to DOM canvas for older browsers.
-		return new Promise<string>((resolve, reject) => {
-			const canvas = document.createElement('canvas');
-			canvas.width = data.width;
-			canvas.height = data.height;
-			const ctx = canvas.getContext('2d');
-			if (!ctx) {
-				return reject(new Error('[om-protocol-mapbox] Could not obtain 2D canvas context'));
-			}
-			ctx.drawImage(data, 0, 0);
-			canvas.toBlob((blob) => {
-				if (!blob) {
-					return reject(new Error('[om-protocol-mapbox] canvas.toBlob returned null'));
-				}
-				resolve(URL.createObjectURL(blob));
-			}, 'image/png');
-		});
 	}
 
 	if (data instanceof ArrayBuffer) {
