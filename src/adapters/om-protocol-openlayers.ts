@@ -43,7 +43,7 @@
  * });
  * ```
  */
-import { extractProtocol } from './helpers';
+import { buildTileUrl, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
 
@@ -230,11 +230,6 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 
 			return pending;
 		};
-	}
-
-	/** Substitute {z}/{x}/{y} placeholders in a tile URL template. */
-	function buildTileUrl(template: string, z: number, x: number, y: number): string {
-		return template.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
 	}
 
 	return {
