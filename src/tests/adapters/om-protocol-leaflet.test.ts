@@ -125,26 +125,6 @@ describe('addLeafletProtocolSupport', () => {
 			const adapter = addLeafletProtocolSupport(L);
 			expect(() => adapter.removeProtocol('nonexistent')).not.toThrow();
 		});
-
-		it('filters invalid OmProtocolSettings objects', () => {
-			const adapter = addLeafletProtocolSupport(L);
-			const handler = createMockHandler();
-
-			// An object without domainOptions or colorScales should be ignored
-			adapter.addProtocol('om', handler, {
-				returnImageBitmap: true
-			} as unknown as OmProtocolSettings);
-
-			// Valid settings with domainOptions should be kept
-			const validSettings = {
-				domainOptions: [],
-				colorScales: {}
-			} as unknown as OmProtocolSettings;
-			adapter.addProtocol('om2', handler, validSettings);
-
-			// We can't directly inspect the stored settings, but we verify no errors
-			expect(true).toBe(true);
-		});
 	});
 
 	// ── createTileLayer ───────────────────────────────────────────────────

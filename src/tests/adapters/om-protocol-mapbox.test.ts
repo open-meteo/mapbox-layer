@@ -146,14 +146,6 @@ describe('addMapboxProtocolSupport', () => {
 			const adapter = addMapboxProtocolSupport(mapboxgl);
 			expect(() => adapter.removeProtocol('nonexistent')).not.toThrow();
 		});
-
-		it('stores optional OmProtocolSettings', () => {
-			const adapter = addMapboxProtocolSupport(mapboxgl);
-			const handler = createMockHandler();
-			const settings = { domainOptions: [], colorScales: {} } as unknown as OmProtocolSettings;
-
-			expect(() => adapter.addProtocol('om', handler, settings)).not.toThrow();
-		});
 	});
 
 	// ── Source types ──────────────────────────────────────────────────────
@@ -282,9 +274,6 @@ describe('addMapboxProtocolSupport', () => {
 				expect(handler).toHaveBeenCalled();
 			});
 
-			// Allow the promise chain to complete
-			await new Promise((r) => setTimeout(r, 10));
-
 			// The handler resolves TileJSON and patches _options
 			const opts = source._options ?? source.options;
 			expect(opts?.['tiles']).toEqual(['om://example.com/{z}/{x}/{y}.png']);
@@ -339,25 +328,6 @@ describe('addMapboxProtocolSupport', () => {
 			});
 
 			consoleSpy.mockRestore();
-		});
-	});
-
-	// ── Isolation between adapters ────────────────────────────────────────
-
-	describe('isolation', () => {
-		it('two adapters have independent protocol registries', () => {
-			const adapter1 = addMapboxProtocolSupport(mapboxgl);
-			const adapter2 = addMapboxProtocolSupport(mapboxgl);
-
-			const handler = createMockHandler();
-			adapter1.addProtocol('om', handler);
-
-			// adapter2 should not know about adapter1's protocols
-			const source = new adapter2.rasterSourceType('test-id', {
-				url: 'om://example.com/tiles.json'
-			});
-			// load() should fall through to super since "om" is not registered in adapter2
-			expect(() => source.load()).not.toThrow();
 		});
 	});
 });

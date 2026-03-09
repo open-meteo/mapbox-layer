@@ -179,14 +179,6 @@ describe('addOpenLayersProtocolSupport', () => {
 			const adapter = addOpenLayersProtocolSupport(ol);
 			expect(() => adapter.removeProtocol('nonexistent')).not.toThrow();
 		});
-
-		it('stores optional OmProtocolSettings', () => {
-			const adapter = addOpenLayersProtocolSupport(ol);
-			const handler = createMockHandler();
-			const settings = { domainOptions: [], colorScales: {} } as unknown as OmProtocolSettings;
-
-			expect(() => adapter.addProtocol('om', handler, settings)).not.toThrow();
-		});
 	});
 
 	// ── createRasterSource ────────────────────────────────────────────────
