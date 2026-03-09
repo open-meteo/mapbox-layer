@@ -81,7 +81,7 @@
 				]);
 			}
 			map.on('moveend', updateBounds);
-			map.once('postrender', updateBounds);
+			map.once('prerender', updateBounds);
 		</script>
 	</body>
 </html>
