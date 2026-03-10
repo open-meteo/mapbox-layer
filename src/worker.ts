@@ -1,5 +1,4 @@
 import Pbf from 'pbf';
-import { arrayBuffer } from 'stream/consumers';
 
 import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
