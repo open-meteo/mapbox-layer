@@ -44,8 +44,8 @@ import { VectorTile } from '@mapbox/vector-tile';
 import Pbf from 'pbf';
 
 import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers';
-import { renderInWorker } from './tile-render-worker';
-import type { ExtractedFeatures, RenderFeature } from './tile-render-worker';
+import { renderInWorker } from './leaflet-worker/leaflet-pbf-worker-pool';
+import type { ExtractedFeatures, RenderFeature } from './leaflet-worker/leaflet-pbf-worker-pool';
 
 import type { OmProtocolSettings } from '../types';
 import { ProtocolHandler } from './types';

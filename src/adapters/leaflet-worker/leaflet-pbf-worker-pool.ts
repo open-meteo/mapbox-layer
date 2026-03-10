@@ -1,3 +1,7 @@
+// ── Worker import ───────────────────────────────────────────────────
+// @ts-expect-error Vite worker import
+import LeafletPbfWorker from './leaflet-pbf-worker?worker&inline';
+
 /**
  * Web Worker pool for offloading vector tile canvas rendering.
  *
@@ -33,53 +37,6 @@ export interface ExtractedFeatures {
 	clip: boolean;
 }
 
-// ── Worker code (self-contained, no imports) ─────────────────────────
-
-const WORKER_CODE = `'use strict';
-self.onmessage = function (e) {
-  var d = e.data, id = d.id, tileSize = d.tileSize, clip = d.clip, features = d.features;
-  var canvas = new OffscreenCanvas(tileSize, tileSize);
-  var ctx = canvas.getContext('2d');
-  if (!ctx) { self.postMessage({ id: id, bitmap: null }); return; }
-  if (clip) {
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, tileSize, tileSize); ctx.clip();
-  }
-  for (var i = 0; i < features.length; i++) {
-    var f = features[i];
-    ctx.strokeStyle = f.strokeStyle;
-    ctx.lineWidth = f.lineWidth;
-    ctx.lineCap = f.lineCap;
-    ctx.globalAlpha = f.globalAlpha;
-    if (f.type === 2 || f.type === 3) {
-      ctx.beginPath();
-      for (var ri = 0; ri < f.rings.length; ri++) {
-        var ring = f.rings[ri];
-        for (var j = 0; j < ring.length; j += 2) {
-          if (j === 0) ctx.moveTo(ring[j], ring[j + 1]);
-          else ctx.lineTo(ring[j], ring[j + 1]);
-        }
-        if (f.type === 3) ctx.closePath();
-      }
-      ctx.stroke();
-      if (f.fill) ctx.fill();
-    } else if (f.type === 1) {
-      for (var ri = 0; ri < f.rings.length; ri++) {
-        var ring = f.rings[ri];
-        for (var j = 0; j < ring.length; j += 2) {
-          ctx.beginPath();
-          ctx.arc(ring[j], ring[j + 1], f.pointRadius, 0, 6.283185307179586);
-          ctx.fill();
-        }
-      }
-    }
-  }
-  if (clip) ctx.restore();
-  ctx.globalAlpha = 1;
-  var bitmap = canvas.transferToImageBitmap();
-  self.postMessage({ id: id, bitmap: bitmap }, [bitmap]);
-};
-`;
-
 // ── Worker pool ──────────────────────────────────────────────────────
 
 const pending = new Map<
@@ -108,15 +65,12 @@ function ensurePool(): Worker[] {
 			: 2,
 		4
 	);
-	const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
-	const url = URL.createObjectURL(blob);
 	pool = [];
 	for (let i = 0; i < count; i++) {
-		const w = new Worker(url);
+		const w = new LeafletPbfWorker() as Worker;
 		w.onmessage = onWorkerMessage;
 		pool.push(w);
 	}
-	URL.revokeObjectURL(url);
 	return pool;
 }
 
