@@ -203,7 +203,7 @@ const defaultVectorStyle: LeafletVectorStyleFn = (properties) => {
  * @returns A `LeafletProtocolAdapter` with `addProtocol`, `removeProtocol`,
  *          `createTileLayer`, and `createVectorTileLayer`.
  */
-export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter {
+export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter => {
 	if (!L?.GridLayer) {
 		throw new Error(
 			'[om-protocol-leaflet] L.GridLayer is not available. ' +
@@ -220,11 +220,11 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 	 * coordinates. The result can be passed to the worker or the main-thread
 	 * fallback for canvas rendering.
 	 */
-	function extractRenderFeatures(
+	const extractRenderFeatures = (
 		vectorTile: VectorTile,
 		tileSize: number,
 		styleFn: LeafletVectorStyleFn
-	): ExtractedFeatures {
+	): ExtractedFeatures => {
 		const scale = tileSize / VECTOR_TILE_EXTENT;
 		const features: RenderFeature[] = [];
 		let clip = false;
@@ -307,17 +307,17 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 		}
 
 		return { features, clip };
-	}
+	};
 
 	return {
-		addProtocol(protocol, handler, settings) {
+		addProtocol: (protocol, handler, settings) => {
 			registry.add(protocol, handler, settings);
 		},
-		removeProtocol(protocol) {
+		removeProtocol: (protocol) => {
 			registry.remove(protocol);
 		},
 
-		createTileLayer(tileJsonUrl, leafletOptions = {}) {
+		createTileLayer: (tileJsonUrl, leafletOptions = {}) => {
 			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
@@ -365,24 +365,8 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 								const ctx = canvas.getContext('2d');
 								if (ctx) {
 									ctx.drawImage(data, 0, 0, tileSize, tileSize);
-									data.close();
 								}
 								done(null, canvas);
-								return;
-							}
-
-							if (data instanceof ArrayBuffer) {
-								// Raw PNG bytes — decode to ImageBitmap then draw.
-								createImageBitmap(new Blob([new Uint8Array(data)], { type: 'image/png' }))
-									.then((bmp) => {
-										const ctx = canvas.getContext('2d');
-										if (ctx) {
-											ctx.drawImage(bmp, 0, 0, tileSize, tileSize);
-											bmp.close();
-										}
-										done(null, canvas);
-									})
-									.catch((err) => done(err, canvas));
 								return;
 							}
 
@@ -500,7 +484,6 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 										const ctx = canvas.getContext('2d');
 										if (ctx) {
 											ctx.drawImage(bitmap, 0, 0);
-											bitmap.close();
 										}
 									}
 									done(null, canvas);
@@ -562,4 +545,4 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 			});
 		}
 	};
-}
+};

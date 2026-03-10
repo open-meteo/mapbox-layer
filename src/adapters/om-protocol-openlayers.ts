@@ -153,7 +153,7 @@ export interface OpenLayersProtocolAdapter {
  * @returns An `OpenLayersProtocolAdapter` with `addProtocol`, `removeProtocol`,
  *          `createRasterSource`, and `createVectorTileSource`.
  */
-export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapter {
+export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapter => {
 	if (!ol?.source?.DataTile || !ol?.source?.VectorTile) {
 		throw new Error(
 			'[om-protocol-openlayers] ol.source.DataTile and ol.source.VectorTile must be available. ' +
@@ -164,14 +164,14 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 	const registry = createProtocolRegistry('om-protocol-openlayers');
 
 	return {
-		addProtocol(protocol, handler, settings) {
+		addProtocol: (protocol, handler, settings) => {
 			registry.add(protocol, handler, settings);
 		},
-		removeProtocol(protocol) {
+		removeProtocol: (protocol) => {
 			registry.remove(protocol);
 		},
 
-		createRasterSource(tileJsonUrl, olOptions = {}) {
+		createRasterSource: (tileJsonUrl, olOptions = {}) => {
 			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
@@ -257,7 +257,7 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 			return source;
 		},
 
-		createVectorTileSource(tileJsonUrl, olOptions = {}) {
+		createVectorTileSource: (tileJsonUrl, olOptions = {}) => {
 			if (!ol.format?.MVT) {
 				throw new Error(
 					'[om-protocol-openlayers] ol.format.MVT is not available. ' +
@@ -390,4 +390,4 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 			return source;
 		}
 	};
-}
+};

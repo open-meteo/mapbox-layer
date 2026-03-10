@@ -48,16 +48,16 @@ let pool: Worker[] | null = null;
 let nextWorker = 0;
 let nextId = 0;
 
-function onWorkerMessage(e: MessageEvent): void {
+const onWorkerMessage = (e: MessageEvent): void => {
 	const { id, bitmap } = e.data as { id: number; bitmap: ImageBitmap | null };
 	const cb = pending.get(id);
 	if (cb) {
 		pending.delete(id);
 		cb.resolve(bitmap);
 	}
-}
+};
 
-function ensurePool(): Worker[] {
+const ensurePool = (): Worker[] => {
 	if (pool) return pool;
 	const count = Math.min(
 		typeof navigator !== 'undefined' && navigator.hardwareConcurrency
@@ -72,7 +72,7 @@ function ensurePool(): Worker[] {
 		pool.push(w);
 	}
 	return pool;
-}
+};
 
 // ── Public API ───────────────────────────────────────────────────────
 
@@ -80,10 +80,10 @@ function ensurePool(): Worker[] {
  * Render pre-processed features in a web worker.
  * Returns a transferable `ImageBitmap` that can be drawn onto a DOM canvas.
  */
-export function renderInWorker(
+export const renderInWorker = (
 	tileSize: number,
 	extracted: ExtractedFeatures
-): Promise<ImageBitmap | null> {
+): Promise<ImageBitmap | null> => {
 	const workers = ensurePool();
 	const id = nextId++;
 	const worker = workers[nextWorker++ % workers.length];
@@ -98,4 +98,4 @@ export function renderInWorker(
 			features: extracted.features
 		});
 	});
-}
+};

@@ -117,7 +117,7 @@ export interface MapboxProtocolAdapter {
  * Prefers `OffscreenCanvas` when available to avoid DOM canvas creation
  * overhead (no layout, no GC of DOM nodes).
  */
-async function dataToObjectUrl(data: unknown): Promise<string> {
+const dataToObjectUrl = async (data: unknown): Promise<string> => {
 	if (data instanceof ImageBitmap) {
 		// Prefer OffscreenCanvas for ImageBitmap → Blob conversion (no DOM overhead).
 		if (typeof OffscreenCanvas !== 'undefined') {
@@ -141,7 +141,7 @@ async function dataToObjectUrl(data: unknown): Promise<string> {
 	throw new Error(
 		`[om-protocol-mapbox] Unsupported tile data type: ${Object.prototype.toString.call(data)}`
 	);
-}
+};
 
 /**
  * Adds custom protocol support to Mapbox GL JS.
@@ -158,7 +158,7 @@ async function dataToObjectUrl(data: unknown): Promise<string> {
  * @throws If `mapboxgl.Style` is not available (i.e., the library is not fully
  *         loaded when this function is called).
  */
-export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAdapter {
+export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAdapter => {
 	if (!mapboxgl?.Style?.getSourceType) {
 		throw new Error(
 			'[om-protocol-mapbox] mapboxgl.Style.getSourceType is not available. ' +
@@ -401,10 +401,10 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 	}
 
 	return {
-		addProtocol(protocol, handler, settings) {
+		addProtocol: (protocol, handler, settings) => {
 			registry.add(protocol, handler, settings);
 		},
-		removeProtocol(protocol) {
+		removeProtocol: (protocol) => {
 			registry.remove(protocol);
 		},
 		rasterSourceType: OmRasterSource,
@@ -412,4 +412,4 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 		// backward-compat alias
 		sourceType: OmRasterSource
 	};
-}
+};

@@ -32,16 +32,16 @@ export interface ProtocolRegistry {
  *
  * @param adapterName - Label used in error messages, e.g. `"om-protocol-leaflet"`.
  */
-export function createProtocolRegistry(adapterName: string): ProtocolRegistry {
+export const createProtocolRegistry = (adapterName: string): ProtocolRegistry => {
 	const protocols = new Map<string, RegisteredProtocol>();
 
-	function get(protocol: string): RegisteredProtocol {
+	const get = (protocol: string): RegisteredProtocol => {
 		const entry = protocols.get(protocol);
 		if (!entry) {
 			throw new Error(`[${adapterName}] No handler registered for protocol: "${protocol}"`);
 		}
 		return entry;
-	}
+	};
 
 	/**
 	 * Build a lazy TileJSON resolver for a given om:// URL.
@@ -49,7 +49,7 @@ export function createProtocolRegistry(adapterName: string): ProtocolRegistry {
 	 * The returned function can be called many times; only one network request
 	 * is made.  Once resolved the result is cached indefinitely.
 	 */
-	function makeTileJsonResolver(tileJsonUrl: string): () => Promise<TileJsonResolved> {
+	const makeTileJsonResolver = (tileJsonUrl: string): () => Promise<TileJsonResolved> => {
 		let cached: TileJsonResolved | null = null;
 		let pending: Promise<TileJsonResolved> | null = null;
 
@@ -83,7 +83,7 @@ export function createProtocolRegistry(adapterName: string): ProtocolRegistry {
 
 			return pending;
 		};
-	}
+	};
 
 	return {
 		add: (protocol, handler, settings) => protocols.set(protocol, { handler, settings }),
@@ -92,4 +92,4 @@ export function createProtocolRegistry(adapterName: string): ProtocolRegistry {
 		get,
 		makeTileJsonResolver
 	};
-}
+};

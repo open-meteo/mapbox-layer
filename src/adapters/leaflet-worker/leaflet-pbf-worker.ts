@@ -16,7 +16,7 @@ interface RenderMessage {
 	features: RenderFeature[];
 }
 
-self.onmessage = function (e: MessageEvent<RenderMessage>): void {
+self.onmessage = (e: MessageEvent<RenderMessage>): void => {
 	const { id, tileSize, clip, features } = e.data;
 	const canvas = new OffscreenCanvas(tileSize, tileSize);
 	const ctx = canvas.getContext('2d');
