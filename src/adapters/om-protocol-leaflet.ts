@@ -41,17 +41,53 @@
  * ```
  */
 import { VectorTile } from '@mapbox/vector-tile';
-// import * as Util from 'leaflet/src/core/Util';
 import Pbf from 'pbf';
 
 import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers';
+import { renderInWorker } from './tile-render-worker';
+import type { ExtractedFeatures, RenderFeature } from './tile-render-worker';
 
 import type { OmProtocolSettings } from '../types';
 import { ProtocolHandler } from './types';
 
+/**
+ * Tile coordinates passed to `createTile` and stored in `GridLayer._tiles`.
+ * A Leaflet `Point` (`{x, y}`) with `z` (zoom) added at runtime.
+ */
+interface LeafletCoords {
+	x: number;
+	y: number;
+	z: number;
+}
+
+/**
+ * Entry in the `_tiles` cache maintained by `GridLayer`.
+ * See: https://github.com/Leaflet/Leaflet/blob/main/src/layer/tile/GridLayer.js
+ */
+interface LeafletInternalTile {
+	/** The element returned by `createTile` (e.g. `<canvas>` or `<img>`). */
+	el: HTMLElement;
+	/** Tile coordinates including zoom level. */
+	coords: LeafletCoords;
+	/** Whether the tile is inside the current viewport. */
+	current: boolean;
+	/** Unix timestamp (ms) set when the tile finishes loading. */
+	loaded?: number;
+	/** Set to `true` once the fade-in animation completes. */
+	active?: boolean;
+	/** Whether to keep the tile during a prune pass. */
+	retain?: boolean;
+}
+
 /** Leaflet GridLayer instance (only the properties this adapter uses). */
 interface LeafletGridLayerInstance {
 	getTileSize(): { x: number; y: number };
+	/** Internal tile cache keyed by `"x:y:z"`. */
+	_tiles: Record<string, LeafletInternalTile>;
+	/** The zoom level currently being rendered, or `undefined` when out of range. */
+	_tileZoom: number | undefined;
+	/** Fire a Leaflet event on this layer (from `Layer`). */
+	fire(event: string, data?: Record<string, unknown>): this;
 }
 
 /** The subset of the Leaflet namespace this adapter consumes. */
@@ -178,44 +214,33 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 	const registry = createProtocolRegistry('om-protocol-leaflet');
 
 	/**
-	 * Render decoded MVT features onto a canvas tile.
-	 * Handles line (type 2) and polygon (type 3) geometries.
+	 * Extract pre-processed features from a decoded MVT.
+	 *
+	 * Resolves styles via the user's `styleFn` and converts geometry to pixel
+	 * coordinates. The result can be passed to the worker or the main-thread
+	 * fallback for canvas rendering.
 	 */
-	function renderVectorFeatures(
-		ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+	function extractRenderFeatures(
 		vectorTile: VectorTile,
 		tileSize: number,
 		styleFn: LeafletVectorStyleFn
-	): void {
+	): ExtractedFeatures {
 		const scale = tileSize / VECTOR_TILE_EXTENT;
+		const features: RenderFeature[] = [];
+		let clip = false;
 
 		for (const layerName of Object.keys(vectorTile.layers)) {
 			const layer = vectorTile.layers[layerName];
 
-			// Detect whether this layer is an N×N square-grid arrow layer.
-			// For those we apply a 2×2 checkerboard skip (¼ density) and scale
-			// each surviving arrow 2× around its own center so it fills the
-			// larger cell.  Any overflow is hidden with a clip rect.
 			const gridN = Math.round(Math.sqrt(layer.length));
 			const isArrowGrid = gridN >= 2 && gridN * gridN === layer.length;
 			const cellSize = isArrowGrid ? VECTOR_TILE_EXTENT / gridN : 0;
-
-			if (isArrowGrid) {
-				ctx.save();
-				ctx.beginPath();
-				ctx.rect(0, 0, tileSize, tileSize);
-				ctx.clip();
-			}
+			if (isArrowGrid) clip = true;
 
 			for (let i = 0; i < layer.length; i++) {
-				// Checkerboard skip — only for arrow grid layers.
 				if (isArrowGrid) {
 					const gridRow = Math.floor(i / gridN);
 					const gridCol = i % gridN;
-					// Keep parity-1 rows/cols (1,3,5,...) rather than parity-0.
-					// Row/col 0 and N-1 are always skipped so no kept arrow ever
-					// has its center on the tile boundary — 2× scaling can never
-					// produce a half-clipped arrowhead at a tile seam.
 					if (gridRow % 2 !== 1 || gridCol % 2 !== 1) continue;
 				}
 
@@ -226,7 +251,6 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 
 				const value = Number(props['value']) || 0;
 
-				// Resolve style properties (support both static values and functions).
 				const strokeStyle =
 					typeof style.strokeStyle === 'function'
 						? style.strokeStyle(value)
@@ -239,25 +263,13 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 						? style.globalAlpha(value)
 						: (style.globalAlpha ?? 1);
 
-				ctx.strokeStyle = strokeStyle;
-				// Scale lineWidth 2× for arrow-grid layers to match the larger cell.
-				ctx.lineWidth = isArrowGrid ? rawLineWidth * 2 : rawLineWidth;
-				ctx.lineCap = lineCap;
-				ctx.globalAlpha = globalAlpha;
-
 				const geometry = feature.loadGeometry();
 
-				// For arrow-grid layers, scale geometry 2× around the arrow's
-				// center (gridCol*cellSize, gridRow*cellSize) so arrows visually
-				// fill the space made available by the checkerboard skip.
 				const gridRow = isArrowGrid ? Math.floor(i / gridN) : 0;
 				const gridCol = isArrowGrid ? i % gridN : 0;
 				const centerX = gridCol * cellSize;
 				const centerY = gridRow * cellSize;
 
-				// Determine rendering type from actual geometry.
-				// If any ring has >1 point, render as line (handles arrows
-				// which may be typed as point but contain line geometry).
 				let renderType = feature.type;
 				if (renderType === 1) {
 					for (const ring of geometry) {
@@ -268,51 +280,32 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 					}
 				}
 
-				if (renderType === 2 || renderType === 3) {
-					ctx.beginPath();
-					for (const ring of geometry) {
-						for (let j = 0; j < ring.length; j++) {
-							// Apply 2× scale around the arrow center for grid layers,
-							// otherwise use the raw coordinate.
-							const sx = isArrowGrid
-								? ((ring[j].x - centerX) * 2 + centerX) * scale
-								: ring[j].x * scale;
-							const sy = isArrowGrid
-								? ((ring[j].y - centerY) * 2 + centerY) * scale
-								: ring[j].y * scale;
-							if (j === 0) {
-								ctx.moveTo(sx, sy);
-							} else {
-								ctx.lineTo(sx, sy);
-							}
-						}
-						if (renderType === 3) {
-							ctx.closePath();
-						}
+				const rings: number[][] = [];
+				for (const ring of geometry) {
+					const coords: number[] = [];
+					for (const pt of ring) {
+						coords.push(
+							isArrowGrid ? ((pt.x - centerX) * 2 + centerX) * scale : pt.x * scale,
+							isArrowGrid ? ((pt.y - centerY) * 2 + centerY) * scale : pt.y * scale
+						);
 					}
-					ctx.stroke();
-					if (renderType === 3 && style.strokeStyle) {
-						ctx.fill();
-					}
-				} else if (renderType === 1) {
-					// True point features — draw small circles.
-					for (const ring of geometry) {
-						for (const pt of ring) {
-							ctx.beginPath();
-							ctx.arc(pt.x * scale, pt.y * scale, rawLineWidth * 1.5, 0, Math.PI * 2);
-							ctx.fill();
-						}
-					}
+					rings.push(coords);
 				}
-			}
 
-			if (isArrowGrid) {
-				ctx.restore();
+				features.push({
+					type: renderType as 1 | 2 | 3,
+					rings,
+					strokeStyle,
+					lineWidth: isArrowGrid ? rawLineWidth * 2 : rawLineWidth,
+					lineCap,
+					globalAlpha,
+					fill: renderType === 3 && !!style.strokeStyle,
+					pointRadius: rawLineWidth * 1.5
+				});
 			}
 		}
 
-		// Reset alpha.
-		ctx.globalAlpha = 1;
+		return { features, clip };
 	}
 
 	return {
@@ -332,7 +325,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 			const OmRasterGridLayer = L.GridLayer.extend({
 				createTile(
 					this: LeafletGridLayerInstance,
-					coords: { x: number; y: number; z: number },
+					coords: LeafletCoords,
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {
 					const tileSize: number = this.getTileSize().x;
@@ -356,14 +349,14 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 						})
 						.then((response) => {
 							if (!response || abortController.signal.aborted) {
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 								return;
 							}
 
 							const data = response.data;
 							if (!data) {
 								// Empty tile — return blank canvas.
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 								return;
 							}
 
@@ -373,7 +366,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 									ctx.drawImage(data, 0, 0, tileSize, tileSize);
 									data.close();
 								}
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 								return;
 							}
 
@@ -386,7 +379,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 											ctx.drawImage(bmp, 0, 0, tileSize, tileSize);
 											bmp.close();
 										}
-										done(null as unknown as Error, canvas);
+										done(null, canvas);
 									})
 									.catch((err) => done(err, canvas));
 								return;
@@ -404,7 +397,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 								console.error('[om-protocol-leaflet] Raster tile error:', err);
 								done(err, canvas);
 							} else {
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 							}
 						})
 						.finally(() => {
@@ -414,7 +407,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 					return canvas;
 				},
 
-				_removeTile(key: string) {
+				_removeTile(this: LeafletGridLayerInstance, key: string) {
 					const controller = inflight.get(key);
 					if (controller) {
 						controller.abort();
@@ -423,39 +416,21 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 					L.GridLayer.prototype._removeTile.call(this, key);
 				},
 
-				// stops loading all tiles in the background layer
-				_abortLoading() {
-					let i, tile;
-					for (i of Object.keys(this._tiles)) {
-						if (this._tiles[i].coords.z !== this._tileZoom) {
-							tile = this._tiles[i].el;
-
-							// tile.onload = Util.falseFn;
-							// tile.onerror = Util.falseFn;
-
-							if (!tile.complete) {
-								const key = `${this._tiles[i].coords.z}/${this._tiles[i].coords.x}/${this._tiles[i].coords.y}`;
-								const controller = inflight.get(key);
-								if (controller) {
-									console.log(`[om-protocol-leaflet] Aborting in-flight tile: ${key}`);
-									controller.abort();
-									inflight.delete(key);
-								}
-
-								// tile.setAttribute('src', '');
-								// const coords = this._tiles[i].coords;
-								// tile.remove();
-								// delete this._tiles[i];
-								// // @event tileabort: TileEvent
-								// // Fired when a tile was loading but is now not wanted.
-								// this.fire('tileabort', {
-								// 	tile,
-								// 	coords
-								// });
+				// Abort in-flight requests for tiles that are no longer at the current zoom level.
+				_abortLoading(this: LeafletGridLayerInstance) {
+					for (const [, entry] of Object.entries(this._tiles)) {
+						if (entry.coords.z !== this._tileZoom) {
+							const { el: tile, coords } = entry;
+							const key = `${coords.z}/${coords.x}/${coords.y}`;
+							if (inflight.has(key)) {
+								inflight.get(key)!.abort();
+								inflight.delete(key);
+								// @event tileabort: TileEvent
+								// Fired when a tile was loading but is now not wanted.
+								this.fire('tileabort', { tile, coords });
 							}
 						}
 					}
-					// L.GridLayer.prototype._abortLoading.call(this);
 				}
 			});
 
@@ -478,7 +453,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 			const OmVectorGridLayer = L.GridLayer.extend({
 				createTile(
 					this: LeafletGridLayerInstance,
-					coords: { x: number; y: number; z: number },
+					coords: LeafletCoords,
 					done: (error: Error | null, tile: HTMLElement) => void
 				): HTMLCanvasElement {
 					const tileSize: number = this.getTileSize().x;
@@ -502,34 +477,46 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 						})
 						.then((response) => {
 							if (!response || abortController.signal.aborted) {
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 								return;
 							}
 
 							const data = response.data;
 							if (!data || (data instanceof ArrayBuffer && data.byteLength === 0)) {
 								// Empty tile — return blank canvas.
-								done(null as unknown as Error, canvas);
-								return;
+								done(null, canvas);
 							}
 
 							// Decode MVT features from PBF bytes.
 							const pbfData = new Pbf(data as ArrayBuffer);
 							const vectorTile = new VectorTile(pbfData);
+							const extracted = extractRenderFeatures(vectorTile, tileSize, styleFn);
 
-							const ctx = canvas.getContext('2d');
-							if (ctx) {
-								renderVectorFeatures(ctx, vectorTile, tileSize, styleFn);
-							}
-
-							done(null as unknown as Error, canvas);
+							renderInWorker(tileSize, extracted)
+								.then((bitmap) => {
+									if (bitmap && !abortController.signal.aborted) {
+										const ctx = canvas.getContext('2d');
+										if (ctx) {
+											ctx.drawImage(bitmap, 0, 0);
+											bitmap.close();
+										}
+									}
+									done(null, canvas);
+								})
+								.catch((err) => {
+									if (!abortController.signal.aborted) {
+										console.error('[om-protocol-leaflet] Worker render error:', err);
+									}
+									done(null, canvas);
+								});
+							return; // done() called in the worker callback
 						})
 						.catch((err) => {
 							if (err.name !== 'AbortError' && !abortController.signal.aborted) {
 								console.error('[om-protocol-leaflet] Vector tile error:', err);
 								done(err, canvas);
 							} else {
-								done(null as unknown as Error, canvas);
+								done(null, canvas);
 							}
 						})
 						.finally(() => {
@@ -539,8 +526,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 					return canvas;
 				},
 
-				_removeTile(key: string) {
-					console.log(`[om-protocol-leaflet] Removing tile: ${key}`);
+				_removeTile(this: LeafletGridLayerInstance, key: string) {
 					const controller = inflight.get(key);
 					if (controller) {
 						controller.abort();
@@ -549,39 +535,21 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 					L.GridLayer.prototype._removeTile.call(this, key);
 				},
 
-				// stops loading all tiles in the background layer
-				_abortLoading() {
-					console.log('hi');
-					// for (i of Object.keys(this._tiles)) {
-					// 	if (this._tiles[i].coords.z !== this._tileZoom) {
-					// 		tile = this._tiles[i].el;
-
-					// 		tile.onload = Util.falseFn;
-					// 		tile.onerror = Util.falseFn;
-
-					// 		if (!tile.complete) {
-					// 			const key = `${this._tiles[i].coords.z}/${this._tiles[i].coords.x}/${this._tiles[i].coords.y}`;
-					// 			const controller = inflight.get(key);
-					// 			if (controller) {
-					// 				console.log(`[om-protocol-leaflet] Aborting in-flight tile: ${key}`);
-					// 				controller.abort();
-					// 				inflight.delete(key);
-					// 			}
-
-					// 			tile.setAttribute('src', '');
-					// 			const coords = this._tiles[i].coords;
-					// 			tile.remove();
-					// 			delete this._tiles[i];
-					// 			// @event tileabort: TileEvent
-					// 			// Fired when a tile was loading but is now not wanted.
-					// 			// this.fire('tileabort', {
-					// 			// 	tile,
-					// 			// 	coords
-					// 			// });
-					// 		}
-					// 	}
-					// }
-					L.GridLayer.prototype._abortLoading.call(this);
+				// Abort in-flight requests for tiles that are no longer at the current zoom level.
+				_abortLoading(this: LeafletGridLayerInstance) {
+					for (const [, entry] of Object.entries(this._tiles)) {
+						if (entry.coords.z !== this._tileZoom) {
+							const { el: tile, coords } = entry;
+							const key = `${coords.z}/${coords.x}/${coords.y}`;
+							if (inflight.has(key)) {
+								inflight.get(key)!.abort();
+								inflight.delete(key);
+								// @event tileabort: TileEvent
+								// Fired when a tile was loading but is now not wanted.
+								this.fire('tileabort', { tile, coords });
+							}
+						}
+					}
 				}
 			});
 
