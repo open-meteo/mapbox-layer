@@ -245,7 +245,8 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 				}
 
 				const feature = layer.feature(i);
-				const props = feature.properties;
+				// Inject the MVT layer name as `layer` so style functions can filter by source layer
+				const props: Record<string, unknown> = { layer: layerName, ...feature.properties };
 				const style = styleFn(props, layerName);
 				if (!style) continue;
 
@@ -485,6 +486,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 							if (!data || (data instanceof ArrayBuffer && data.byteLength === 0)) {
 								// Empty tile — return blank canvas.
 								done(null, canvas);
+								return;
 							}
 
 							// Decode MVT features from PBF bytes.
