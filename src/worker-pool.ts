@@ -44,34 +44,22 @@ export class WorkerPool {
 		if (data.type.startsWith('return')) {
 			const originalTile = data.tile;
 			const resolvers = pending.resolvers;
-			this.pendingRequests.delete(data.key);
 
-			if (resolvers.length === 0) return;
-
-			if (originalTile instanceof ImageBitmap && resolvers.length > 1) {
-				// Each subscriber may call .close() on the bitmap after drawing.
-				// Clone for the first N-1 subscribers; the last gets the original.
-				// All clones are created before any resolver fires so the original
-				// cannot be closed prematurely.
-				Promise.all(
-					Array.from({ length: resolvers.length - 1 }, () => createImageBitmap(originalTile))
-				).then((clones) => {
-					clones.forEach((clone, i) => resolvers[i]({ data: clone, cancelled: false }));
-					resolvers[resolvers.length - 1]({ data: originalTile, cancelled: false });
-				});
-			} else {
+			if (resolvers.length > 0) {
+				// The first subscriber can receive the original (transferred) buffer.
 				const firstResolver = resolvers.shift()!;
 				firstResolver({ data: originalTile, cancelled: false });
 
-				// ArrayBuffer must be sliced for each additional subscriber to avoid
-				// detached-buffer errors after the first subscriber transfers it.
-				// FIXES: DOMException: Worker.postMessage: attempting to access detached ArrayBuffer
+				// All other subscribers must receive a clone.
 				resolvers.forEach((resolve) => {
-					const tile =
-						originalTile instanceof ArrayBuffer ? originalTile.slice(0) : originalTile;
+					// Create a copy for each subsequent subscriber.
+					// ImageBitmaps are safe to share without cloning.
+					// FIXES: DOMException: Worker.postMessage: attempting to access detached ArrayBuffer
+					const tile = originalTile instanceof ArrayBuffer ? originalTile.slice(0) : originalTile;
 					resolve({ data: tile, cancelled: false });
 				});
 			}
+			this.pendingRequests.delete(data.key);
 		}
 	}
 
