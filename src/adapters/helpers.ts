@@ -49,7 +49,7 @@ export const createProtocolRegistry = (adapterName: string): ProtocolRegistry =>
 	 * The returned function can be called many times; only one network request
 	 * is made.  Once resolved the result is cached indefinitely.
 	 */
-	const makeTileJsonResolver = (tileJsonUrl: string): () => Promise<TileJsonResolved> => {
+	const makeTileJsonResolver = (tileJsonUrl: string): (() => Promise<TileJsonResolved>) => {
 		let cached: TileJsonResolved | null = null;
 		let pending: Promise<TileJsonResolved> | null = null;
 
