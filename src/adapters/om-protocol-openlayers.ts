@@ -43,10 +43,10 @@
  * });
  * ```
  */
-import { buildTileUrl, extractProtocol } from './helpers';
+import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler, RegisteredProtocol } from './types';
+import { ProtocolHandler } from './types';
 
 /* ── Minimal OpenLayers type surface used by this adapter ────────────── */
 
@@ -161,73 +161,18 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 		);
 	}
 
-	const protocols = new Map<string, RegisteredProtocol>();
-
-	function getRegistered(protocol: string): RegisteredProtocol {
-		const entry = protocols.get(protocol);
-		if (!entry) {
-			throw new Error(`[om-protocol-openlayers] No handler registered for protocol: "${protocol}"`);
-		}
-		return entry;
-	}
-
-	/**
-	 * Build a lazy TileJSON resolver for a given om:// URL.
-	 *
-	 * The returned function can be called many times; only one network request
-	 * is made.  Once resolved the result is cached indefinitely.
-	 */
-	function makeTileJsonResolver(
-		tileJsonUrl: string
-	): () => Promise<{ tileTemplate: string; tileJson: Record<string, unknown> }> {
-		type Resolved = { tileTemplate: string; tileJson: Record<string, unknown> };
-		let cached: Resolved | null = null;
-		let pending: Promise<Resolved> | null = null;
-
-		return () => {
-			if (cached) return Promise.resolve(cached);
-			if (pending) return pending;
-
-			const protocol = extractProtocol(tileJsonUrl)!;
-			const { handler, settings } = getRegistered(protocol);
-
-			pending = handler({ url: tileJsonUrl, type: 'json' }, new AbortController(), settings)
-				.then((response) => {
-					if (!response?.data) {
-						throw new Error(
-							`[om-protocol-openlayers] Protocol handler returned no data for TileJSON: ${tileJsonUrl}`
-						);
-					}
-					const tileJson = response.data as Record<string, unknown>;
-					const tiles = tileJson['tiles'] as string[] | undefined;
-					if (!tiles?.length) {
-						throw new Error(
-							`[om-protocol-openlayers] TileJSON contains no tile URLs: ${tileJsonUrl}`
-						);
-					}
-					cached = { tileTemplate: tiles[0], tileJson };
-					pending = null;
-					return cached;
-				})
-				.catch((err) => {
-					pending = null; // allow retry on next call
-					throw err;
-				});
-
-			return pending;
-		};
-	}
+	const registry = createProtocolRegistry('om-protocol-openlayers');
 
 	return {
 		addProtocol(protocol, handler, settings) {
-			protocols.set(protocol, { handler, settings });
+			registry.add(protocol, handler, settings);
 		},
 		removeProtocol(protocol) {
-			protocols.delete(protocol);
+			registry.remove(protocol);
 		},
 
 		createRasterSource(tileJsonUrl, olOptions = {}) {
-			const resolve = makeTileJsonResolver(tileJsonUrl);
+			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
 			const inflight = new Map<string, AbortController>();
@@ -275,7 +220,7 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 
 						const url = buildTileUrl(tileTemplate, z, x, y);
 						const tileProtocol = extractProtocol(url) ?? extractProtocol(tileJsonUrl)!;
-						const { handler, settings } = getRegistered(tileProtocol);
+						const { handler, settings } = registry.get(tileProtocol);
 
 						const response = await handler({ url, type: 'image' }, abortController, settings);
 						const data = response?.data;
@@ -320,7 +265,7 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 				);
 			}
 
-			const resolve = makeTileJsonResolver(tileJsonUrl);
+			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 			const baseProtocol = extractProtocol(tileJsonUrl)!;
 			const format = (olOptions['format'] as OlMVTFormat | undefined) ?? new ol.format.MVT();
 			const { format: _unusedFormat, ...restOlOptions } = olOptions;
@@ -361,8 +306,7 @@ export function addOpenLayersProtocolSupport(ol: OlLib): OpenLayersProtocolAdapt
 
 							const url = buildTileUrl(tileTemplate, z, x, y);
 							const tileProtocol = extractProtocol(url) ?? baseProtocol;
-							const { handler, settings } = getRegistered(tileProtocol);
-
+							const { handler, settings } = registry.get(tileProtocol);
 							return handler({ url, type: 'arrayBuffer' }, abortController, settings);
 						})
 						.then((response) => {

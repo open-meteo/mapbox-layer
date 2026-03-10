@@ -41,12 +41,13 @@
  * ```
  */
 import { VectorTile } from '@mapbox/vector-tile';
+// import * as Util from 'leaflet/src/core/Util';
 import Pbf from 'pbf';
 
-import { buildTileUrl, extractProtocol } from './helpers';
+import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler, RegisteredProtocol } from './types';
+import { ProtocolHandler } from './types';
 
 /** Leaflet GridLayer instance (only the properties this adapter uses). */
 interface LeafletGridLayerInstance {
@@ -61,6 +62,7 @@ export interface LeafletLib {
 		): new (options: Record<string, unknown>) => LeafletGridLayerInstance;
 		prototype: {
 			_removeTile(this: unknown, key: string): void;
+			_abortLoading(this: unknown): void;
 		};
 	};
 }
@@ -173,60 +175,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 		);
 	}
 
-	const protocols = new Map<string, RegisteredProtocol>();
-
-	function getRegistered(protocol: string): RegisteredProtocol {
-		const entry = protocols.get(protocol);
-		if (!entry) {
-			throw new Error(`[om-protocol-leaflet] No handler registered for protocol: "${protocol}"`);
-		}
-		return entry;
-	}
-
-	/**
-	 * Build a lazy TileJSON resolver for a given om:// URL.
-	 *
-	 * The returned function can be called many times; only one network request
-	 * is made.  Once resolved the result is cached indefinitely.
-	 */
-	function makeTileJsonResolver(
-		tileJsonUrl: string
-	): () => Promise<{ tileTemplate: string; tileJson: Record<string, unknown> }> {
-		type Resolved = { tileTemplate: string; tileJson: Record<string, unknown> };
-		let cached: Resolved | null = null;
-		let pending: Promise<Resolved> | null = null;
-
-		return () => {
-			if (cached) return Promise.resolve(cached);
-			if (pending) return pending;
-
-			const protocol = extractProtocol(tileJsonUrl)!;
-			const { handler, settings } = getRegistered(protocol);
-
-			pending = handler({ url: tileJsonUrl, type: 'json' }, new AbortController(), settings)
-				.then((response) => {
-					if (!response?.data) {
-						throw new Error(
-							`[om-protocol-leaflet] Protocol handler returned no data for TileJSON: ${tileJsonUrl}`
-						);
-					}
-					const tileJson = response.data as Record<string, unknown>;
-					const tiles = tileJson['tiles'] as string[] | undefined;
-					if (!tiles?.length) {
-						throw new Error(`[om-protocol-leaflet] TileJSON contains no tile URLs: ${tileJsonUrl}`);
-					}
-					cached = { tileTemplate: tiles[0], tileJson };
-					pending = null;
-					return cached;
-				})
-				.catch((err) => {
-					pending = null; // allow retry on next call
-					throw err;
-				});
-
-			return pending;
-		};
-	}
+	const registry = createProtocolRegistry('om-protocol-leaflet');
 
 	/**
 	 * Render decoded MVT features onto a canvas tile.
@@ -368,14 +317,14 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 
 	return {
 		addProtocol(protocol, handler, settings) {
-			protocols.set(protocol, { handler, settings: settings });
+			registry.add(protocol, handler, settings);
 		},
 		removeProtocol(protocol) {
-			protocols.delete(protocol);
+			registry.remove(protocol);
 		},
 
 		createTileLayer(tileJsonUrl, leafletOptions = {}) {
-			const resolve = makeTileJsonResolver(tileJsonUrl);
+			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
 			const inflight = new Map<string, AbortController>();
@@ -401,7 +350,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 
 							const url = buildTileUrl(tileTemplate, coords.z, coords.x, coords.y);
 							const tileProtocol = extractProtocol(url) ?? extractProtocol(tileJsonUrl)!;
-							const { handler, settings } = getRegistered(tileProtocol);
+							const { handler, settings } = registry.get(tileProtocol);
 
 							return handler({ url, type: 'image' }, abortController, settings);
 						})
@@ -466,14 +415,47 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 				},
 
 				_removeTile(key: string) {
-					// Abort any in-flight request for this tile before Leaflet removes it.
 					const controller = inflight.get(key);
 					if (controller) {
 						controller.abort();
 						inflight.delete(key);
 					}
-					// Call the original Leaflet _removeTile.
 					L.GridLayer.prototype._removeTile.call(this, key);
+				},
+
+				// stops loading all tiles in the background layer
+				_abortLoading() {
+					let i, tile;
+					for (i of Object.keys(this._tiles)) {
+						if (this._tiles[i].coords.z !== this._tileZoom) {
+							tile = this._tiles[i].el;
+
+							// tile.onload = Util.falseFn;
+							// tile.onerror = Util.falseFn;
+
+							if (!tile.complete) {
+								const key = `${this._tiles[i].coords.z}/${this._tiles[i].coords.x}/${this._tiles[i].coords.y}`;
+								const controller = inflight.get(key);
+								if (controller) {
+									console.log(`[om-protocol-leaflet] Aborting in-flight tile: ${key}`);
+									controller.abort();
+									inflight.delete(key);
+								}
+
+								// tile.setAttribute('src', '');
+								// const coords = this._tiles[i].coords;
+								// tile.remove();
+								// delete this._tiles[i];
+								// // @event tileabort: TileEvent
+								// // Fired when a tile was loading but is now not wanted.
+								// this.fire('tileabort', {
+								// 	tile,
+								// 	coords
+								// });
+							}
+						}
+					}
+					// L.GridLayer.prototype._abortLoading.call(this);
 				}
 			});
 
@@ -488,7 +470,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 			const { style: userStyle, ...restOptions } = options;
 			const styleFn: LeafletVectorStyleFn =
 				(userStyle as LeafletVectorStyleFn) ?? defaultVectorStyle;
-			const resolve = makeTileJsonResolver(tileJsonUrl);
+			const resolve = registry.makeTileJsonResolver(tileJsonUrl);
 
 			// Track in-flight AbortControllers per tile key for cancellation.
 			const inflight = new Map<string, AbortController>();
@@ -514,7 +496,7 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 
 							const url = buildTileUrl(tileTemplate, coords.z, coords.x, coords.y);
 							const tileProtocol = extractProtocol(url) ?? extractProtocol(tileJsonUrl)!;
-							const { handler, settings } = getRegistered(tileProtocol);
+							const { handler, settings } = registry.get(tileProtocol);
 
 							return handler({ url, type: 'arrayBuffer' }, abortController, settings);
 						})
@@ -558,12 +540,48 @@ export function addLeafletProtocolSupport(L: LeafletLib): LeafletProtocolAdapter
 				},
 
 				_removeTile(key: string) {
+					console.log(`[om-protocol-leaflet] Removing tile: ${key}`);
 					const controller = inflight.get(key);
 					if (controller) {
 						controller.abort();
 						inflight.delete(key);
 					}
 					L.GridLayer.prototype._removeTile.call(this, key);
+				},
+
+				// stops loading all tiles in the background layer
+				_abortLoading() {
+					console.log('hi');
+					// for (i of Object.keys(this._tiles)) {
+					// 	if (this._tiles[i].coords.z !== this._tileZoom) {
+					// 		tile = this._tiles[i].el;
+
+					// 		tile.onload = Util.falseFn;
+					// 		tile.onerror = Util.falseFn;
+
+					// 		if (!tile.complete) {
+					// 			const key = `${this._tiles[i].coords.z}/${this._tiles[i].coords.x}/${this._tiles[i].coords.y}`;
+					// 			const controller = inflight.get(key);
+					// 			if (controller) {
+					// 				console.log(`[om-protocol-leaflet] Aborting in-flight tile: ${key}`);
+					// 				controller.abort();
+					// 				inflight.delete(key);
+					// 			}
+
+					// 			tile.setAttribute('src', '');
+					// 			const coords = this._tiles[i].coords;
+					// 			tile.remove();
+					// 			delete this._tiles[i];
+					// 			// @event tileabort: TileEvent
+					// 			// Fired when a tile was loading but is now not wanted.
+					// 			// this.fire('tileabort', {
+					// 			// 	tile,
+					// 			// 	coords
+					// 			// });
+					// 		}
+					// 	}
+					// }
+					L.GridLayer.prototype._abortLoading.call(this);
 				}
 			});
 

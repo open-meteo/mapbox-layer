@@ -34,10 +34,10 @@
  * });
  * ```
  */
-import { extractProtocol } from './helpers';
+import { createProtocolRegistry, extractProtocol } from './helpers';
 
 import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler, RegisteredProtocol } from './types';
+import { ProtocolHandler } from './types';
 
 /** Minimal representation of a Mapbox tile object passed to loadTile(). */
 interface MapboxTile {
@@ -166,7 +166,7 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 		);
 	}
 
-	const protocols = new Map<string, RegisteredProtocol>();
+	const registry = createProtocolRegistry('om-protocol-mapbox');
 
 	/**
 	 * Shared `load()` override for both raster and vector source subclasses.
@@ -183,12 +183,12 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 			(optionsObj?.['url'] as string) ?? (this.url as string | undefined);
 
 		const protocol = originalUrl ? extractProtocol(originalUrl) : null;
-		if (!protocol || !protocols.has(protocol)) {
+		if (!protocol || !registry.has(protocol)) {
 			superLoad.call(this);
 			return;
 		}
 
-		const { handler, settings } = protocols.get(protocol)!;
+		const { handler, settings } = registry.get(protocol);
 		const abortController = new AbortController();
 
 		handler({ url: originalUrl, type: 'json' }, abortController, settings)
@@ -247,12 +247,12 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
-			if (!protocol || !protocols.has(protocol)) {
+			if (!protocol || !registry.has(protocol)) {
 				super.loadTile(tile, callback);
 				return;
 			}
 
-			const { handler, settings } = protocols.get(protocol)!;
+			const { handler, settings } = registry.get(protocol);
 			const abortController = new AbortController();
 
 			// Expose cancellation so Mapbox can abort in-flight tile requests.
@@ -352,12 +352,12 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
-			if (!protocol || !protocols.has(protocol)) {
+			if (!protocol || !registry.has(protocol)) {
 				super.loadTile(tile, callback);
 				return;
 			}
 
-			const { handler, settings } = protocols.get(protocol)!;
+			const { handler, settings } = registry.get(protocol);
 			const abortController = new AbortController();
 
 			tile.request = { cancel: () => abortController.abort() };
@@ -402,10 +402,10 @@ export function addMapboxProtocolSupport(mapboxgl: MapboxLib): MapboxProtocolAda
 
 	return {
 		addProtocol(protocol, handler, settings) {
-			protocols.set(protocol, { handler, settings });
+			registry.add(protocol, handler, settings);
 		},
 		removeProtocol(protocol) {
-			protocols.delete(protocol);
+			registry.remove(protocol);
 		},
 		rasterSourceType: OmRasterSource,
 		vectorSourceType: OmVectorSource,
