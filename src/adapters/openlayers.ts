@@ -83,6 +83,10 @@ interface OlVectorTileTile {
 	setFeatures(features: unknown[]): void;
 	onLoad(features: unknown[], projection: unknown): void;
 	setState(state: number): void;
+	/** Returns the tile's current state (0=IDLE, 1=LOADING, 2=LOADED, 3=ERROR, 4=EMPTY, 5=ABORT). */
+	getState(): number;
+	addEventListener(type: string, listener: () => void): void;
+	removeEventListener(type: string, listener: () => void): void;
 }
 
 /** The subset of the OpenLayers namespace this adapter consumes. */
@@ -157,7 +161,7 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 	if (!ol?.source?.DataTile || !ol?.source?.VectorTile) {
 		throw new Error(
 			'[om-protocol-openlayers] ol.source.DataTile and ol.source.VectorTile must be available. ' +
-				'OpenLayers 7.5+ is required.'
+				'Only the latest OpenLayers version is supported.'
 		);
 	}
 
@@ -180,37 +184,45 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 
 			const source = new ol.source.DataTile({
 				/**
-				 * OL calls this for every visible tile.  The first call also resolves
-				 * TileJSON and updates source metadata (attribution, zoom range).
+				 * OL calls this for every visible tile.  TileJSON is resolved lazily on
+				 * the first call; attribution is set once resolved.
 				 *
 				 * We return `ImageBitmap` directly — OL's DataTile + WebGLTile pipeline
 				 * accepts it natively and uploads it to the GPU without re-encoding.
 				 *
-				 * OL 9+ passes a 4th `options` parameter with a `signal` property
-				 * that fires when the tile is no longer needed.  We use it when
-				 * available and fall back to our own controller otherwise.
+				 * Latest OL always provides `{signal}` which fires when OL cancels
+				 * the tile (e.g. evicted from cache while still loading).
 				 */
-				loader: async (z: number, x: number, y: number, options?: { signal?: AbortSignal }) => {
+				loader: async (z: number, x: number, y: number, { signal }: { signal: AbortSignal }) => {
 					const tileKey = `${z}/${x}/${y}`;
+
+					// Abort any in-flight request for the same tile key, and proactively abort
+					// all tiles from a different zoom level — once OL starts loading tiles for
+					// zoom z those tiles are guaranteed stale (previous zoom level).
+					for (const [key, ctrl] of inflight) {
+						if (key === tileKey || parseInt(key) !== z) {
+							ctrl.abort();
+							inflight.delete(key);
+						}
+					}
+
 					const abortController = new AbortController();
 					inflight.set(tileKey, abortController);
 
-					// If OL provides a signal (OL 9+), wire it to our controller.
-					const externalSignal = options?.signal as AbortSignal | undefined;
-					if (externalSignal) {
-						if (externalSignal.aborted) {
-							abortController.abort();
-						} else {
-							externalSignal.addEventListener('abort', () => abortController.abort(), {
-								once: true
-							});
-						}
+					// Forward OL's abort signal to our controller so the handler's
+					// network fetch is cancelled when OL cancels the tile.
+					if (signal.aborted) {
+						abortController.abort();
+					} else {
+						signal.addEventListener('abort', () => abortController.abort(), { once: true });
 					}
 
 					try {
 						const { tileTemplate, tileJson } = await resolve();
 
-						if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+						if (abortController.signal.aborted) {
+							throw new DOMException('Aborted', 'AbortError');
+						}
 
 						// Update source metadata once on first successful TileJSON fetch.
 						if (tileJson['attribution'] && !attributionSet) {
@@ -225,7 +237,9 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 						const response = await handler({ url, type: 'image' }, abortController, settings);
 						const data = response?.data;
 
-						if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+						if (abortController.signal.aborted) {
+							throw new DOMException('Aborted', 'AbortError');
+						}
 
 						if (!data) {
 							// Empty tile — return a transparent 1×1 pixel so OL marks it LOADED.
@@ -246,7 +260,10 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 							`[om-protocol-openlayers] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
 						);
 					} finally {
-						inflight.delete(tileKey);
+						// Guard: only remove our entry — a newer request may have replaced it.
+						if (inflight.get(tileKey) === abortController) {
+							inflight.delete(tileKey);
+						}
 					}
 				},
 				wrapX: true,
@@ -293,24 +310,44 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 					const [z, x, y] = tileCoord;
 					const tileKey = `${z}/${x}/${y}`;
 
-					// Abort any previous in-flight request for the same tile key.
-					const prev = inflight.get(tileKey);
-					if (prev) prev.abort();
+					// Abort any in-flight request for the same tile key, and proactively abort
+					// all tiles from a different zoom level — once OL starts loading tiles for
+					// zoom z those tiles are guaranteed stale (previous zoom level).
+					for (const [key, ctrl] of inflight) {
+						if (key === tileKey || parseInt(key) !== z) {
+							ctrl.abort();
+							inflight.delete(key);
+						}
+					}
 
 					const abortController = new AbortController();
 					inflight.set(tileKey, abortController);
 
+					// In latest OL, when OL explicitly marks this tile EMPTY (4) or
+					// ABORT (5), forward that to our controller so the fetch is cancelled.
+					const onTileStateChange = () => {
+						const state = tile.getState();
+						if (state === 4 /* EMPTY */ || state === 5 /* ABORT */) {
+							abortController.abort();
+							tile.removeEventListener('change', onTileStateChange);
+						}
+					};
+					tile.addEventListener('change', onTileStateChange);
+
 					resolve()
 						.then(({ tileTemplate }) => {
-							if (abortController.signal.aborted) return;
-
+							if (abortController.signal.aborted) {
+								return;
+							}
 							const url = buildTileUrl(tileTemplate, z, x, y);
 							const tileProtocol = extractProtocol(url) ?? baseProtocol;
 							const { handler, settings } = registry.get(tileProtocol);
 							return handler({ url, type: 'arrayBuffer' }, abortController, settings);
 						})
 						.then((response) => {
-							if (abortController.signal.aborted) return;
+							if (abortController.signal.aborted) {
+								return;
+							}
 
 							const data = response?.data;
 
@@ -336,15 +373,14 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 							tile.onLoad(features, dataProjection);
 						})
 						.catch((err: unknown) => {
-							if ((err as Error).name !== 'AbortError' && !abortController.signal.aborted) {
-								console.error('[om-protocol-openlayers] Vector tile error:', err);
-							}
+							console.error('[om-protocol-openlayers] Vector tile error:', err);
 							// Signal error state so OL doesn't keep retrying.
 							if (!abortController.signal.aborted) {
 								tile.setState(3); // TileState.ERROR
 							}
 						})
 						.finally(() => {
+							tile.removeEventListener('change', onTileStateChange);
 							// Clean up the inflight entry if it still points to this controller.
 							if (inflight.get(tileKey) === abortController) {
 								inflight.delete(tileKey);

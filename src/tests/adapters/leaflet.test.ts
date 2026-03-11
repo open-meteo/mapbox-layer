@@ -4,8 +4,8 @@
  * These tests exercise the adapter's public API in isolation using a minimal
  * mock of the Leaflet library surface — no real Leaflet dependency required.
  */
-import type { LeafletLib } from '../../adapters/om-protocol-leaflet';
-import { addLeafletProtocolSupport } from '../../adapters/om-protocol-leaflet';
+import type { LeafletLib } from '../../adapters/leaflet';
+import { addLeafletProtocolSupport } from '../../adapters/leaflet';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Shape exposed by the mock GridLayer so tests can inspect stored options. */

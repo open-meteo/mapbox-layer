@@ -12,9 +12,9 @@ export * from './utils/bounds';
 
 export * from './grids/index';
 
-export * from './adapters/om-protocol-leaflet';
-export * from './adapters/om-protocol-mapbox';
-export * from './adapters/om-protocol-openlayers';
+export * from './adapters/leaflet';
+export * from './adapters/mapbox';
+export * from './adapters/openlayers';
 
 export * from './om-file-reader';
 export * from './om-protocol';

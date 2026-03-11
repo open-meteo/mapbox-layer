@@ -4,8 +4,8 @@
  * These tests exercise the adapter's public API in isolation using a minimal
  * mock of the Mapbox GL JS library surface — no real Mapbox dependency required.
  */
-import type { MapboxLib } from '../../adapters/om-protocol-mapbox';
-import { addMapboxProtocolSupport } from '../../adapters/om-protocol-mapbox';
+import type { MapboxLib } from '../../adapters/mapbox';
+import { addMapboxProtocolSupport } from '../../adapters/mapbox';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ---------------------------------------------------------------------------

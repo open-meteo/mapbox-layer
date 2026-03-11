@@ -4,8 +4,8 @@
  * These tests exercise the adapter's public API in isolation using a minimal
  * mock of the OpenLayers library surface — no real OL dependency required.
  */
-import type { OlLib } from '../../adapters/om-protocol-openlayers';
-import { addOpenLayersProtocolSupport } from '../../adapters/om-protocol-openlayers';
+import type { OlLib } from '../../adapters/openlayers';
+import { addOpenLayersProtocolSupport } from '../../adapters/openlayers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Shape of the mock DataTile/VectorTile instances so tests can inspect stored state. */
