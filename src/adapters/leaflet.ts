@@ -393,10 +393,15 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 				},
 
 				_removeTile(this: LeafletGridLayerInstance, key: string) {
-					const controller = inflight.get(key);
-					if (controller) {
-						controller.abort();
-						inflight.delete(key);
+					// Leaflet's internal key format is "x:y:z"; our inflight map uses "z/x/y".
+					const parts = key.split(':');
+					if (parts.length === 3) {
+						const inflightKey = `${parts[2]}/${parts[0]}/${parts[1]}`;
+						const controller = inflight.get(inflightKey);
+						if (controller) {
+							controller.abort();
+							inflight.delete(inflightKey);
+						}
 					}
 					L.GridLayer.prototype._removeTile.call(this, key);
 				},
@@ -512,10 +517,15 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 				},
 
 				_removeTile(this: LeafletGridLayerInstance, key: string) {
-					const controller = inflight.get(key);
-					if (controller) {
-						controller.abort();
-						inflight.delete(key);
+					// Leaflet's internal key format is "x:y:z"; our inflight map uses "z/x/y".
+					const parts = key.split(':');
+					if (parts.length === 3) {
+						const inflightKey = `${parts[2]}/${parts[0]}/${parts[1]}`;
+						const controller = inflight.get(inflightKey);
+						if (controller) {
+							controller.abort();
+							inflight.delete(inflightKey);
+						}
 					}
 					L.GridLayer.prototype._removeTile.call(this, key);
 				},

@@ -26,18 +26,20 @@ function createMockLeaflet(): LeafletLib {
 				return class MockGridLayer {
 					_proto = proto;
 					_options: Record<string, unknown>;
+					_tiles: Record<string, unknown> = {};
+					_tileZoom: number | undefined = undefined;
+					fire = vi.fn();
 					constructor(options: Record<string, unknown> = {}) {
 						this._options = options;
 					}
 					getTileSize() {
 						return { x: 256, y: 256 };
 					}
-				} as unknown as new (options: Record<string, unknown>) => {
-					getTileSize(): { x: number; y: number };
-				};
+				} as unknown as ReturnType<LeafletLib['GridLayer']['extend']>;
 			},
 			prototype: {
-				_removeTile: vi.fn()
+				_removeTile: vi.fn(),
+				_abortLoading: vi.fn()
 			}
 		}
 	};

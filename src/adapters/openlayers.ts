@@ -270,7 +270,6 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 				tileSize: 256,
 				...olOptions
 			});
-
 			return source;
 		},
 
@@ -407,22 +406,6 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 				for (const controller of inflight.values()) controller.abort();
 				inflight.clear();
 			});
-
-			// Eagerly kick off TileJSON resolution so the first tiles don't
-			// have to wait for it.  Set attribution once resolved.
-			resolve()
-				.then(({ tileJson }) => {
-					if (tileJson['attribution']) {
-						source.setAttributions(tileJson['attribution'] as string);
-					}
-				})
-				.catch((err: Error) => {
-					console.error(
-						'[om-protocol-openlayers] Error resolving TileJSON for vector source:',
-						err
-					);
-				});
-
 			return source;
 		}
 	};
