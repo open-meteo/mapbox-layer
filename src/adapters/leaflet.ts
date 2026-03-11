@@ -206,12 +206,12 @@ const defaultVectorStyle: LeafletVectorStyleFn = (properties) => {
 export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter => {
 	if (!L?.GridLayer) {
 		throw new Error(
-			'[om-protocol-leaflet] L.GridLayer is not available. ' +
+			'[leaflet-adapter] L.GridLayer is not available. ' +
 				'Make sure Leaflet is fully loaded before calling addLeafletProtocolSupport().'
 		);
 	}
 
-	const registry = createProtocolRegistry('om-protocol-leaflet');
+	const registry = createProtocolRegistry('leaflet-adapter');
 
 	/**
 	 * Extract pre-processed features from a decoded MVT.
@@ -372,14 +372,14 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 
 							done(
 								new Error(
-									`[om-protocol-leaflet] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
+									`[leaflet-adapter] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
 								),
 								canvas
 							);
 						})
 						.catch((err) => {
 							if (err.name !== 'AbortError' && !abortController.signal.aborted) {
-								console.error('[om-protocol-leaflet] Raster tile error:', err);
+								console.error('[leaflet-adapter] Raster tile error:', err);
 								done(err, canvas);
 							} else {
 								done(null, canvas);
@@ -495,7 +495,7 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 								})
 								.catch((err) => {
 									if (!abortController.signal.aborted) {
-										console.error('[om-protocol-leaflet] Worker render error:', err);
+										console.error('[leaflet-adapter] Worker render error:', err);
 									}
 									done(null, canvas);
 								});
@@ -503,7 +503,7 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 						})
 						.catch((err) => {
 							if (err.name !== 'AbortError' && !abortController.signal.aborted) {
-								console.error('[om-protocol-leaflet] Vector tile error:', err);
+								console.error('[leaflet-adapter] Vector tile error:', err);
 								done(err, canvas);
 							} else {
 								done(null, canvas);

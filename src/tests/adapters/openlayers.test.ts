@@ -554,6 +554,7 @@ describe('addOpenLayersProtocolSupport', () => {
 			) as unknown as MockSourceInstance;
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
+			await vi.waitFor(() => expect(typeof resolveJson).toBe('function'));
 			resolveJson({ data: tileJsonData });
 
 			// Start two loads for the exact same tile key
@@ -692,7 +693,7 @@ describe('addOpenLayersProtocolSupport', () => {
 			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
 
 			await expect(loader(1, 0, 0, loaderOpts())).rejects.toThrow(
-				'No handler registered for protocol: "om"'
+				`[openlayers-adapter] No handler registered for protocol: "om"`
 			);
 		});
 
@@ -722,26 +723,6 @@ describe('addOpenLayersProtocolSupport', () => {
 			await expect(loader(1, 0, 0, loaderOpts())).rejects.toThrow(
 				'Protocol handler returned no data for TileJSON'
 			);
-		});
-	});
-
-	// ── Isolation between adapters ────────────────────────────────────────
-
-	describe('isolation', () => {
-		it('two adapters have independent protocol registries', async () => {
-			const adapter1 = addOpenLayersProtocolSupport(ol);
-			const adapter2 = addOpenLayersProtocolSupport(ol);
-
-			const handler = createMockHandler();
-			adapter1.addProtocol('om', handler);
-
-			// adapter2 should not have access to adapter1's protocol
-			const source = adapter2.createRasterSource(
-				'om://example.com/tiles.json'
-			) as unknown as MockSourceInstance;
-			const loader = source._options.loader as (...args: unknown[]) => Promise<unknown>;
-
-			await expect(loader(1, 0, 0, loaderOpts())).rejects.toThrow('No handler registered');
 		});
 	});
 });

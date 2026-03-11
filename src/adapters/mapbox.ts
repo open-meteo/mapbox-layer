@@ -124,7 +124,7 @@ const dataToObjectUrl = async (data: unknown): Promise<string> => {
 			const oc = new OffscreenCanvas(data.width, data.height);
 			const ctx = oc.getContext('2d');
 			if (!ctx) {
-				throw new Error('[om-protocol-mapbox] Could not obtain OffscreenCanvas 2D context');
+				throw new Error('[mapbox-adapter] Could not obtain OffscreenCanvas 2D context');
 			}
 			ctx.drawImage(data, 0, 0);
 			const blob = await oc.convertToBlob({ type: 'image/png' });
@@ -139,7 +139,7 @@ const dataToObjectUrl = async (data: unknown): Promise<string> => {
 	}
 
 	throw new Error(
-		`[om-protocol-mapbox] Unsupported tile data type: ${Object.prototype.toString.call(data)}`
+		`[mapbox-adapter] Unsupported tile data type: ${Object.prototype.toString.call(data)}`
 	);
 };
 
@@ -161,12 +161,12 @@ const dataToObjectUrl = async (data: unknown): Promise<string> => {
 export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAdapter => {
 	if (!mapboxgl?.Style?.getSourceType) {
 		throw new Error(
-			'[om-protocol-mapbox] mapboxgl.Style.getSourceType is not available. ' +
+			'[mapbox-adapter] mapboxgl.Style.getSourceType is not available. ' +
 				'Make sure the Mapbox GL JS library is fully loaded before calling addMapboxProtocolSupport().'
 		);
 	}
 
-	const registry = createProtocolRegistry('om-protocol-mapbox');
+	const registry = createProtocolRegistry('mapbox-adapter');
 
 	/**
 	 * Shared `load()` override for both raster and vector source subclasses.
@@ -195,7 +195,7 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 			.then((response) => {
 				if (!response?.data) {
 					throw new Error(
-						`[om-protocol-mapbox] Protocol handler returned no data for TileJSON: ${originalUrl}`
+						`[mapbox-adapter] Protocol handler returned no data for TileJSON: ${originalUrl}`
 					);
 				}
 
@@ -215,7 +215,7 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 				superLoad.call(this);
 			})
 			.catch((err: Error) => {
-				console.error('[om-protocol-mapbox] Error fetching TileJSON:', err);
+				console.error('[mapbox-adapter] Error fetching TileJSON:', err);
 				this.fire?.('error', { error: err });
 			});
 	}

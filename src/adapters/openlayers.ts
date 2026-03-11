@@ -160,12 +160,12 @@ export interface OpenLayersProtocolAdapter {
 export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapter => {
 	if (!ol?.source?.DataTile || !ol?.source?.VectorTile) {
 		throw new Error(
-			'[om-protocol-openlayers] ol.source.DataTile and ol.source.VectorTile must be available. ' +
+			'[openlayers-adapter] ol.source.DataTile and ol.source.VectorTile must be available. ' +
 				'Only the latest OpenLayers version is supported.'
 		);
 	}
 
-	const registry = createProtocolRegistry('om-protocol-openlayers');
+	const registry = createProtocolRegistry('openlayers-adapter');
 
 	return {
 		addProtocol: (protocol, handler, settings) => {
@@ -257,7 +257,7 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 						}
 
 						throw new Error(
-							`[om-protocol-openlayers] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
+							`[openlayers-adapter] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
 						);
 					} finally {
 						// Guard: only remove our entry — a newer request may have replaced it.
@@ -270,13 +270,26 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 				tileSize: 256,
 				...olOptions
 			});
+
+			// Eagerly kick off TileJSON resolution so the first tiles don't
+			// have to wait for it. This prefetch is best-effort: tile loaders
+			// will surface real errors to callers when tiles are requested.
+			Promise.resolve()
+				.then(() => resolve())
+				.then(({ tileJson }) => {
+					if (tileJson['attribution']) {
+						source.setAttributions(tileJson['attribution'] as string);
+					}
+				})
+				.catch(() => {});
+
 			return source;
 		},
 
 		createVectorTileSource: (tileJsonUrl, olOptions = {}) => {
 			if (!ol.format?.MVT) {
 				throw new Error(
-					'[om-protocol-openlayers] ol.format.MVT is not available. ' +
+					'[openlayers-adapter] ol.format.MVT is not available. ' +
 						'Make sure the full OpenLayers bundle is loaded.'
 				);
 			}
@@ -372,7 +385,7 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 							tile.onLoad(features, dataProjection);
 						})
 						.catch((err: unknown) => {
-							console.error('[om-protocol-openlayers] Vector tile error:', err);
+							console.error('[openlayers-adapter] Vector tile error:', err);
 							// Signal error state so OL doesn't keep retrying.
 							if (!abortController.signal.aborted) {
 								tile.setState(3); // TileState.ERROR
@@ -406,6 +419,19 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 				for (const controller of inflight.values()) controller.abort();
 				inflight.clear();
 			});
+
+			// Eagerly kick off TileJSON resolution so the first tiles don't
+			// have to wait for it. This prefetch is best-effort: tile loads
+			// handle/report actual failures when needed.
+			Promise.resolve()
+				.then(() => resolve())
+				.then(({ tileJson }) => {
+					if (tileJson['attribution']) {
+						source.setAttributions(tileJson['attribution'] as string);
+					}
+				})
+				.catch(() => {});
+
 			return source;
 		}
 	};

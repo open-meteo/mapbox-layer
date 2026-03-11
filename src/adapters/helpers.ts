@@ -30,7 +30,7 @@ export interface ProtocolRegistry {
 /**
  * Create a protocol registry that manages handler registration and TileJSON resolution.
  *
- * @param adapterName - Label used in error messages, e.g. `"om-protocol-leaflet"`.
+ * @param adapterName - Label used in error messages, e.g. `"leaflet-adapter"`.
  */
 export const createProtocolRegistry = (adapterName: string): ProtocolRegistry => {
 	const protocols = new Map<string, RegisteredProtocol>();

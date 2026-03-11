@@ -320,7 +320,7 @@ describe('addMapboxProtocolSupport', () => {
 
 			await vi.waitFor(() => {
 				expect(consoleSpy).toHaveBeenCalledWith(
-					'[om-protocol-mapbox] Error fetching TileJSON:',
+					'[mapbox-adapter] Error fetching TileJSON:',
 					expect.any(Error)
 				);
 			});
