@@ -455,23 +455,166 @@
 // 		model_interval: '6_hourly'
 // 	},
 
-// 	// ItaliaMeteo
-// 	{
-// 		value: 'italia_meteo_arpae_icon_2i',
-// 		label: 'IM ARPAE ICON 2i',
-// 		grid: {
-// 			type: 'regular',
-// 			nx: 761,
-// 			ny: 761,
-// 			latMin: 33.7,
-// 			lonMin: 3,
-// 			dx: 0.025,
-// 			dy: 0.02,
-// 			zoom: 5.2
-// 		},
-// 		time_interval: 'hourly',
-// 		model_interval: '3_hourly'
+// // ECWMF
+// {
+// 	value: 'ecmwf_ifs025',
+// 	label: 'ECMWF IFS 0.25°',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 1440,
+// 		ny: 721,
+// 		latMin: -90,
+// 		lonMin: -180,
+// 		dx: 360 / 1440,
+// 		dy: 180 / (721 - 1),
+// 		zoom: 1
 // 	},
+// 	time_interval: '3_hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_ifs025_ensemble',
+// 	label: 'ECMWF IFS 0.25° Ensemble',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 1440,
+// 		ny: 721,
+// 		latMin: -90,
+// 		lonMin: -180,
+// 		dx: 360 / 1440,
+// 		dy: 180 / (721 - 1),
+// 		zoom: 1
+// 	},
+// 	time_interval: '6_hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_aifs025_single',
+// 	label: 'ECMWF AIFS 0.25° Single ',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 1440,
+// 		ny: 721,
+// 		latMin: -90,
+// 		lonMin: -180,
+// 		dx: 360 / 1440,
+// 		dy: 180 / (721 - 1),
+// 		zoom: 1
+// 	},
+// 	time_interval: '6_hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_aifs025_ensemble',
+// 	label: 'ECMWF AIFS 0.25° Ensemble',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 1440,
+// 		ny: 721,
+// 		latMin: -90,
+// 		lonMin: -180,
+// 		dx: 360 / 1440,
+// 		dy: 180 / (721 - 1),
+// 		zoom: 1
+// 	},
+// 	time_interval: '6_hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_ifs',
+// 	label: 'ECMWF IFS HRES',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 6599680,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 1280
+// 	},
+// 	time_interval: 'hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_wam025',
+// 	label: 'ECMWF WAM 0.25°',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 1440,
+// 		ny: 721,
+// 		latMin: -90,
+// 		lonMin: -180,
+// 		dx: 360 / 1440,
+// 		dy: 180 / (721 - 1),
+// 		zoom: 1
+// 	},
+// 	time_interval: '3_hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_wam',
+// 	label: 'ECMWF WAM',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 6599680,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 1280
+// 	},
+// 	time_interval: 'hourly',
+// 	model_interval: '6_hourly'
+// },
+// {
+// 	value: 'ecmwf_seas5_monthly',
+// 	label: 'ECMWF SEAS5',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 421120,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 320
+// 	},
+// 	time_interval: 'monthly',
+// 	model_interval: 'monthly'
+// },
+// Ensemble
+// {
+// 	value: 'ecmwf_ec46',
+// 	label: 'ECMWF EC46',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 421120,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 320
+// 	},
+// 	time_interval: 'daily',
+// 	model_interval: 'daily'
+// },
+// {
+// 	value: 'ecmwf_ec46_ensemble_mean',
+// 	label: 'ECMWF EC46 Ensemble Mean',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 421120,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 320
+// 	},
+// 	time_interval: 'daily',
+// 	model_interval: 'daily'
+// },
+// {
+// 	value: 'ecmwf_ec46_weekly',
+// 	label: 'ECMWF EC46 Weekly',
+// 	grid: {
+// 		type: 'gaussian',
+// 		nx: 421120,
+// 		ny: 1,
+// 		zoom: 3.2,
+// 		gaussianGridLatitudeLines: 320
+// 	},
+// 	time_interval: 'weekly_on_monday',
+// 	model_interval: 'daily'
+// },
 
 // 	// JMA
 // 	{
