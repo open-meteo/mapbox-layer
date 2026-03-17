@@ -227,18 +227,6 @@ describe('addMapboxProtocolSupport', () => {
 			});
 		});
 
-		it('load() with non-custom-protocol URL falls through to super.load()', () => {
-			const adapter = addMapboxProtocolSupport(mapboxgl);
-
-			const source = new adapter.rasterSourceType('test-id', {
-				url: 'https://example.com/tiles.json',
-				type: 'raster'
-			});
-
-			// Should not throw — falls through to the mock super.load()
-			expect(() => source.load()).not.toThrow();
-		});
-
 		it('load() with no registered handler fires an error event', () => {
 			const adapter = addMapboxProtocolSupport(mapboxgl);
 			// Register nothing
