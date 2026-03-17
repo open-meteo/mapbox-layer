@@ -8,12 +8,12 @@
 		<script src="https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js"></script>
 		<script src="https://unpkg.com/@turf/turf@7.3.4/turf.min.js"></script>
 		<!-- x-release-please-start-version -->
-		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.14/dist/index.js"></script>
+		<script src="https://unpkg.com/@openmeteo/mapbox-layer@0.0.15/dist/index.js"></script>
 		<!-- x-release-please-end -->
 		<!-- Local development -->
 		<script>
 			if (location.hostname === 'localhost' || location.href.startsWith('file://')) {
-				document.write('<script src="/dist/index.js"><\/script>');
+				document.write('<script src="../../../dist/index.js"><\/script>');
 			}
 		</script>
 		<style>
@@ -61,7 +61,7 @@
 
 					const map = new maplibregl.Map({
 						container: 'map',
-						style: 'https://public.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
+						style: 'https://map-assets.open-meteo.com/styles/minimal-planet-maps.json', // replace with your own style sheet
 						hash: true
 					});
 
