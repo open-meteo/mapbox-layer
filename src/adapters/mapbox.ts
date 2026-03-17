@@ -183,8 +183,14 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 			(optionsObj?.['url'] as string) ?? (this.url as string | undefined);
 
 		const protocol = originalUrl ? extractProtocol(originalUrl) : null;
-		if (!protocol || !registry.has(protocol)) {
+		if (!protocol) {
 			superLoad.call(this);
+			return;
+		}
+		if (!registry.has(protocol)) {
+			const err = new Error(`[mapbox-adapter] No handler registered for protocol: "${protocol}"`);
+			console.error(err.message);
+			this.fire?.('error', { error: err });
 			return;
 		}
 
@@ -247,8 +253,12 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
-			if (!protocol || !registry.has(protocol)) {
+			if (!protocol) {
 				super.loadTile(tile, callback);
+				return;
+			}
+			if (!registry.has(protocol)) {
+				callback(new Error(`[mapbox-adapter] No handler registered for protocol: "${protocol}"`));
 				return;
 			}
 
@@ -352,8 +362,12 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 					: '';
 
 			const protocol = rawUrl ? extractProtocol(rawUrl) : null;
-			if (!protocol || !registry.has(protocol)) {
+			if (!protocol) {
 				super.loadTile(tile, callback);
+				return;
+			}
+			if (!registry.has(protocol)) {
+				callback(new Error(`[mapbox-adapter] No handler registered for protocol: "${protocol}"`));
 				return;
 			}
 

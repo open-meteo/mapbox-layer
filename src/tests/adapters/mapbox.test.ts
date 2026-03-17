@@ -239,7 +239,7 @@ describe('addMapboxProtocolSupport', () => {
 			expect(() => source.load()).not.toThrow();
 		});
 
-		it('load() with no registered handler falls through to super.load()', () => {
+		it('load() with no registered handler fires an error event', () => {
 			const adapter = addMapboxProtocolSupport(mapboxgl);
 			// Register nothing
 
@@ -248,7 +248,16 @@ describe('addMapboxProtocolSupport', () => {
 				type: 'raster'
 			});
 
-			expect(() => source.load()).not.toThrow();
+			const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+			source.load();
+
+			expect(consoleSpy).toHaveBeenCalledWith(
+				'[mapbox-adapter] No handler registered for protocol: "om"'
+			);
+			expect(source.fire).toHaveBeenCalledWith('error', {
+				error: expect.objectContaining({ message: '[mapbox-adapter] No handler registered for protocol: "om"' })
+			});
+			consoleSpy.mockRestore();
 		});
 
 		it('load() patches source options with TileJSON metadata', async () => {

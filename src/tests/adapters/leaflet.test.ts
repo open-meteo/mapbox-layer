@@ -207,31 +207,15 @@ describe('addLeafletProtocolSupport', () => {
 	describe('error handling', () => {
 		it('createTileLayer with unregistered protocol creates the layer (error at tile load time)', () => {
 			const adapter = addLeafletProtocolSupport(L);
-			// Don't register any protocol — layer creation is synchronous and succeeds
+			// Layer creation is synchronous and always succeeds — the protocol
+			// is only looked up when a tile is actually requested.
 			const layer = adapter.createTileLayer('om://example.com/tiles.json');
 			expect(layer).toBeDefined();
 		});
 
-		it('createVectorTileLayer with unregistered protocol creates the layer', () => {
+		it('createVectorTileLayer with unregistered protocol creates the layer (error at tile load time)', () => {
 			const adapter = addLeafletProtocolSupport(L);
 			const layer = adapter.createVectorTileLayer('om://example.com/tiles.json');
-			expect(layer).toBeDefined();
-		});
-	});
-
-	// ── Multiple adapters ─────────────────────────────────────────────────
-
-	describe('isolation', () => {
-		it('two adapters have independent protocol registries', () => {
-			const adapter1 = addLeafletProtocolSupport(L);
-			const adapter2 = addLeafletProtocolSupport(L);
-
-			const handler = createMockHandler();
-			adapter1.addProtocol('om', handler);
-
-			// adapter2 should not have the protocol registered
-			// Creating a layer is fine (synchronous), but using it would fail
-			const layer = adapter2.createTileLayer('om://example.com/tiles.json');
 			expect(layer).toBeDefined();
 		});
 	});
