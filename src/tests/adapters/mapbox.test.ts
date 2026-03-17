@@ -243,7 +243,9 @@ describe('addMapboxProtocolSupport', () => {
 				'[mapbox-adapter] No handler registered for protocol: "om"'
 			);
 			expect(source.fire).toHaveBeenCalledWith('error', {
-				error: expect.objectContaining({ message: '[mapbox-adapter] No handler registered for protocol: "om"' })
+				error: expect.objectContaining({
+					message: '[mapbox-adapter] No handler registered for protocol: "om"'
+				})
 			});
 			consoleSpy.mockRestore();
 		});
