@@ -162,9 +162,9 @@ The Maptiler SDK natively supports `addProtocol`, but unfortunately it mangles t
 
 ```ts
 // MapTiler SDK mangles URLs like `om://https://...` into `om://https//...`
-maptilersdk.addProtocol('om', (params) => {
+maptilersdk.addProtocol('om', (params, abortController) => {
 	params.url = params.url.replace('https//', 'https://');
-	return omProtocol(params, undefined, omProtocolSettings);
+	return omProtocol(params, abortController, omProtocolSettings);
 });
 ```
 

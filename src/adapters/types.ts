@@ -1,4 +1,4 @@
-import { OmProtocolSettings } from '../types';
+import type { OmProtocolSettings } from '../types';
 
 /**
  * Protocol handler signature – identical to MapLibre's addProtocol handler so
