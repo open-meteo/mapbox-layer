@@ -68,13 +68,6 @@ describe('addLeafletProtocolSupport', () => {
 
 	beforeEach(() => {
 		L = createMockLeaflet();
-		vi.stubGlobal('document', {
-			createElement: vi.fn().mockReturnValue({
-				width: 0,
-				height: 0,
-				getContext: vi.fn().mockReturnValue(null)
-			})
-		});
 	});
 
 	afterEach(() => {
