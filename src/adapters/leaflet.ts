@@ -47,8 +47,7 @@ import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers
 import { renderInWorker } from './leaflet-worker/leaflet-pbf-worker-pool';
 import type { ExtractedFeatures, RenderFeature } from './leaflet-worker/leaflet-pbf-worker-pool';
 
-import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler } from './types';
+import { ProtocolAdapter } from './types';
 
 /**
  * Tile coordinates passed to `createTile` and stored in `GridLayer._tiles`.
@@ -133,23 +132,7 @@ export interface VectorTileLayerOptions {
 /**
  * The object returned by `addLeafletProtocolSupport`.
  */
-export interface LeafletProtocolAdapter {
-	/**
-	 * Register a protocol handler.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 * @param handler  - Protocol handler (e.g. `omProtocol`).
-	 * @param settings - Optional OmProtocolSettings forwarded to every handler call.
-	 */
-	addProtocol: (protocol: string, handler: ProtocolHandler, settings?: OmProtocolSettings) => void;
-
-	/**
-	 * Unregister a previously registered protocol handler.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 */
-	removeProtocol: (protocol: string) => void;
-
+export interface LeafletProtocolAdapter extends ProtocolAdapter {
 	/**
 	 * Create a raster tile layer backed by the registered protocol handler.
 	 *

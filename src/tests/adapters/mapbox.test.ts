@@ -113,11 +113,6 @@ describe('addMapboxProtocolSupport', () => {
 			expect(typeof adapter.addProtocol).toBe('function');
 			expect(typeof adapter.removeProtocol).toBe('function');
 		});
-
-		it('sourceType is an alias for rasterSourceType (backward-compat)', () => {
-			const adapter = addMapboxProtocolSupport(mapboxgl);
-			expect(adapter.sourceType).toBe(adapter.rasterSourceType);
-		});
 	});
 
 	// ── Protocol registration ─────────────────────────────────────────────

@@ -45,7 +45,7 @@
 			// Register the custom source type with the map instance. Sources using this protocol must declare  type: 'raster-om'  instead of 'raster'.
 			map.addSourceType(
 				'raster-om',
-				mapboxAdapter.sourceType,
+				mapboxAdapter.rasterSourceType,
 				(e) => e && console.error('Failed to register raster-om source type', e)
 			);
 

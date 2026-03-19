@@ -36,8 +36,7 @@
  */
 import { createProtocolRegistry, extractProtocol } from './helpers';
 
-import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler } from './types';
+import { ProtocolAdapter } from './types';
 
 /** Minimal representation of a Mapbox tile object passed to loadTile(). */
 interface MapboxTile {
@@ -75,24 +74,7 @@ export interface MapboxLib {
 /**
  * The object returned by `addMapboxProtocolSupport`.
  */
-export interface MapboxProtocolAdapter {
-	/**
-	 * Register a protocol handler.
-	 * The handler receives params and an AbortController, just like MapLibre's addProtocol.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 * @param handler  - Protocol handler (e.g. `omProtocol`).
-	 * @param settings - Optional OmProtocolSettings forwarded to every handler call.
-	 */
-	addProtocol: (protocol: string, handler: ProtocolHandler, settings?: OmProtocolSettings) => void;
-
-	/**
-	 * Unregister a previously registered protocol handler.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 */
-	removeProtocol: (protocol: string) => void;
-
+export interface MapboxProtocolAdapter extends ProtocolAdapter {
 	/**
 	 * Custom raster source class – pass to `map.addSourceType('raster-om', adapter.rasterSourceType, cb)`.
 	 */
@@ -103,11 +85,6 @@ export interface MapboxProtocolAdapter {
 	 * Required for vector tile layers (arrows, contours, grids, …).
 	 */
 	vectorSourceType: MapboxSourceConstructor;
-
-	/**
-	 * @deprecated Use `rasterSourceType` instead. Kept for backward compatibility.
-	 */
-	sourceType: MapboxSourceConstructor;
 }
 
 /**
@@ -153,7 +130,7 @@ const dataToObjectUrl = async (data: unknown): Promise<string> => {
  * HTTP requests.
  *
  * @param mapboxgl - The Mapbox GL JS library object (`import mapboxgl from 'mapbox-gl'`).
- * @returns A `MapboxProtocolAdapter` containing `addProtocol`, `removeProtocol`, and `sourceType`.
+ * @returns A `MapboxProtocolAdapter` containing `addProtocol`, `removeProtocol`, `rasterSourceType`, and `vectorSourceType`.
  *
  * @throws If `mapboxgl.Style` is not available (i.e., the library is not fully
  *         loaded when this function is called).
@@ -282,7 +259,7 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 
 					if (!response?.data) {
 						// Empty / null response – treat as an empty tile rather than an error.
-						tile.state = 'errored';
+						tile.state = 'loaded';
 						callback(null);
 						return;
 					}
@@ -422,8 +399,6 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 			registry.remove(protocol);
 		},
 		rasterSourceType: OmRasterSource,
-		vectorSourceType: OmVectorSource,
-		// backward-compat alias
-		sourceType: OmRasterSource
+		vectorSourceType: OmVectorSource
 	};
 };

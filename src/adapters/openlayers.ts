@@ -45,8 +45,7 @@
  */
 import { buildTileUrl, createProtocolRegistry, extractProtocol } from './helpers';
 
-import type { OmProtocolSettings } from '../types';
-import { ProtocolHandler } from './types';
+import { ProtocolAdapter } from './types';
 
 /* ── Minimal OpenLayers type surface used by this adapter ────────────── */
 
@@ -103,23 +102,7 @@ export interface OlLib {
 /**
  * The object returned by `addOpenLayersProtocolSupport`.
  */
-export interface OpenLayersProtocolAdapter {
-	/**
-	 * Register a protocol handler.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 * @param handler  - Protocol handler (e.g. `omProtocol`).
-	 * @param settings - Optional OmProtocolSettings forwarded to every handler call.
-	 */
-	addProtocol: (protocol: string, handler: ProtocolHandler, settings?: OmProtocolSettings) => void;
-
-	/**
-	 * Unregister a previously registered protocol handler.
-	 *
-	 * @param protocol - Protocol prefix WITHOUT the trailing "://", e.g. `"om"`.
-	 */
-	removeProtocol: (protocol: string) => void;
-
+export interface OpenLayersProtocolAdapter extends ProtocolAdapter {
 	/**
 	 * Create a raster tile source backed by the registered protocol handler.
 	 *
