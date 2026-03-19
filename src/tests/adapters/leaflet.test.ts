@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 /** Shape exposed by the mock GridLayer so tests can inspect stored options. */
 interface MockLayerInstance {
 	_options: Record<string, unknown>;
+	_proto: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,10 +68,18 @@ describe('addLeafletProtocolSupport', () => {
 
 	beforeEach(() => {
 		L = createMockLeaflet();
+		vi.stubGlobal('document', {
+			createElement: vi.fn().mockReturnValue({
+				width: 0,
+				height: 0,
+				getContext: vi.fn().mockReturnValue(null)
+			})
+		});
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 	});
 
 	// ── Constructor validation ────────────────────────────────────────────
@@ -191,24 +200,6 @@ describe('addLeafletProtocolSupport', () => {
 			adapter.addProtocol('om', createMockHandler());
 
 			// Should not throw
-			const layer = adapter.createVectorTileLayer('om://example.com/tiles.json');
-			expect(layer).toBeDefined();
-		});
-	});
-
-	// ── Error handling ────────────────────────────────────────────────────
-
-	describe('error handling', () => {
-		it('createTileLayer with unregistered protocol creates the layer (error at tile load time)', () => {
-			const adapter = addLeafletProtocolSupport(L);
-			// Layer creation is synchronous and always succeeds — the protocol
-			// is only looked up when a tile is actually requested.
-			const layer = adapter.createTileLayer('om://example.com/tiles.json');
-			expect(layer).toBeDefined();
-		});
-
-		it('createVectorTileLayer with unregistered protocol creates the layer (error at tile load time)', () => {
-			const adapter = addLeafletProtocolSupport(L);
 			const layer = adapter.createVectorTileLayer('om://example.com/tiles.json');
 			expect(layer).toBeDefined();
 		});

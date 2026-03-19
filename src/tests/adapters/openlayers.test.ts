@@ -203,7 +203,7 @@ describe('addOpenLayersProtocolSupport', () => {
 					}
 				})
 				.mockResolvedValueOnce({
-					data: new ArrayBuffer(16)
+					data: new ImageBitmap()
 				});
 			adapter.addProtocol('om', handler);
 
