@@ -35,7 +35,7 @@
 			leafletAdapter.addProtocol('om', OpenMeteoMapboxLayer.omProtocol);
 
 			// Create the map with a standard base layer.
-			const map = L.map('map').setView([50, 10], 7);
+			const map = L.map('map').setView([0, 0], 2);
 
 			// Keep the protocol informed of the current viewport bounds.
 			function updateBounds() {

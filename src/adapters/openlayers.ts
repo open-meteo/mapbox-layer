@@ -234,11 +234,6 @@ export const addOpenLayersProtocolSupport = (ol: OlLib): OpenLayersProtocolAdapt
 							return data;
 						}
 
-						if (data instanceof ArrayBuffer) {
-							// ArrayBuffer = raw encoded PNG bytes — decode into ImageBitmap.
-							return createImageBitmap(new Blob([new Uint8Array(data)], { type: 'image/png' }));
-						}
-
 						throw new Error(
 							`[openlayers-adapter] Unsupported raster tile data type: ${Object.prototype.toString.call(data)}`
 						);

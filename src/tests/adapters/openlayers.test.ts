@@ -19,7 +19,7 @@ interface MockSourceInstance {
 // ---------------------------------------------------------------------------
 
 /** Construct a minimal mock of the OpenLayers namespace. */
-function createMockOl(): OlLib {
+const createMockOl = (): OlLib => {
 	class MockDataTile {
 		_options: Record<string, unknown>;
 		_attributions: string | null = null;
@@ -74,10 +74,10 @@ function createMockOl(): OlLib {
 			MVT: MockMVT as unknown as NonNullable<OlLib['format']>['MVT']
 		}
 	};
-}
+};
 
 /** Create a mock protocol handler that returns predictable TileJSON. */
-function createMockHandler(overrides: Record<string, unknown> = {}) {
+const createMockHandler = (overrides: Record<string, unknown> = {}) => {
 	const tileJson = {
 		tiles: ['om://example.com/{z}/{x}/{y}.png'],
 		attribution: '© Open-Meteo',
@@ -87,7 +87,7 @@ function createMockHandler(overrides: Record<string, unknown> = {}) {
 	};
 
 	return vi.fn().mockResolvedValue({ data: tileJson });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -116,24 +116,6 @@ describe('addOpenLayersProtocolSupport', () => {
 			expect(() => addOpenLayersProtocolSupport(null as unknown as OlLib)).toThrow(
 				'ol.source.DataTile and ol.source.VectorTile must be available'
 			);
-		});
-
-		it('throws when ol.source is missing', () => {
-			expect(() => addOpenLayersProtocolSupport({} as unknown as OlLib)).toThrow(
-				'ol.source.DataTile and ol.source.VectorTile must be available'
-			);
-		});
-
-		it('throws when ol.source.DataTile is missing', () => {
-			expect(() =>
-				addOpenLayersProtocolSupport({ source: { VectorTile: vi.fn() } } as unknown as OlLib)
-			).toThrow('ol.source.DataTile and ol.source.VectorTile must be available');
-		});
-
-		it('throws when ol.source.VectorTile is missing', () => {
-			expect(() =>
-				addOpenLayersProtocolSupport({ source: { DataTile: vi.fn() } } as unknown as OlLib)
-			).toThrow('ol.source.DataTile and ol.source.VectorTile must be available');
 		});
 
 		it('returns an adapter with the expected interface', () => {

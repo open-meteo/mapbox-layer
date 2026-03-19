@@ -361,10 +361,7 @@ export const addMapboxProtocolSupport = (mapboxgl: MapboxLib): MapboxProtocolAda
 						return;
 					}
 
-					const bytes =
-						response?.data instanceof ArrayBuffer
-							? new Uint8Array(response.data)
-							: new Uint8Array(0);
+					const bytes = response?.data instanceof ArrayBuffer ? response.data : new Uint8Array(0);
 					const blob = new Blob([bytes], { type: 'application/x-protobuf' });
 					const objectUrl = URL.createObjectURL(blob);
 

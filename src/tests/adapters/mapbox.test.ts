@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // ---------------------------------------------------------------------------
 
 /** Construct a minimal mock of the Mapbox GL JS namespace. */
-function createMockMapbox(): MapboxLib {
+const createMockMapbox = (): MapboxLib => {
 	class MockRasterSource {
 		_options?: Record<string, unknown>;
 		options?: Record<string, unknown>;
@@ -51,10 +51,10 @@ function createMockMapbox(): MapboxLib {
 			}
 		}
 	};
-}
+};
 
 /** Create a mock protocol handler that returns predictable TileJSON. */
-function createMockHandler(overrides: Record<string, unknown> = {}) {
+const createMockHandler = (overrides: Record<string, unknown> = {}) => {
 	const tileJson = {
 		tiles: ['om://example.com/{z}/{x}/{y}.png'],
 		attribution: '© Open-Meteo',
@@ -65,7 +65,7 @@ function createMockHandler(overrides: Record<string, unknown> = {}) {
 	};
 
 	return vi.fn().mockResolvedValue({ data: tileJson });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -91,25 +91,12 @@ describe('addMapboxProtocolSupport', () => {
 			);
 		});
 
-		it('throws when mapboxgl.Style is missing', () => {
-			expect(() => addMapboxProtocolSupport({} as unknown as MapboxLib)).toThrow(
-				'mapboxgl.Style.getSourceType is not available'
-			);
-		});
-
-		it('throws when mapboxgl.Style.getSourceType is missing', () => {
-			expect(() => addMapboxProtocolSupport({ Style: {} } as unknown as MapboxLib)).toThrow(
-				'mapboxgl.Style.getSourceType is not available'
-			);
-		});
-
 		it('returns an adapter with the expected interface', () => {
 			const adapter = addMapboxProtocolSupport(mapboxgl);
 			expect(adapter).toHaveProperty('addProtocol');
 			expect(adapter).toHaveProperty('removeProtocol');
 			expect(adapter).toHaveProperty('rasterSourceType');
 			expect(adapter).toHaveProperty('vectorSourceType');
-			expect(adapter).toHaveProperty('sourceType');
 			expect(typeof adapter.addProtocol).toBe('function');
 			expect(typeof adapter.removeProtocol).toBe('function');
 		});

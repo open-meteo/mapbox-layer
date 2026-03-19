@@ -255,10 +255,11 @@ export const addLeafletProtocolSupport = (L: LeafletLib): LeafletProtocolAdapter
 				const centerY = gridRow * cellSize;
 
 				let renderType = feature.type;
+				// Point
 				if (renderType === 1) {
 					for (const ring of geometry) {
 						if (ring.length > 1) {
-							renderType = 2;
+							renderType = 2; // LineString
 							break;
 						}
 					}

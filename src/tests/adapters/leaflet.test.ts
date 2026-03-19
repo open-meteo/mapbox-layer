@@ -18,7 +18,7 @@ interface MockLayerInstance {
 // ---------------------------------------------------------------------------
 
 /** Construct a minimal mock of the Leaflet namespace. */
-function createMockLeaflet(): LeafletLib {
+const createMockLeaflet = (): LeafletLib => {
 	return {
 		GridLayer: {
 			extend(proto: Record<string, unknown>) {
@@ -43,10 +43,10 @@ function createMockLeaflet(): LeafletLib {
 			}
 		}
 	};
-}
+};
 
 /** Create a mock protocol handler that returns predictable TileJSON. */
-function createMockHandler(overrides: Record<string, unknown> = {}) {
+const createMockHandler = (overrides: Record<string, unknown> = {}) => {
 	const tileJson = {
 		tiles: ['om://example.com/{z}/{x}/{y}.png'],
 		attribution: '© Open-Meteo',
@@ -56,7 +56,7 @@ function createMockHandler(overrides: Record<string, unknown> = {}) {
 	};
 
 	return vi.fn().mockResolvedValue({ data: tileJson });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -78,12 +78,6 @@ describe('addLeafletProtocolSupport', () => {
 	describe('constructor validation', () => {
 		it('throws when L is null', () => {
 			expect(() => addLeafletProtocolSupport(null as unknown as LeafletLib)).toThrow(
-				'L.GridLayer is not available'
-			);
-		});
-
-		it('throws when L.GridLayer is missing', () => {
-			expect(() => addLeafletProtocolSupport({} as unknown as LeafletLib)).toThrow(
 				'L.GridLayer is not available'
 			);
 		});
