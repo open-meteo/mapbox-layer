@@ -48,8 +48,6 @@
 			}
 
 			.popup-div {
-				/* width: 100%;
-				height: 100%; */
 				display: inline-block;
 				text-align: center;
 				padding: 3px 5px;
@@ -67,7 +65,7 @@
 				hash: true
 			});
 
-			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			const omUrl = `https://map-tiles.open-meteo.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=freezing_level_height`;
 
 			let popup;
 			const updatePopup = async (e) => {
@@ -90,7 +88,7 @@
 
 				if (isFinite(value)) {
 					const colorScale = OpenMeteoMapboxLayer.getColorScale(
-						'temperature_2m',
+						'freezing_level_height',
 						false,
 						OpenMeteoMapboxLayer.defaultOmProtocolSettings.colorScales
 					);
