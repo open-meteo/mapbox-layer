@@ -1,5 +1,5 @@
 {
-	"name": "@openmeteo/mapbox-layer",
+	"name": "@openmeteo/weather-map-layer",
 	"type": "module",
 	"main": "dist/index.cjs",
 	"types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
 	"module": "dist/index.mjs",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/open-meteo/mapbox-layer.git"
+		"url": "git+https://github.com/open-meteo/weather-map-layer.git"
 	},
 	"description": "Protocol to read OMfiles and parse them to tiles for Mapbox / Maplibre",
 	"keywords": [
