@@ -1,4 +1,4 @@
-# Open-Meteo Mapbox Layer
+# Open-Meteo Weather Map Layer
 
 [![codecov](https://codecov.io/gh/open-meteo/weather-map-layer/graph/badge.svg?token=E2WYHGJJHP)](https://codecov.io/gh/open-meteo/weather-map-layer)
 [![Linting & Tests](https://github.com/open-meteo/weather-map-layer/actions/workflows/ci.yml/badge.svg)](https://github.com/open-meteo/weather-map-layer/actions/workflows/ci.yml)
