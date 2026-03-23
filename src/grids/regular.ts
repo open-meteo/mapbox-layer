@@ -95,7 +95,7 @@ export class RegularGrid implements GridInterface {
 		const yFraction = yRaw - y;
 
 		// small visual hack for "incomplete" icon global grids
-		// compare: https://github.com/open-meteo/mapbox-layer/pull/148#discussion_r2681391084
+		// compare: https://github.com/open-meteo/weather-map-layer/pull/148#discussion_r2681391084
 		const x = Math.min(Math.floor(xRaw), this.nx - 1);
 		const absDx = Math.abs(this.dx);
 		const effectiveDx = this.longitudeWrap && xRaw >= this.nx - 1 ? absDx * 2 : absDx;
