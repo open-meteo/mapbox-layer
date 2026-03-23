@@ -10,8 +10,9 @@
 		"type": "git",
 		"url": "git+https://github.com/open-meteo/weather-map-layer.git"
 	},
-	"description": "Protocol to read OMfiles and parse them to tiles for Mapbox / Maplibre",
+	"description": "Weather Map Layer for MapLibre/Mapbox GL JS powered by Open-Meteo OMfiles",
 	"keywords": [
+		"openmeteo",
 		"open-meteo",
 		"meteorological-data",
 		"weather-maps",
