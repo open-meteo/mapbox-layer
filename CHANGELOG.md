@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.17](https://github.com/open-meteo/mapbox-layer/compare/v0.0.16...v0.0.17) (2026-03-23)
+
+
+### Features
+
+* popup example ([#211](https://github.com/open-meteo/mapbox-layer/issues/211)) ([4e8d189](https://github.com/open-meteo/mapbox-layer/commit/4e8d18923f22005d3bc470ebbc071502f23ba63d))
+
 ## [0.0.16](https://github.com/open-meteo/mapbox-layer/compare/v0.0.15...v0.0.16) (2026-03-19)
 
 
