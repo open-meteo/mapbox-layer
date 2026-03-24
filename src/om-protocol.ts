@@ -78,11 +78,7 @@ export const omProtocol = async (
 	// Handle TileJSON request
 	if (params.type == 'json') {
 		return {
-			data: await getTilejson(
-				params.url,
-				request.dataOptions,
-				settings.clippingOptions as ResolvedClipping
-			)
+			data: await getTilejson(params.url, request.dataOptions, settings.clippingOptions)
 		};
 	}
 
