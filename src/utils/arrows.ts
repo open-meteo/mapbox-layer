@@ -1,7 +1,7 @@
 import { GridFactory } from '../grids';
 import Pbf from 'pbf';
 
-import { ResolvedClipping, createClippingTester } from './clipping';
+import { type ResolvedClipping, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';

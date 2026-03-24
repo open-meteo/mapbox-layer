@@ -1,4 +1,4 @@
-import { ResolvedClipping } from './utils/clipping';
+import type { ResolvedClipping } from './utils/clipping';
 
 import { FileReaderConfig, MapboxLayerFileReader } from './om-file-reader';
 
