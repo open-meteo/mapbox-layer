@@ -61,28 +61,17 @@ export const createClippingTester = (
 	const sp = clippingOptions?.polygons;
 	if (!sp || sp.polygonOffsets.length <= 1) return undefined;
 
-	const fillRule = clippingOptions.fillRule;
-
 	// Build the polygon array(s) for point-in-polygon testing.
-	// With 'evenodd', rings are grouped per polygon so inner rings create holes.
-	// With 'nonzero', every ring is treated as its own enclosing polygon.
 	const polygons: number[][][][] = [];
-	if (fillRule === 'evenodd') {
-		const numPolygons = sharedPolygonsPolygonCount(sp);
-		for (let p = 0; p < numPolygons; p++) {
-			const firstRing = sp.polygonOffsets[p];
-			const lastRing = sp.polygonOffsets[p + 1];
-			const rings: number[][][] = [];
-			for (let r = firstRing; r < lastRing; r++) {
-				rings.push(sharedPolygonsRing(sp, r));
-			}
-			polygons.push(rings);
+	const numPolygons = sharedPolygonsPolygonCount(sp);
+	for (let p = 0; p < numPolygons; p++) {
+		const firstRing = sp.polygonOffsets[p];
+		const lastRing = sp.polygonOffsets[p + 1];
+		const rings: number[][][] = [];
+		for (let r = firstRing; r < lastRing; r++) {
+			rings.push(sharedPolygonsRing(sp, r));
 		}
-	} else {
-		const numRings = sharedPolygonsRingCount(sp);
-		for (let r = 0; r < numRings; r++) {
-			polygons.push([sharedPolygonsRing(sp, r)]);
-		}
+		polygons.push(rings);
 	}
 
 	// Pre-extract bounds for a fast AABB rejection (O(1) per point).

@@ -164,7 +164,6 @@ describe('resolveClippingOptions - polygon structure', () => {
 describe('createClippingTester - polygon holes', () => {
 	test('point inside hole is excluded', () => {
 		const resolved = resolveClippingOptions({
-			fillRule: 'evenodd',
 			geojson: {
 				type: 'Feature',
 				geometry: {
@@ -201,7 +200,6 @@ describe('createClippingTester - polygon holes', () => {
 
 	test('MultiPolygon with hole: point in hole excluded, other polygon included', () => {
 		const resolved = resolveClippingOptions({
-			fillRule: 'evenodd',
 			geojson: {
 				type: 'Feature',
 				geometry: {
