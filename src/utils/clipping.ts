@@ -8,21 +8,32 @@ import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } fr
  * Flat representation of clipping polygons.
  * When `useSAB` is true the backing buffer is a SharedArrayBuffer (zero-copy
  * across workers); otherwise a regular ArrayBuffer is used.
+ *
+ * Polygon grouping is preserved so that holes are correctly excluded:
+ * `polygonOffsets[p]` .. `polygonOffsets[p+1]` gives the range of ring indices
+ * belonging to polygon *p* (first ring = outer boundary, rest = holes).
  */
 export type SharedPolygons = {
 	/** Flat [lon, lat, …] pairs for all rings. */
 	coordinates: Float64Array;
 	/** Ring start indices (element offsets into `coordinates`). Length = numRings + 1. */
 	offsets: Uint32Array;
+	/** Polygon start indices (indices into `offsets`). Length = numPolygons + 1. */
+	polygonOffsets: Uint32Array;
 };
 
-export type ResolvedClipping = {
+export type ResolvedClippingOptions = {
 	polygons?: SharedPolygons;
 	bounds?: Bounds;
+	fillRule: 'nonzero' | 'evenodd';
 };
 
 /** Number of rings stored in a SharedPolygons structure. */
 export const sharedPolygonsRingCount = (sp: SharedPolygons): number => sp.offsets.length - 1;
+
+/** Number of polygons stored in a SharedPolygons structure. */
+export const sharedPolygonsPolygonCount = (sp: SharedPolygons): number =>
+	sp.polygonOffsets.length - 1;
 
 /** Extract ring *i* as a plain `number[][]` (each element `[lon, lat]`). */
 export const sharedPolygonsRing = (sp: SharedPolygons, i: number): number[][] => {
@@ -45,18 +56,33 @@ export const sharedPolygonsRing = (sp: SharedPolygons, i: number): number[][] =>
  * skip the test entirely.
  */
 export const createClippingTester = (
-	clippingOptions: ResolvedClipping | undefined
+	clippingOptions: ResolvedClippingOptions | undefined
 ): ((lon: number, lat: number) => boolean) | undefined => {
 	const sp = clippingOptions?.polygons;
-	if (!sp || sp.offsets.length <= 1) return undefined;
+	if (!sp || sp.polygonOffsets.length <= 1) return undefined;
 
-	const numRings = sharedPolygonsRingCount(sp);
+	const fillRule = clippingOptions.fillRule;
 
-	// Pre-extract each ring into the [ring] shape that point-in-polygon-hao expects,
-	// so we avoid allocating wrapper arrays on every call.
-	const wrappedPolygons: number[][][][] = [];
-	for (let i = 0; i < numRings; i++) {
-		wrappedPolygons.push([sharedPolygonsRing(sp, i)]);
+	// Build the polygon array(s) for point-in-polygon testing.
+	// With 'evenodd', rings are grouped per polygon so inner rings create holes.
+	// With 'nonzero', every ring is treated as its own enclosing polygon.
+	const polygons: number[][][][] = [];
+	if (fillRule === 'evenodd') {
+		const numPolygons = sharedPolygonsPolygonCount(sp);
+		for (let p = 0; p < numPolygons; p++) {
+			const firstRing = sp.polygonOffsets[p];
+			const lastRing = sp.polygonOffsets[p + 1];
+			const rings: number[][][] = [];
+			for (let r = firstRing; r < lastRing; r++) {
+				rings.push(sharedPolygonsRing(sp, r));
+			}
+			polygons.push(rings);
+		}
+	} else {
+		const numRings = sharedPolygonsRingCount(sp);
+		for (let r = 0; r < numRings; r++) {
+			polygons.push([sharedPolygonsRing(sp, r)]);
+		}
 	}
 
 	// Pre-extract bounds for a fast AABB rejection (O(1) per point).
@@ -75,18 +101,19 @@ export const createClippingTester = (
 
 		point[0] = lon;
 		point[1] = lat;
-		return wrappedPolygons.some((polygon) => !!inside(point, polygon));
+		return polygons.some((polygon) => !!inside(point, polygon));
 	};
 };
 
 export const resolveClippingOptions = (
 	options: ClippingOptions,
 	useSAB = false
-): ResolvedClipping | undefined => {
+): ResolvedClippingOptions | undefined => {
 	if (!options) return undefined;
 
-	// Collect rings as plain arrays first, then pack into a flat buffer at the end.
-	const rings: [number, number][][] = [];
+	// Collect rings grouped by polygon, then pack into flat buffers at the end.
+	// Each entry in `polygonRings` is one polygon: [outerRing, hole1, hole2, …].
+	const polygonRings: [number, number][][][] = [];
 	let bounds = options.bounds;
 
 	let combinedMinLon = Infinity;
@@ -119,28 +146,30 @@ export const resolveClippingOptions = (
 	};
 
 	if (options.geojson) {
-		const addRing = (ring: GeoJsonPosition[]) => {
-			const normalizedRing = ring.map((position) => toCoord2(position));
-			if (!bounds) {
-				extendBoundsWithRing(normalizedRing);
+		const addPolygon = (geoRings: GeoJsonPosition[][]) => {
+			const processedRings: [number, number][][] = [];
+			for (const ring of geoRings) {
+				const normalizedRing = ring.map((position) => toCoord2(position));
+				if (!bounds) {
+					extendBoundsWithRing(normalizedRing);
+				}
+				if (normalizedRing.length === 0) continue;
+				processedRings.push(closeRing(normalizedRing));
 			}
-			if (normalizedRing.length === 0) return;
-			rings.push(closeRing(normalizedRing));
+			if (processedRings.length > 0) {
+				polygonRings.push(processedRings);
+			}
 		};
 
 		const addGeometry = (geometry: GeoJsonGeometry | null) => {
 			if (!geometry) return;
 			if (geometry.type === 'Polygon') {
-				for (const ring of geometry.coordinates) {
-					addRing(ring);
-				}
+				addPolygon(geometry.coordinates);
 				return;
 			}
 			if (geometry.type === 'MultiPolygon') {
 				for (const polygon of geometry.coordinates) {
-					for (const ring of polygon) {
-						addRing(ring);
-					}
+					addPolygon(polygon);
 				}
 				return;
 			}
@@ -175,35 +204,56 @@ export const resolveClippingOptions = (
 		bounds = [combinedMinLon, combinedMinLat, combinedMaxLon, combinedMaxLat];
 	}
 
-	if (!bounds && rings.length === 0) return undefined;
+	if (!bounds && polygonRings.length === 0) return undefined;
 
 	// Pack collected rings into flat typed arrays (SharedArrayBuffer when useSAB is true).
 	let sharedPolygons: SharedPolygons | undefined;
-	if (rings.length > 0) {
+	if (polygonRings.length > 0) {
+		// Flatten to count totals
+		const allRings: [number, number][][] = [];
+		const polygonBoundaries: number[] = [0];
+		for (const polygon of polygonRings) {
+			for (const ring of polygon) {
+				allRings.push(ring);
+			}
+			polygonBoundaries.push(allRings.length);
+		}
+
 		let totalElements = 0;
-		for (const ring of rings) totalElements += ring.length * 2;
+		for (const ring of allRings) totalElements += ring.length * 2;
 
 		const coordBytes = totalElements * Float64Array.BYTES_PER_ELEMENT;
-		const offsetBytes = (rings.length + 1) * Uint32Array.BYTES_PER_ELEMENT;
+		const ringOffsetBytes = (allRings.length + 1) * Uint32Array.BYTES_PER_ELEMENT;
+		const polyOffsetBytes = polygonBoundaries.length * Uint32Array.BYTES_PER_ELEMENT;
 		const coordBuffer = useSAB ? new SharedArrayBuffer(coordBytes) : new ArrayBuffer(coordBytes);
 		const coordinates = new Float64Array(coordBuffer);
-		const offsetBuffer = useSAB ? new SharedArrayBuffer(offsetBytes) : new ArrayBuffer(offsetBytes);
-		const offsets = new Uint32Array(offsetBuffer);
+		const ringOffsetBuffer = useSAB
+			? new SharedArrayBuffer(ringOffsetBytes)
+			: new ArrayBuffer(ringOffsetBytes);
+		const offsets = new Uint32Array(ringOffsetBuffer);
+		const polyOffsetBuffer = useSAB
+			? new SharedArrayBuffer(polyOffsetBytes)
+			: new ArrayBuffer(polyOffsetBytes);
+		const polygonOffsets = new Uint32Array(polyOffsetBuffer);
 
 		let idx = 0;
-		for (let r = 0; r < rings.length; r++) {
+		for (let r = 0; r < allRings.length; r++) {
 			offsets[r] = idx;
-			for (const [lon, lat] of rings[r]) {
+			for (const [lon, lat] of allRings[r]) {
 				coordinates[idx++] = lon;
 				coordinates[idx++] = lat;
 			}
 		}
-		offsets[rings.length] = idx;
+		offsets[allRings.length] = idx;
 
-		sharedPolygons = { coordinates, offsets };
+		for (let p = 0; p < polygonBoundaries.length; p++) {
+			polygonOffsets[p] = polygonBoundaries[p];
+		}
+
+		sharedPolygons = { coordinates, offsets, polygonOffsets };
 	}
 
-	return { polygons: sharedPolygons, bounds };
+	return { polygons: sharedPolygons, bounds, fillRule: options.fillRule ?? 'nonzero' };
 };
 
 export const clipRasterToPolygons = (
@@ -212,7 +262,7 @@ export const clipRasterToPolygons = (
 	z: number,
 	x: number,
 	y: number,
-	clippingOptions: ResolvedClipping
+	clippingOptions: ResolvedClippingOptions
 ): ImageBitmap => {
 	const sp = clippingOptions.polygons;
 	if (!sp) {
@@ -247,7 +297,7 @@ export const clipRasterToPolygons = (
 		clipContext.closePath();
 	}
 
-	clipContext.clip();
+	clipContext.clip(clippingOptions.fillRule);
 	clipContext.drawImage(canvas, 0, 0);
 
 	return clipCanvas.transferToImageBitmap();

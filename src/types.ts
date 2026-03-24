@@ -1,4 +1,4 @@
-import type { ResolvedClipping } from './utils/clipping';
+import type { ResolvedClippingOptions } from './utils/clipping';
 
 import { FileReaderConfig, MapboxLayerFileReader } from './om-file-reader';
 
@@ -37,7 +37,7 @@ export interface ParsedRequest {
 	tileIndex: TileIndex | null;
 	renderOptions: RenderOptions; // Only rendering-related params
 	dataOptions: DataIdentityOptions; // Only data-identity params,
-	clippingOptions: ResolvedClipping | undefined;
+	clippingOptions: ResolvedClippingOptions | undefined;
 }
 
 export interface OmUrlState {
@@ -114,7 +114,7 @@ export interface TileRequest {
 	renderOptions: RenderOptions;
 	dataOptions: DataIdentityOptions;
 	ranges: DimensionRange[];
-	clippingOptions: ResolvedClipping | undefined;
+	clippingOptions: ResolvedClippingOptions | undefined;
 	signal?: AbortSignal;
 }
 
@@ -347,4 +347,6 @@ export type GeoJson =
 	| GeoJsonFeature
 	| { type: 'FeatureCollection'; features: GeoJsonFeature[] };
 
-export type ClippingOptions = { geojson?: GeoJson; bounds?: Bounds } | undefined;
+export type ClippingOptions =
+	| { geojson?: GeoJson; bounds?: Bounds; fillRule?: 'nonzero' | 'evenodd' }
+	| undefined;

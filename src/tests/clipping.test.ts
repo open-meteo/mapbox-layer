@@ -1,4 +1,9 @@
-import { resolveClippingOptions } from '../utils/clipping';
+import {
+	createClippingTester,
+	resolveClippingOptions,
+	sharedPolygonsPolygonCount,
+	sharedPolygonsRingCount
+} from '../utils/clipping';
 import { describe, expect, test } from 'vitest';
 
 describe('resolveClippingOptions - bounds computation', () => {
@@ -80,5 +85,166 @@ describe('resolveClippingOptions - bounds computation', () => {
 
 	test('undefined options returns undefined', () => {
 		expect(resolveClippingOptions(undefined)).toBeUndefined();
+	});
+});
+
+describe('resolveClippingOptions - polygon structure', () => {
+	test('Polygon with hole produces 1 polygon with 2 rings', () => {
+		const result = resolveClippingOptions({
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[0, 0],
+							[10, 0],
+							[10, 10],
+							[0, 10],
+							[0, 0]
+						],
+						[
+							[2, 2],
+							[8, 2],
+							[8, 8],
+							[2, 8],
+							[2, 2]
+						]
+					]
+				}
+			}
+		});
+		const sp = result!.polygons!;
+		expect(sharedPolygonsPolygonCount(sp)).toBe(1);
+		expect(sharedPolygonsRingCount(sp)).toBe(2);
+	});
+
+	test('MultiPolygon produces separate polygon groups', () => {
+		const result = resolveClippingOptions({
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'MultiPolygon',
+					coordinates: [
+						[
+							[
+								[0, 0],
+								[5, 0],
+								[5, 5],
+								[0, 5],
+								[0, 0]
+							]
+						],
+						[
+							[
+								[20, 20],
+								[30, 20],
+								[30, 30],
+								[20, 30],
+								[20, 20]
+							],
+							[
+								[22, 22],
+								[28, 22],
+								[28, 28],
+								[22, 28],
+								[22, 22]
+							]
+						]
+					]
+				}
+			}
+		});
+		const sp = result!.polygons!;
+		expect(sharedPolygonsPolygonCount(sp)).toBe(2);
+		expect(sharedPolygonsRingCount(sp)).toBe(3);
+	});
+});
+
+describe('createClippingTester - polygon holes', () => {
+	test('point inside hole is excluded', () => {
+		const resolved = resolveClippingOptions({
+			fillRule: 'evenodd',
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'Polygon',
+					coordinates: [
+						[
+							[0, 0],
+							[10, 0],
+							[10, 10],
+							[0, 10],
+							[0, 0]
+						],
+						[
+							[2, 2],
+							[8, 2],
+							[8, 8],
+							[2, 8],
+							[2, 2]
+						]
+					]
+				}
+			}
+		});
+		const tester = createClippingTester(resolved)!;
+		expect(tester).toBeDefined();
+
+		// Inside outer ring but inside hole → excluded
+		expect(tester(5, 5)).toBe(false);
+		// Inside outer ring but outside hole → included
+		expect(tester(1, 1)).toBe(true);
+		// Outside outer ring → excluded
+		expect(tester(15, 15)).toBe(false);
+	});
+
+	test('MultiPolygon with hole: point in hole excluded, other polygon included', () => {
+		const resolved = resolveClippingOptions({
+			fillRule: 'evenodd',
+			geojson: {
+				type: 'Feature',
+				geometry: {
+					type: 'MultiPolygon',
+					coordinates: [
+						[
+							[
+								[0, 0],
+								[10, 0],
+								[10, 10],
+								[0, 10],
+								[0, 0]
+							],
+							[
+								[2, 2],
+								[8, 2],
+								[8, 8],
+								[2, 8],
+								[2, 2]
+							]
+						],
+						[
+							[
+								[20, 20],
+								[30, 20],
+								[30, 30],
+								[20, 30],
+								[20, 20]
+							]
+						]
+					]
+				}
+			}
+		});
+		const tester = createClippingTester(resolved)!;
+
+		// In hole of first polygon
+		expect(tester(5, 5)).toBe(false);
+		// In solid part of first polygon
+		expect(tester(1, 1)).toBe(true);
+		// In second polygon
+		expect(tester(25, 25)).toBe(true);
+		// Outside both
+		expect(tester(15, 15)).toBe(false);
 	});
 });

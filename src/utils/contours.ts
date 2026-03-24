@@ -1,7 +1,7 @@
 import { GridInterface } from '../grids/index';
 import Pbf from 'pbf';
 
-import { type ResolvedClipping, createClippingTester } from './clipping';
+import { type ResolvedClippingOptions, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -110,7 +110,7 @@ export const generateContours = (
 	z: number,
 	tileSize: number,
 	intervals: number[],
-	clippingOptions: ResolvedClipping | undefined,
+	clippingOptions: ResolvedClippingOptions | undefined,
 	extent: number = VECTOR_TILE_EXTENT
 ) => {
 	const features = [];

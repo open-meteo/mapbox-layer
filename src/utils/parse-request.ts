@@ -1,6 +1,5 @@
 import { currentBounds, setClippingBounds } from './bounds';
-import { resolveClippingOptions } from './clipping';
-import type { ResolvedClipping } from './clipping';
+import { type ResolvedClippingOptions, resolveClippingOptions } from './clipping';
 import {
 	DEFAULT_INTERVAL,
 	DEFAULT_TILE_SIZE,
@@ -23,12 +22,12 @@ import type {
 } from '../types';
 
 let cachedClippingInput: ClippingOptions = undefined;
-let cachedClippingResult: ResolvedClipping | undefined = undefined;
+let cachedClippingResult: ResolvedClippingOptions | undefined = undefined;
 
 const getCachedResolvedClipping = (
 	options: ClippingOptions,
 	useSAB: boolean | undefined
-): ResolvedClipping | undefined => {
+): ResolvedClippingOptions | undefined => {
 	if (options === cachedClippingInput) {
 		return cachedClippingResult;
 	}
