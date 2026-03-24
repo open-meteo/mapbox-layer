@@ -45,7 +45,7 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 		settings.clippingOptions,
 		settings.fileReaderConfig.useSAB
 	);
-	if (resolvedClippingOptions) setClippingBounds(resolvedClippingOptions?.bounds);
+	setClippingBounds(resolvedClippingOptions?.bounds);
 
 	return {
 		baseUrl: urlComponents.baseUrl,
