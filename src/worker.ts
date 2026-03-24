@@ -79,7 +79,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		let imageBitmap;
 		if (clippingOptions?.polygons) {
-			imageBitmap = clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions.polygons);
+			imageBitmap = clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions);
 		} else {
 			imageBitmap = canvas.transferToImageBitmap();
 		}

@@ -37,11 +37,6 @@
 						highQuality: true
 					});
 
-					let polygons = [];
-					for (let coords of simplifiedoceansPolygon.geometry.coordinates) {
-						polygons.push(...coords);
-					}
-
 					const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
 						geojson: simplifiedoceansPolygon

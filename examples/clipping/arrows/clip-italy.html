@@ -38,11 +38,6 @@
 						highQuality: true
 					});
 
-					let polygons = [];
-					for (let coords of simplifieditalyPolygon.geometry.coordinates) {
-						polygons.push(...coords);
-					}
-
 					const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
 					omProtocolOptions.clippingOptions = {
 						geojson: simplifiedItaly

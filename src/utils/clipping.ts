@@ -1,6 +1,6 @@
 import inside from 'point-in-polygon-hao';
 
-import { normalizeLon, tile2lon } from './math';
+import { lat2tile, lon2tile } from './math';
 
 import { Bounds, ClippingOptions, GeoJson, GeoJsonGeometry, GeoJsonPosition } from '../types';
 
@@ -70,35 +70,13 @@ export const createClippingTester = (
 		if (bounds) {
 			const [minLon, minLat, maxLon, maxLat] = bounds;
 			if (lat < minLat || lat > maxLat) return false;
-			// Dateline-aware longitude check (same logic as checkAgainstBounds)
-			if (maxLon >= minLon) {
-				if (lon < minLon || lon > maxLon) return false;
-			} else {
-				// Wrapping bounds: valid range is [minLon, 180] ∪ [-180, maxLon]
-				if (lon < minLon && lon > maxLon) return false;
-			}
+			if (lon < minLon || lon > maxLon) return false;
 		}
 
 		point[0] = lon;
 		point[1] = lat;
 		return wrappedPolygons.some((polygon) => !!inside(point, polygon));
 	};
-};
-
-/** Unwrap a ring's longitudes to be continuous (no jumps > 180°) */
-export const unwrapLongitudes = (ring: [number, number][]): [number, number][] => {
-	if (ring.length < 2) return ring.slice();
-	const result: [number, number][] = [[ring[0][0], ring[0][1]]];
-	let prevLon = ring[0][0];
-	for (let i = 1; i < ring.length; i++) {
-		const [lon, lat] = ring[i];
-		const delta = lon - prevLon;
-		const shift = Math.round(delta / 360) * -360;
-		const adjustedLon = lon + shift;
-		result.push([adjustedLon, lat]);
-		prevLon = adjustedLon;
-	}
-	return result;
 };
 
 export const resolveClippingOptions = (
@@ -111,42 +89,17 @@ export const resolveClippingOptions = (
 	const rings: [number, number][][] = [];
 	let bounds = options.bounds;
 
-	// Track combined (unwrapped) bounds for dateline-aware auto-computation
 	let combinedMinLon = Infinity;
 	let combinedMaxLon = -Infinity;
 	let combinedMinLat = Infinity;
 	let combinedMaxLat = -Infinity;
 
-	/** Extend the combined bounds with an entire ring, shifting it into the
-	 *  same longitude frame as previously added rings so that rings on opposite
-	 *  sides of the dateline are correctly merged. */
 	const extendBoundsWithRing = (ring: [number, number][]) => {
-		const unwrapped = unwrapLongitudes(ring);
-		if (unwrapped.length === 0) return;
-
-		let ringMinLon = Infinity;
-		let ringMaxLon = -Infinity;
-		for (const [lon, lat] of unwrapped) {
-			if (lon < ringMinLon) ringMinLon = lon;
-			if (lon > ringMaxLon) ringMaxLon = lon;
+		for (const [lon, lat] of ring) {
+			if (lon < combinedMinLon) combinedMinLon = lon;
+			if (lon > combinedMaxLon) combinedMaxLon = lon;
 			if (lat < combinedMinLat) combinedMinLat = lat;
 			if (lat > combinedMaxLat) combinedMaxLat = lat;
-		}
-
-		if (combinedMinLon === Infinity) {
-			// First ring establishes the reference frame
-			combinedMinLon = ringMinLon;
-			combinedMaxLon = ringMaxLon;
-		} else {
-			// Shift this ring's interval to be closest to the existing midpoint
-			const mid = (combinedMinLon + combinedMaxLon) / 2;
-			const ringMid = (ringMinLon + ringMaxLon) / 2;
-			const shift = Math.round((mid - ringMid) / 360) * 360;
-			ringMinLon += shift;
-			ringMaxLon += shift;
-
-			combinedMinLon = Math.min(combinedMinLon, ringMinLon);
-			combinedMaxLon = Math.max(combinedMaxLon, ringMaxLon);
 		}
 	};
 
@@ -171,9 +124,8 @@ export const resolveClippingOptions = (
 			if (!bounds) {
 				extendBoundsWithRing(normalizedRing);
 			}
-			const unwrapped = unwrapLongitudes(normalizedRing);
-			if (unwrapped.length === 0) return;
-			rings.push(closeRing(unwrapped));
+			if (normalizedRing.length === 0) return;
+			rings.push(closeRing(normalizedRing));
 		};
 
 		const addGeometry = (geometry: GeoJsonGeometry | null) => {
@@ -219,19 +171,8 @@ export const resolveClippingOptions = (
 		}
 	}
 
-	// Finalize auto-computed bounds from unwrapped coordinates
 	if (!bounds && combinedMinLon !== Infinity) {
-		if (combinedMaxLon - combinedMinLon >= 360) {
-			// Polygon spans the entire globe
-			bounds = [-180, combinedMinLat, 180, combinedMaxLat];
-		} else {
-			bounds = [
-				normalizeLon(combinedMinLon),
-				combinedMinLat,
-				normalizeLon(combinedMaxLon),
-				combinedMaxLat
-			];
-		}
+		bounds = [combinedMinLon, combinedMinLat, combinedMaxLon, combinedMaxLat];
 	}
 
 	if (!bounds && rings.length === 0) return undefined;
@@ -265,128 +206,49 @@ export const resolveClippingOptions = (
 	return { polygons: sharedPolygons, bounds };
 };
 
-export const clipRasterToPolygons = async (
+export const clipRasterToPolygons = (
 	canvas: OffscreenCanvas,
 	tileSize: number,
 	z: number,
 	x: number,
 	y: number,
-	sp: SharedPolygons
-): Promise<ImageBitmap> => {
+	clippingOptions: ResolvedClipping
+): ImageBitmap => {
+	const sp = clippingOptions.polygons;
+	if (!sp) {
+		return canvas.transferToImageBitmap();
+	}
+
 	const numRings = sharedPolygonsRingCount(sp);
 	if (numRings === 0) {
 		return canvas.transferToImageBitmap();
 	}
 
-	const coords = sp.coordinates;
-	const offsets = sp.offsets;
-
 	const clipCanvas = new OffscreenCanvas(tileSize, tileSize);
-	const ctx = clipCanvas.getContext('2d');
-	if (!ctx) throw new Error('Could not initialise canvas context');
+	const clipContext = clipCanvas.getContext('2d');
 
-	// Precompute constants
-	const nTiles = 1 << z; // 2^z
-	const lonToTileScale = nTiles / 360; // tile units per degree longitude
-	const tileOriginX = x; // tile index of left edge
-	const tileOriginY = y; // tile index of top edge
-	const tileCenterLon = tile2lon(x + 0.5, z);
-
-	// clip path builder
-	const path = new Path2D();
-
-	// temporary vars reused in loops
-	let ringMinLon: number, ringMaxLon: number, ringMidLon: number, lonShift: number;
-	let minLat: number, maxLat: number;
-	const tilePixelLeft = 0;
-	const tilePixelRight = tileSize;
-	const tilePixelTop = 0;
-	const tilePixelBottom = tileSize;
-
-	for (let ri = 0; ri < numRings; ri++) {
-		const start = offsets[ri];
-		const end = offsets[ri + 1];
-		const ringElements = end - start; // number of float64 elements (lon,lat pairs × 2)
-		if (ringElements < 4) continue; // need at least 2 points
-
-		// compute ring lon/lat bbox (cheap index loop over flat buffer)
-		ringMinLon = Infinity;
-		ringMaxLon = -Infinity;
-		minLat = Infinity;
-		maxLat = -Infinity;
-		for (let j = start; j < end; j += 2) {
-			const lon = coords[j];
-			const lat = coords[j + 1];
-			if (lon < ringMinLon) ringMinLon = lon;
-			if (lon > ringMaxLon) ringMaxLon = lon;
-			if (lat < minLat) minLat = lat;
-			if (lat > maxLat) maxLat = lat;
-		}
-
-		// representative midpoint of ring longitudes and shift into tile frame
-		ringMidLon = (ringMinLon + ringMaxLon) / 2;
-		lonShift = Math.round((tileCenterLon - ringMidLon) / 360) * 360;
-
-		// Early reject by projecting ring bbox to tile pixel bbox.
-		const shiftedMinLon = ringMinLon + lonShift;
-		const shiftedMaxLon = ringMaxLon + lonShift;
-		const tileXMin = (shiftedMinLon + 180) * lonToTileScale;
-		const tileXMax = (shiftedMaxLon + 180) * lonToTileScale;
-		const pixelXMin = (tileXMin - tileOriginX) * tileSize;
-		const pixelXMax = (tileXMax - tileOriginX) * tileSize;
-
-		const latToTileY = (lat: number) => {
-			const rad = (lat * Math.PI) / 180;
-			const merc = Math.log(Math.tan(rad) + 1 / Math.cos(rad));
-			return ((1 - merc / Math.PI) / 2) * nTiles;
-		};
-
-		const tileYMin = latToTileY(maxLat); // note lat to tile Y inverses (maxLat -> min tileY)
-		const tileYMax = latToTileY(minLat);
-		const pixelYMin = (tileYMin - tileOriginY) * tileSize;
-		const pixelYMax = (tileYMax - tileOriginY) * tileSize;
-
-		// If the ring pixel bbox doesn't intersect tile pixel rectangle, skip.
-		if (
-			pixelXMax < tilePixelLeft ||
-			pixelXMin > tilePixelRight ||
-			pixelYMax < tilePixelTop ||
-			pixelYMin > tilePixelBottom
-		) {
-			continue;
-		}
-
-		// First vertex
-		{
-			const lon = coords[start] + lonShift;
-			const lat = coords[start + 1];
-			const tileXF = (lon + 180) * lonToTileScale;
-			const px = (tileXF - tileOriginX) * tileSize;
-			const rad = (lat * Math.PI) / 180;
-			const py =
-				(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * nTiles - tileOriginY) *
-				tileSize;
-			path.moveTo(px, py);
-		}
-
-		for (let j = start + 2; j < end; j += 2) {
-			const lon = coords[j] + lonShift;
-			const lat = coords[j + 1];
-			const tileXF = (lon + 180) * lonToTileScale;
-			const px = (tileXF - tileOriginX) * tileSize;
-			const rad = (lat * Math.PI) / 180;
-			const py =
-				(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * nTiles - tileOriginY) *
-				tileSize;
-			path.lineTo(px, py);
-		}
-
-		path.closePath();
+	if (!clipContext) {
+		throw new Error('Could not initialise canvas context');
 	}
 
-	// Clip once with the constructed path and draw
-	ctx.clip(path);
-	ctx.drawImage(canvas, 0, 0);
+	clipContext.beginPath();
+	for (let r = 0; r < numRings; r++) {
+		const ring = sharedPolygonsRing(sp, r);
+		for (let i = 0; i < ring.length; i++) {
+			const [polyX, polyY] = ring[i];
+			const polyXtile = (lon2tile(polyX, z) - x) * tileSize;
+			const polyYtile = (lat2tile(polyY, z) - y) * tileSize;
+			if (i === 0) {
+				clipContext.moveTo(polyXtile, polyYtile);
+			} else {
+				clipContext.lineTo(polyXtile, polyYtile);
+			}
+		}
+		clipContext.closePath();
+	}
+
+	clipContext.clip();
+	clipContext.drawImage(canvas, 0, 0);
 
 	return clipCanvas.transferToImageBitmap();
 };
