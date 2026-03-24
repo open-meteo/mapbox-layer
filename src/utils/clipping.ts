@@ -272,10 +272,10 @@ export const clipRasterToPolygons = async (
 	x: number,
 	y: number,
 	sp: SharedPolygons
-): Promise<Blob> => {
+): Promise<ImageBitmap> => {
 	const numRings = sharedPolygonsRingCount(sp);
 	if (numRings === 0) {
-		return canvas.convertToBlob({ type: 'image/png' });
+		return canvas.transferToImageBitmap();
 	}
 
 	const coords = sp.coordinates;
@@ -388,5 +388,5 @@ export const clipRasterToPolygons = async (
 	ctx.clip(path);
 	ctx.drawImage(canvas, 0, 0);
 
-	return clipCanvas.convertToBlob({ type: 'image/png' });
+	return clipCanvas.transferToImageBitmap();
 };

@@ -111,7 +111,7 @@ export const omProtocol = async (
 	}
 };
 
-const normalizeUrl = async (url: string): Promise<string> => {
+export const normalizeUrl = async (url: string): Promise<string> => {
 	let normalized = url;
 	if (url.includes('.json')) {
 		normalized = await parseMetaJson(normalized);

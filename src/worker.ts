@@ -77,15 +77,14 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		context.putImageData(imageData, 0, 0);
 
-		let blob;
+		let imageBitmap;
 		if (clippingOptions?.polygons) {
-			blob = await clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions.polygons);
+			imageBitmap = clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions.polygons);
 		} else {
-			blob = await canvas.convertToBlob({ type: 'image/png' });
+			imageBitmap = canvas.transferToImageBitmap();
 		}
 
-		const arrayBuffer = await blob.arrayBuffer();
-		postMessage({ type: 'returnImage', tile: arrayBuffer, key: key }, { transfer: [arrayBuffer] });
+		postMessage({ type: 'returnImage', tile: imageBitmap, key: key }, { transfer: [imageBitmap] });
 	} else if (message.data.type == 'getArrayBuffer') {
 		const directions = message.data.data.directions;
 
