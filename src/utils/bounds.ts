@@ -23,14 +23,14 @@ export const setClippingBounds = (newBounds?: Bounds): void => {
 };
 
 export const updateCurrentBounds = (bounds: Bounds) => {
+	let effectiveBounds: Bounds = bounds;
 	if (clippingBounds) {
 		const clipped = constrainBounds(bounds, clippingBounds);
 		if (!clipped) return;
-		currentBounds = clipped;
-	} else {
-		const bbox = tileToBBOX(bboxToTile([bounds[0], bounds[1], bounds[2], bounds[3]]));
-		currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
+		effectiveBounds = clipped;
 	}
+	const bbox = tileToBBOX(bboxToTile(effectiveBounds));
+	currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
 };
 
 export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolean => {
