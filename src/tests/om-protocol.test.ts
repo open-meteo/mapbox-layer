@@ -1,4 +1,4 @@
-import { MapboxLayerFileReader } from '../om-file-reader';
+import { WeatherMapLayerFileReader } from '../om-file-reader';
 import { defaultOmProtocolSettings } from '../om-protocol';
 import { parseRequest } from '../utils/parse-request';
 import { RequestParameters } from 'maplibre-gl';
@@ -23,7 +23,7 @@ vi.mock('../om-file-reader', async () => {
 	const actual = await vi.importActual('../om-file-reader');
 	return {
 		...actual,
-		MapboxLayerFileReader: class {
+		WeatherMapLayerFileReader: class {
 			config = {};
 			async setToOmFile() {}
 			async readVariable(_variable: string, ranges: DimensionRange[]) {
@@ -75,7 +75,7 @@ describe('Request Options', () => {
 	describe('parseRequest', () => {
 		it('resolves data identity and render options from URL', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
@@ -88,7 +88,7 @@ describe('Request Options', () => {
 
 		it('can resolve domain from a variety of different urls', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 
 			const url1 =
 				'om://https://nested.subdomain.of.example.com/data_spatial/domain1/file.om?variable=temperature&dark=true&intervals=2';
@@ -109,7 +109,7 @@ describe('Request Options', () => {
 
 		it('throws for missing variable', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 			const url = 'om://https://example.com/data_spatial/domain1/file.om';
 
 			await expect(parseRequest(url, settings, reader)).rejects.toThrow(
@@ -119,7 +119,7 @@ describe('Request Options', () => {
 
 		it('parses render options with defaults', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 
 			const url = 'om://https://example.com/data_spatial/domain1/file.om?variable=temp';
 			const { renderOptions } = await parseRequest(url, settings, reader);
@@ -136,7 +136,7 @@ describe('Request Options', () => {
 
 		it('parses custom render options', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=1024&grid=true&arrows=true&contours=true';
@@ -150,7 +150,7 @@ describe('Request Options', () => {
 
 		it('throws for invalid tile size', async () => {
 			const settings = createTestSettings();
-			const reader = new MapboxLayerFileReader();
+			const reader = new WeatherMapLayerFileReader();
 
 			const url =
 				'om://https://example.com/data_spatial/domain1/file.om?variable=temp&tile_size=999';
@@ -200,6 +200,89 @@ describe('Request Options', () => {
 			await omProtocol(params, new AbortController(), settings);
 
 			expect(customResolver).toHaveBeenCalled();
+		});
+	});
+});
+
+describe('omProtocol', () => {
+	describe('TileJSON requests', () => {
+		it('returns tilejson with correct tiles URL', async () => {
+			const { omProtocol } = await import('../om-protocol');
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				type: 'json'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+			const resultData = result.data as TileJSON;
+
+			expect(resultData.tilejson).toBe('3.0.0');
+			expect(resultData.tiles[0]).toBe(params.url + '/{z}/{x}/{y}');
+			expect(resultData.attribution).toContain('Open-Meteo');
+			expect(resultData.minzoom).toBe(0);
+			expect(resultData.maxzoom).toBe(12);
+			expect(resultData.bounds).toBeDefined();
+		});
+
+		it('returns correct bounds for domain grid', async () => {
+			const { omProtocol } = await import('../om-protocol');
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				type: 'json'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+			const resultData = result.data as TileJSON;
+
+			// Mocked reader bounds
+			expect(resultData.bounds).toEqual([0, 0, 10, 20]);
+		});
+	});
+
+	describe('tile requests', () => {
+		it('early return for vector requests', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
+				type: 'arrayBuffer'
+			};
+			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
+
+			expect(result.data).toBeInstanceOf(ArrayBuffer);
+			expect(result.data as ArrayBuffer).toEqual(new ArrayBuffer(0));
+		});
+
+		it('throws for tile request without coordinates', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				type: 'arrayBuffer'
+			};
+
+			await expect(
+				omProtocol(params, new AbortController(), defaultOmProtocolSettings)
+			).rejects.toThrow('Tile coordinates required');
+		});
+
+		it('calls postReadCallback after data is loaded', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			const postReadCallback = vi.fn();
+			const settings = createTestSettings({ postReadCallback });
+
+			const params: RequestParameters = {
+				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
+				type: 'arrayBuffer'
+			};
+
+			await omProtocol(params, new AbortController(), settings);
+
+			expect(postReadCallback).toHaveBeenCalledTimes(1);
+			expect(postReadCallback).toHaveBeenCalledWith(
+				expect.anything(), // omFileReader
+				expect.objectContaining({ values: expect.any(Float32Array) }), // data
+				expect.objectContaining({ omFileUrl: expect.stringContaining('map-tiles.open-meteo.com') })
+			);
 		});
 	});
 });
@@ -282,7 +365,7 @@ describe('omProtocol', () => {
 			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
 			const resultData = result.data as TileJSON;
 
-			expect(resultData.tilejson).toBe('2.2.0');
+			expect(resultData.tilejson).toBe('3.0.0');
 			expect(resultData.tiles[0]).toBe(params.url + '/{z}/{x}/{y}');
 			expect(resultData.attribution).toContain('Open-Meteo');
 			expect(resultData.minzoom).toBe(0);

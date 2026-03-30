@@ -1,11 +1,14 @@
 // import type { Domain } from './types';
 
 // export const domainGroups = [
-// 	//'bom',
+// 	// { value: 'bom', label: 'BOM Australia' },
+// 	{ value: 'cams', label: 'CAMS' },
+// 	{ value: 'cma', label: 'CMA China' },
 // 	{ value: 'dmi', label: 'DMI Denmark' },
 // 	{ value: 'dwd', label: 'DWD Germany' },
 // 	{ value: 'ecmwf', label: 'ECMWF' },
 // 	{ value: 'cmc_gem', label: 'GEM Canada' },
+// 	{ value: 'geosphere', label: 'Geosphere Austria' },
 // 	{ value: 'ncep', label: 'NOAA U.S.' },
 // 	{ value: 'italia_meteo', label: 'ItaliaMeteo' },
 // 	{ value: 'jma', label: 'JMA Japan' },
@@ -699,6 +702,41 @@
 // 		time_interval: 'hourly',
 // 		model_interval: '3_hourly'
 // 	},
+// // Geosphere Austria
+// {
+// 	value: 'geosphere_arome_austria',
+// 	label: 'Geosphere Austria',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 594,
+// 		ny: 492,
+// 		latMin: 42.981,
+// 		lonMin: 5.498,
+// 		dx: 0.028,
+// 		dy: 0.018,
+// 		zoom: 1
+// 	},
+// 	time_interval: 'hourly',
+// 	model_interval: '3_hourly'
+// },
+
+// // ItaliaMeteo
+// {
+// 	value: 'italia_meteo_arpae_icon_2i',
+// 	label: 'IM ARPAE ICON 2i',
+// 	grid: {
+// 		type: 'regular',
+// 		nx: 761,
+// 		ny: 761,
+// 		latMin: 33.7,
+// 		lonMin: 3,
+// 		dx: 0.025,
+// 		dy: 0.02,
+// 		zoom: 5.2
+// 	},
+// 	time_interval: 'hourly',
+// 	model_interval: '3_hourly'
+// },
 
 // 	{
 // 		value: 'meteofrance_arome_france_hd',

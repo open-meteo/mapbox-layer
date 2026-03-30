@@ -1,7 +1,7 @@
-import { FileReaderConfig, MapboxLayerFileReader } from './om-file-reader';
+import { FileReaderConfig, WeatherMapLayerFileReader } from './om-file-reader';
 
 export interface OmProtocolInstance {
-	omFileReader: MapboxLayerFileReader;
+	omFileReader: WeatherMapLayerFileReader;
 
 	// per-URL state:
 	stateByKey: Map<string, OmUrlState>;
@@ -59,7 +59,7 @@ export type RequestResolver = (
 ) => Promise<{ dataOptions: DataIdentityOptions; renderOptions: RenderOptions }>;
 
 export type PostReadCallback =
-	| ((omFileReader: MapboxLayerFileReader, data: Data, state: OmUrlState) => void)
+	| ((omFileReader: WeatherMapLayerFileReader, data: Data, state: OmUrlState) => void)
 	| undefined;
 
 export interface OmProtocolSettings {
@@ -85,21 +85,18 @@ export interface Data {
 }
 
 export type TileJSON = {
-	tilejson: '2.2.0';
+	tilejson: '3.0.0';
 	tiles: Array<string>;
 	name?: string;
 	description?: string;
 	version?: string;
 	attribution?: string;
-	template?: string;
-	legend?: string;
 	scheme?: string;
-	grids?: Array<string>;
-	data?: Array<string>;
 	minzoom: number;
 	maxzoom: number;
 	bounds?: Array<number>;
 	center?: Array<number>;
+	fillzoom?: number;
 };
 
 export type TileIndex = {

@@ -13,7 +13,7 @@ import { wktToGridData } from './utils/wkt';
 import type { Data, DimensionRange, GridData } from './types';
 
 /**
- * Configuration options for the MapboxLayerFileReader.
+ * Configuration options for the WeatherMapLayerFileReader.
  */
 export interface FileReaderConfig {
 	/** Whether to use SharedArrayBuffer for data reading. @default false */
@@ -41,9 +41,9 @@ export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> 
 /**
  * Convenience class for reading from OM-files implementing some utility conversions during reading.
  */
-export class MapboxLayerFileReader {
+export class WeatherMapLayerFileReader {
 	private reader?: OmFileReader;
-	private cache: BlockCache;
+	readonly cache: BlockCache;
 	readonly config: Required<Omit<FileReaderConfig, 'cache'>>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 
