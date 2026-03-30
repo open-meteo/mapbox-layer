@@ -1,7 +1,7 @@
 import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 
 import { GridFactory } from './grids';
-import { MapboxLayerFileReader } from './om-file-reader';
+import { WeatherMapLayerFileReader } from './om-file-reader';
 
 import { Domain } from './types';
 
@@ -23,7 +23,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 	private backgroundIndexBuffer: WebGLBuffer | undefined;
 
 	private omUrl: string;
-	private omFileReader: MapboxLayerFileReader;
+	private omFileReader: WeatherMapLayerFileReader;
 	private domain: Domain;
 	private variable: string;
 	private dataLoaded = false;
@@ -41,7 +41,7 @@ export class WebGLWindLayer implements CustomLayerInterface {
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new MapboxLayerFileReader();
+		this.omFileReader = new WeatherMapLayerFileReader();
 	}
 
 	private getBounds() {

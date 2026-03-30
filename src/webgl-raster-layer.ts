@@ -1,7 +1,7 @@
 import { CustomLayerInterface, CustomRenderMethodInput, Map } from 'maplibre-gl';
 
 import { GridFactory } from './grids';
-import { MapboxLayerFileReader } from './om-file-reader';
+import { WeatherMapLayerFileReader } from './om-file-reader';
 
 import { Domain } from './types';
 
@@ -18,7 +18,7 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 	private buffer: WebGLBuffer | undefined;
 
 	private omUrl: string;
-	private omFileReader: MapboxLayerFileReader;
+	private omFileReader: WeatherMapLayerFileReader;
 	private domain: Domain;
 	private variable: string;
 	private dataLoaded = false;
@@ -76,7 +76,7 @@ export class WebGLRasterLayer implements CustomLayerInterface {
 		this.domain = domain;
 		this.variable = variable;
 		this.omUrl = omUrl;
-		this.omFileReader = new MapboxLayerFileReader();
+		this.omFileReader = new WeatherMapLayerFileReader();
 		this.colorScale = colorScale;
 		console.log(colorScale);
 	}
