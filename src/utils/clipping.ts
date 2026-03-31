@@ -80,6 +80,8 @@ export const createClippingTester = (
 	// Reusable point array to avoid allocating [lon, lat] per call.
 	const point: [number, number] = [0, 0];
 
+	const fillRule = clippingOptions?.fillRule ?? 'nonzero';
+
 	return (lon: number, lat: number): boolean => {
 		// Fast bounds rejection
 		if (bounds) {
@@ -90,6 +92,15 @@ export const createClippingTester = (
 
 		point[0] = lon;
 		point[1] = lat;
+
+		if (fillRule === 'evenodd') {
+			let count = 0;
+			for (const polygon of polygons) {
+				if (inside(point, polygon)) count++;
+			}
+			return count % 2 === 1;
+		}
+
 		return polygons.some((polygon) => !!inside(point, polygon));
 	};
 };
