@@ -1,27 +1,40 @@
 import { Bounds } from '../types';
 
-/** Smallest power of 2 that is >= n (returns 1 for n <= 0) */
-const ceilPow2 = (n: number): number => {
-	if (n <= 0) return 1;
-	return Math.pow(2, Math.ceil(Math.log2(n)));
+/**
+ * Smallest value >= n from the series 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, …
+ */
+const ceilSnapStep = (n: number): number => {
+	if (n <= 1) return 1;
+	const p = Math.pow(2, Math.floor(Math.log2(n)));
+	if (n <= p) return p;
+	if (n <= p * 1.5) return p * 1.5;
+	return p * 2;
 };
 
 /**
- * Snap bounds to a power-of-2 aligned grid based on viewport size.
+ * Snap bounds to a stable grid based on viewport size.
  * This quantizes continuous viewport changes into discrete steps,
  * so small pans within the same grid cell produce identical bounds.
+ *
+ * Uses a grid spacing of step/4 for alignment, which means you need
+ * to pan ~25% of the viewport before bounds change.
+ *
+ * Adds one grid step of padding on each side so that map tiles at the
+ * viewport edge (which extend beyond the viewport) always have data.
+ * This keeps fetched area within ~1.5–2× the viewport, much less than
+ * tile-boundary snapping while avoiding partially rendered edge tiles.
  */
 export const snapBounds = (bounds: Bounds): Bounds => {
 	const [minLon, minLat, maxLon, maxLat] = bounds;
 
-	const latStep = ceilPow2(maxLat - minLat);
-	const lonStep = ceilPow2(maxLon - minLon);
+	const latGrid = ceilSnapStep(maxLat - minLat) / 4; // 25% of viewport height
+	const lonGrid = ceilSnapStep(maxLon - minLon) / 4; // 25% of viewport width
 
 	return [
-		Math.floor(minLon / lonStep) * lonStep,
-		Math.floor(minLat / latStep) * latStep,
-		Math.ceil(maxLon / lonStep) * lonStep,
-		Math.ceil(maxLat / latStep) * latStep
+		Math.floor(minLon / lonGrid) * lonGrid - lonGrid,
+		Math.floor(minLat / latGrid) * latGrid - latGrid,
+		Math.ceil(maxLon / lonGrid) * lonGrid + lonGrid,
+		Math.ceil(maxLat / latGrid) * latGrid + latGrid
 	];
 };
 
