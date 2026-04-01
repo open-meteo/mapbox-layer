@@ -1,41 +1,43 @@
+import { lat2tile, lon2tile, tile2lat } from './math';
+
 import { Bounds } from '../types';
 
 /**
- * Smallest value >= n from the series 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, …
+ * Snap bounds to tile boundaries for stable, padded data fetching.
  */
-const ceilSnapStep = (n: number): number => {
-	if (n <= 1) return 1;
-	const p = Math.pow(2, Math.floor(Math.log2(n)));
-	if (n <= p) return p;
-	if (n <= p * 1.5) return p * 1.5;
-	return p * 2;
-};
+export const snapBounds = (viewportBounds: Bounds): Bounds => {
+	const [minLon, minLat, maxLon, maxLat] = viewportBounds;
 
-/**
- * Snap bounds to a stable grid based on viewport size.
- * This quantizes continuous viewport changes into discrete steps,
- * so small pans within the same grid cell produce identical bounds.
- *
- * Uses a grid spacing of step/4 for alignment, which means you need
- * to pan ~25% of the viewport before bounds change.
- *
- * Adds one grid step of padding on each side so that map tiles at the
- * viewport edge (which extend beyond the viewport) always have data.
- * This keeps fetched area within ~1.5–2× the viewport, much less than
- * tile-boundary snapping while avoiding partially rendered edge tiles.
- */
-export const snapBounds = (bounds: Bounds): Bounds => {
-	const [minLon, minLat, maxLon, maxLat] = bounds;
+	const lonSpan = maxLon - minLon;
 
-	const latGrid = ceilSnapStep(maxLat - minLat) / 4; // 25% of viewport height
-	const lonGrid = ceilSnapStep(maxLon - minLon) / 4; // 25% of viewport width
+	// Pick a zoom where tiles are closest to viewport-sized
+	const z = Math.max(0, Math.round(Math.log2(360 / lonSpan)));
+	const numTiles = Math.pow(2, z);
 
-	return [
-		Math.floor(minLon / lonGrid) * lonGrid - lonGrid,
-		Math.floor(minLat / latGrid) * latGrid - latGrid,
-		Math.ceil(maxLon / lonGrid) * lonGrid + lonGrid,
-		Math.ceil(maxLat / latGrid) * latGrid + latGrid
-	];
+	// Snap latitude via tile boundaries
+	const minTileY = Math.max(0, Math.floor(lat2tile(maxLat, z)));
+	const maxTileY = Math.min(numTiles, Math.ceil(lat2tile(minLat, z)));
+	const snapMinLat = tile2lat(maxTileY, z);
+	const snapMaxLat = tile2lat(minTileY, z);
+
+	// Full-world longitude: use [-180, 180] but still snap latitude
+	if (lonSpan >= 360) {
+		return [-180, snapMinLat, 180, snapMaxLat];
+	}
+
+	// Snap longitude via tile boundaries
+	const minTileX = Math.floor(lon2tile(minLon, z));
+	const maxTileX = Math.ceil(lon2tile(maxLon, z));
+
+	if (maxTileX - minTileX >= numTiles) {
+		return [-180, snapMinLat, 180, snapMaxLat];
+	}
+
+	// Convert tile X range without modular wrap
+	const snapMinLon = (minTileX / numTiles) * 360 - 180;
+	const snapMaxLon = (maxTileX / numTiles) * 360 - 180;
+
+	return [snapMinLon, snapMinLat, snapMaxLon, snapMaxLat];
 };
 
 let clippingBounds: Bounds | undefined = undefined;
@@ -55,9 +57,9 @@ export const setClippingBounds = (newClippingBounds?: Bounds): void => {
 };
 
 export let currentBounds: Bounds | undefined = undefined;
-export const updateCurrentBounds = (bounds: Bounds) => {
+export const updateCurrentBounds = (viewportBounds: Bounds) => {
 	// Snap to a stable grid first so small pans don't change the request
-	let effectiveBounds = snapBounds(bounds);
+	let effectiveBounds = snapBounds(viewportBounds);
 
 	// Then constrain to clipping bounds
 	if (clippingBounds) {
