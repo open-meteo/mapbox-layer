@@ -25,33 +25,30 @@ export const snapBounds = (bounds: Bounds): Bounds => {
 	];
 };
 
-export let currentBounds: Bounds | undefined = undefined;
-
 let clippingBounds: Bounds | undefined = undefined;
-export const setClippingBounds = (newBounds?: Bounds): void => {
+export const setClippingBounds = (newClippingBounds?: Bounds): void => {
 	if (
 		clippingBounds &&
-		newBounds &&
-		clippingBounds[0] === newBounds[0] &&
-		clippingBounds[1] === newBounds[1] &&
-		clippingBounds[2] === newBounds[2] &&
-		clippingBounds[3] === newBounds[3]
+		newClippingBounds &&
+		clippingBounds[0] === newClippingBounds[0] &&
+		clippingBounds[1] === newClippingBounds[1] &&
+		clippingBounds[2] === newClippingBounds[2] &&
+		clippingBounds[3] === newClippingBounds[3]
 	) {
 		// No change in clipping bounds
 		return;
 	}
-	clippingBounds = newBounds;
+	clippingBounds = newClippingBounds;
 };
 
+export let currentBounds: Bounds | undefined = undefined;
 export const updateCurrentBounds = (bounds: Bounds) => {
 	// Snap to a stable grid first so small pans don't change the request
 	let effectiveBounds = snapBounds(bounds);
 
 	// Then constrain to clipping bounds
 	if (clippingBounds) {
-		const clipped = constrainBounds(effectiveBounds, clippingBounds);
-		if (!clipped) return;
-		effectiveBounds = clipped;
+		effectiveBounds = constrainBounds(effectiveBounds, clippingBounds);
 	}
 
 	currentBounds = effectiveBounds;
@@ -67,7 +64,7 @@ export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolea
 /*
 Compares domain bounds against bounds limitation set in clippingOptions
 */
-export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds | undefined => {
+export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds => {
 	let [minLon, minLat, maxLon, maxLat] = bounds;
 	const [clipMinLon, clipMinLat, clipMaxLon, clipMaxLat] = constraint;
 
