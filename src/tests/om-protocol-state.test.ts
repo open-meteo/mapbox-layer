@@ -343,12 +343,7 @@ describe('getOrCreateState – eviction', () => {
 
 		// Request with smaller bounds (included in existing state)
 		const dataOptions2 = makeDataOptions({ bounds: [-30, -30, 30, 30] });
-		const state2 = getOrCreateState(
-			stateByKey,
-			'k1',
-			dataOptions2,
-			'https://example.com/file.om'
-		);
+		const state2 = getOrCreateState(stateByKey, 'k1', dataOptions2, 'https://example.com/file.om');
 
 		expect(state2).toBe(state1);
 	});
@@ -360,12 +355,7 @@ describe('getOrCreateState – eviction', () => {
 
 		// Request with larger/different bounds
 		const dataOptions2 = makeDataOptions({ bounds: [-50, -50, 50, 50] });
-		const state2 = getOrCreateState(
-			stateByKey,
-			'k1',
-			dataOptions2,
-			'https://example.com/file.om'
-		);
+		const state2 = getOrCreateState(stateByKey, 'k1', dataOptions2, 'https://example.com/file.om');
 
 		expect(state2).not.toBe(state1);
 	});
