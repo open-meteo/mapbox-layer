@@ -1,8 +1,29 @@
-import { bboxToTile, tileToBBOX } from '@mapbox/tilebelt';
-
-import { normalizeLon } from './math';
-
 import { Bounds } from '../types';
+
+/** Smallest power of 2 that is >= n (returns 1 for n <= 0) */
+const ceilPow2 = (n: number): number => {
+	if (n <= 0) return 1;
+	return Math.pow(2, Math.ceil(Math.log2(n)));
+};
+
+/**
+ * Snap bounds to a power-of-2 aligned grid based on viewport size.
+ * This quantizes continuous viewport changes into discrete steps,
+ * so small pans within the same grid cell produce identical bounds.
+ */
+export const snapBounds = (bounds: Bounds): Bounds => {
+	const [minLon, minLat, maxLon, maxLat] = bounds;
+
+	const latStep = ceilPow2(maxLat - minLat);
+	const lonStep = ceilPow2(maxLon - minLon);
+
+	return [
+		Math.floor(minLon / lonStep) * lonStep,
+		Math.floor(minLat / latStep) * latStep,
+		Math.ceil(maxLon / lonStep) * lonStep,
+		Math.ceil(maxLat / latStep) * latStep
+	];
+};
 
 export let currentBounds: Bounds | undefined = undefined;
 
@@ -23,14 +44,17 @@ export const setClippingBounds = (newBounds?: Bounds): void => {
 };
 
 export const updateCurrentBounds = (bounds: Bounds) => {
-	let effectiveBounds: Bounds = bounds;
+	// Snap to a stable grid first so small pans don't change the request
+	let effectiveBounds = snapBounds(bounds);
+
+	// Then constrain to clipping bounds
 	if (clippingBounds) {
-		const clipped = constrainBounds(bounds, clippingBounds);
+		const clipped = constrainBounds(effectiveBounds, clippingBounds);
 		if (!clipped) return;
 		effectiveBounds = clipped;
 	}
-	const bbox = tileToBBOX(bboxToTile(effectiveBounds));
-	currentBounds = [bbox[0], bbox[1], bbox[2], bbox[3]];
+
+	currentBounds = effectiveBounds;
 };
 
 export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolean => {
@@ -47,58 +71,10 @@ export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds | un
 	let [minLon, minLat, maxLon, maxLat] = bounds;
 	const [clipMinLon, clipMinLat, clipMaxLon, clipMaxLat] = constraint;
 
-	// Clip latitude (always simple, no wrapping)
 	if (minLat < clipMinLat) minLat = clipMinLat;
 	if (maxLat > clipMaxLat) maxLat = clipMaxLat;
-
-	const boundsCrossesDateline = minLon > maxLon;
-	const clipCrossesDateline = clipMinLon > clipMaxLon;
-
-	if (!boundsCrossesDateline && !clipCrossesDateline) {
-		// Standard case: neither crosses dateline
-		if (minLon < clipMinLon) minLon = clipMinLon;
-		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
-	} else if (!boundsCrossesDateline && clipCrossesDateline) {
-		// Bounds don't cross, but clip does
-		// Valid clip longitudes: [clipMinLon, 180] ∪ [-180, clipMaxLon]
-
-		// If minLon is in the "gap" (between clipMaxLon and clipMinLon), clamp to clipMinLon
-		if (minLon < normalizeLon(clipMaxLon) && minLon < normalizeLon(clipMinLon)) {
-			minLon = clipMinLon;
-		} else {
-			return undefined;
-		}
-
-		// If maxLon is in the "gap", clamp to clipMaxLon
-		if (maxLon > normalizeLon(clipMinLon) && maxLon > normalizeLon(clipMaxLon)) {
-			maxLon = clipMaxLon;
-		} else {
-			return undefined;
-		}
-	} else if (boundsCrossesDateline && !clipCrossesDateline) {
-		// Bounds cross dateline, but clip doesn't
-		// Bounds covers: [minLon, 180] ∪ [-180, maxLon]
-		// Clip covers: [clipMinLon, clipMaxLon]
-		const deltaClipLon = Math.abs(clipMaxLon - clipMinLon);
-		if (deltaClipLon < 360) {
-			if (normalizeLon(maxLon) < clipMaxLon) {
-				maxLon = clipMaxLon;
-			}
-			if (normalizeLon(minLon) < clipMinLon) {
-				minLon = clipMinLon;
-			}
-		}
-
-		if (minLon === maxLon) {
-			return undefined;
-		}
-	} else {
-		// Both cross dateline
-		// Bounds: [minLon, 180] ∪ [-180, maxLon]
-		// Clip: [clipMinLon, 180] ∪ [-180, clipMaxLon]
-		if (minLon < clipMinLon) minLon = clipMinLon;
-		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
-	}
+	if (minLon < clipMinLon) minLon = clipMinLon;
+	if (maxLon > clipMaxLon) maxLon = clipMaxLon;
 
 	return [minLon, minLat, maxLon, maxLat];
 };

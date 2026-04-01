@@ -130,10 +130,14 @@ export const resolveClippingOptions = (
 		}
 	};
 
-	const toCoord2 = (position: GeoJsonPosition): [number, number] => [
-		position[0] ?? 0,
-		position[1] ?? 0
-	];
+	const toCoord2 = (position: GeoJsonPosition): [number, number] => {
+		const lon = position[0];
+		const lat = position[1];
+		if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+			throw new Error('Invalid GeoJSON position: expected [lon, lat] with finite numbers.');
+		}
+		return [lon, lat];
+	};
 
 	const samePoint = (a: [number, number], b: [number, number]) => a[0] === b[0] && a[1] === b[1];
 
