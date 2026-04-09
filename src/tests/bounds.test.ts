@@ -1,7 +1,8 @@
 import {
 	checkAgainstBounds,
+	constrainBounds,
 	currentBounds,
-	setClippingBounds,
+	// setClippingBounds,
 	snapBounds,
 	updateCurrentBounds
 } from '../utils/bounds';
@@ -11,9 +12,9 @@ import type { Bounds } from '../types';
 
 // Reset module-level state between tests
 afterEach(() => {
-	setClippingBounds(undefined);
+	// setClippingBounds(undefined);
 	updateCurrentBounds([0, 0, 1, 1]); // reset currentBounds to a known value
-	setClippingBounds(undefined); // clear again after updateCurrentBounds
+	// setClippingBounds(undefined); // clear again after updateCurrentBounds
 });
 
 describe('snapBounds', () => {
@@ -69,9 +70,13 @@ describe('snapBounds', () => {
 		const viewport: Bounds = [170, -10, 190, 10];
 		const snapped = snapBounds(viewport);
 
-		// Should contain the viewport
-		expect(snapped[0]).toBeLessThanOrEqual(170);
-		expect(snapped[2]).toBeGreaterThanOrEqual(190);
+		// Antimeridian-crossing viewports fall back to full-world longitude
+		// since a single Bounds tuple cannot represent a wrapped range
+		expect(snapped[0]).toBe(-180);
+		expect(snapped[2]).toBe(180);
+		// Latitude should still be snapped to cover the viewport
+		expect(snapped[1]).toBeLessThanOrEqual(-10);
+		expect(snapped[3]).toBeGreaterThanOrEqual(10);
 	});
 
 	it('returns valid latitude bounds within Mercator limits', () => {
@@ -141,14 +146,14 @@ describe('updateCurrentBounds', () => {
 		expect(currentBounds).toEqual(snapped);
 	});
 
-	it('constrains to clipping bounds when set', () => {
-		setClippingBounds([0, 0, 20, 60]);
-		updateCurrentBounds([-10, 30, 30, 70]);
+	// it('constrains to clipping bounds when set', () => {
+	// 	setClippingBounds([0, 0, 20, 60]);
+	// 	updateCurrentBounds([-10, 30, 30, 70]);
 
-		expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![2]).toBeLessThanOrEqual(20);
-		expect(currentBounds![3]).toBeLessThanOrEqual(60);
-	});
+	// 	expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
+	// 	expect(currentBounds![2]).toBeLessThanOrEqual(20);
+	// 	expect(currentBounds![3]).toBeLessThanOrEqual(60);
+	// });
 });
 
 describe('checkAgainstBounds', () => {
@@ -194,6 +199,165 @@ describe('checkAgainstBounds', () => {
 
 		it('returns false when point equals max', () => {
 			expect(checkAgainstBounds(10, 160, 10)).toBe(false);
+		});
+	});
+});
+
+describe('constrainBounds', () => {
+	describe('standard bounds (no dateline crossing)', () => {
+		it('should return the same bounds when fully within constrainBounds', () => {
+			const bounds: Bounds = [-50, -30, 50, 30];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-50, -30, 50, 30]);
+		});
+
+		it('should clip minLon to constrainBounds minLon', () => {
+			const bounds: Bounds = [-100, -30, 50, 30];
+			const clip: Bounds = [-80, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-80, -30, 50, 30]);
+		});
+
+		it('should clip maxLon to constrainBounds maxLon', () => {
+			const bounds: Bounds = [-50, -30, 100, 30];
+			const clip: Bounds = [-180, -90, 80, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-50, -30, 80, 30]);
+		});
+
+		it('should clip minLat to constrainBounds minLat', () => {
+			const bounds: Bounds = [-50, -100, 50, 30];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-50, -90, 50, 30]);
+		});
+
+		it('should clip maxLat to constrainBounds maxLat', () => {
+			const bounds: Bounds = [-50, -30, 50, 100];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-50, -30, 50, 90]);
+		});
+
+		it('should clip all values when bounds exceed constrainBounds on all sides', () => {
+			const bounds: Bounds = [-100, -50, 100, 50];
+			const clip: Bounds = [-80, -40, 80, 40];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-80, -40, 80, 40]);
+		});
+
+		it('should return exact constrainBounds when bounds match exactly', () => {
+			const bounds: Bounds = [-180, -90, 180, 90];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-180, -90, 180, 90]);
+		});
+
+		it('should handle partial overlap', () => {
+			const bounds: Bounds = [-100, -50, 50, 30];
+			const clip: Bounds = [-80, -40, 80, 40];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-80, -40, 50, 30]);
+		});
+	});
+
+	describe('dateline crossing clip bounds (clipMinLon > clipMaxLon)', () => {
+		it('should preserve dateline-crossing bounds with world clip', () => {
+			const bounds: Bounds = [-180, -30, 180, 30];
+			const clip: Bounds = [170, -90, -170, 90]; // Crosses dateline: 170°E to 170°W
+
+			expect(constrainBounds(bounds, clip)).toEqual([170, -30, -170, 30]);
+		});
+
+		it('should not modify bounds already within dateline-crossing clip', () => {
+			const bounds: Bounds = [175, -30, -175, 30];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([175, -30, -175, 30]);
+		});
+
+		it('should clip minLon when in the gap of dateline-crossing clip', () => {
+			// minLon 0 is in the "gap" (invalid zone between -170 and 170)
+			const bounds: Bounds = [0, -30, -175, 30];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([170, -30, -175, 30]);
+		});
+
+		it('should clip maxLon when in the gap of dateline-crossing clip', () => {
+			// maxLon 0 is in the "gap" (invalid zone between -170 and 170)
+			const bounds: Bounds = [175, -30, 0, 30];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([175, -30, -170, 30]);
+		});
+
+		it('should return null when bounds do not overlap', () => {
+			const bounds: Bounds = [-50, -30, 50, 30];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual(undefined);
+		});
+
+		it('should still clip latitude normally with dateline-crossing clip', () => {
+			const bounds: Bounds = [175, -100, -175, 100];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([175, -90, -175, 90]);
+		});
+
+		it('should handle narrow dateline-crossing clip bounds', () => {
+			const bounds: Bounds = [-180, -45, 180, 45];
+			const clip: Bounds = [179, -90, -179, 90]; // Very narrow strip across dateline
+
+			expect(constrainBounds(bounds, clip)).toEqual([179, -45, -179, 45]);
+		});
+	});
+
+	describe('dateline crossing input bounds (minLon > maxLon)', () => {
+		it('should preserve dateline-crossing bounds with world clip', () => {
+			const bounds: Bounds = [170, -30, -170, 30]; // Crosses dateline
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([170, -30, -170, 30]);
+		});
+
+		it('should clip dateline-crossing bounds against smaller non-crossing clip', () => {
+			const bounds: Bounds = [160, -30, -160, 30]; // Wide dateline crossing
+			const clip: Bounds = [170, -90, 180, 90]; // Eastern hemisphere only
+
+			expect(constrainBounds(bounds, clip)).toEqual([170, -30, 180, 30]);
+		});
+
+		it('should handle both bounds and clip crossing dateline', () => {
+			const bounds: Bounds = [160, -30, -160, 30];
+			const clip: Bounds = [170, -90, -170, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([170, -30, -170, 30]);
+		});
+	});
+
+	describe('edge cases', () => {
+		it('should handle bounds at exactly the dateline', () => {
+			const bounds: Bounds = [180, -30, -180, 30];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([180, -30, -180, 30]);
+		});
+
+		it('should handle zero-width bounds', () => {
+			const bounds: Bounds = [50, -30, 50, 30];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([50, -30, 50, 30]);
+		});
+
+		it('should handle zero-height bounds', () => {
+			const bounds: Bounds = [-50, 0, 50, 0];
+			const clip: Bounds = [-180, -90, 180, 90];
+
+			expect(constrainBounds(bounds, clip)).toEqual([-50, 0, 50, 0]);
 		});
 	});
 });

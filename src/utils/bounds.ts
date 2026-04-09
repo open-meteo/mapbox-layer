@@ -57,3 +57,96 @@ export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolea
 
 	return inMinX >= outMinX && inMinY >= outMinY && inMaxX <= outMaxX && inMaxY <= outMaxY;
 };
+
+/*
+Compares domain bounds against bounds limitation set in clippingOptions.
+Returns the intersection, or undefined when there is no overlap.
+Both bounds and constraint may cross the antimeridian (minLon > maxLon).
+*/
+export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds | undefined => {
+	let [minLon, minLat, maxLon, maxLat] = bounds;
+	const [clipMinLon, clipMinLat, clipMaxLon, clipMaxLat] = constraint;
+
+	// Latitude: always simple clamping
+	if (minLat < clipMinLat) minLat = clipMinLat;
+	if (maxLat > clipMaxLat) maxLat = clipMaxLat;
+
+	const boundsWraps = minLon > maxLon;
+	const clipWraps = clipMinLon > clipMaxLon;
+
+	if (!boundsWraps && !clipWraps) {
+		// Standard contiguous case
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+	} else if (clipWraps && !boundsWraps) {
+		// Bounds = [a, b]; Clip = [c1, 180] ∪ [-180, c2] (c1 > c2)
+		// Intersection = ([max(a,c1), b] if non-empty) ∪ ([a, min(b,c2)] if non-empty)
+		const rightStart = Math.max(minLon, clipMinLon);
+		const rightEnd = maxLon;
+		const rightNonEmpty = rightStart <= rightEnd;
+
+		const leftStart = minLon;
+		const leftEnd = Math.min(maxLon, clipMaxLon);
+		const leftNonEmpty = leftStart <= leftEnd;
+
+		if (rightNonEmpty && leftNonEmpty) {
+			// Result wraps: right segment ∪ left segment
+			minLon = rightStart;
+			maxLon = leftEnd;
+		} else if (rightNonEmpty) {
+			minLon = rightStart;
+			maxLon = rightEnd;
+		} else if (leftNonEmpty) {
+			minLon = leftStart;
+			maxLon = leftEnd;
+		} else {
+			return undefined;
+		}
+	} else if (boundsWraps && !clipWraps) {
+		// Bounds = [a, 180] ∪ [-180, b] (a > b); Clip = [c1, c2]
+		const rightStart = Math.max(minLon, clipMinLon);
+		const rightEnd = Math.min(180, clipMaxLon);
+		const rightNonEmpty = rightStart <= rightEnd;
+
+		const leftStart = Math.max(-180, clipMinLon);
+		const leftEnd = Math.min(maxLon, clipMaxLon);
+		const leftNonEmpty = leftStart <= leftEnd;
+
+		if (rightNonEmpty && leftNonEmpty) {
+			// Still wrapping
+			minLon = rightStart;
+			maxLon = leftEnd;
+		} else if (rightNonEmpty) {
+			minLon = rightStart;
+			maxLon = rightEnd;
+		} else if (leftNonEmpty) {
+			minLon = leftStart;
+			maxLon = leftEnd;
+		} else {
+			return undefined;
+		}
+	} else {
+		// Both wrap: Bounds = [a, 180] ∪ [-180, b]; Clip = [c1, 180] ∪ [-180, c2]
+		// Intersection: [max(a, c1), min(b, c2)] (still wrapping)
+		minLon = Math.max(minLon, clipMinLon);
+		maxLon = Math.min(maxLon, clipMaxLon);
+	}
+
+	return [minLon, minLat, maxLon, maxLat];
+};
+
+export const checkAgainstBounds = (point: number, min: number, max: number) => {
+	if (max < min) {
+		if (point < min && point > max) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		if (point < min || point > max) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+};
