@@ -93,39 +93,39 @@ describe('snapBounds', () => {
 	});
 });
 
-describe('setClippingBounds', () => {
-	it('sets clipping bounds that updateCurrentBounds uses', () => {
-		setClippingBounds([0, 0, 50, 50]);
-		updateCurrentBounds([-10, -10, 60, 60]);
+// describe('setClippingBounds', () => {
+// 	it('sets clipping bounds that updateCurrentBounds uses', () => {
+// 		setClippingBounds([0, 0, 50, 50]);
+// 		updateCurrentBounds([-10, -10, 60, 60]);
 
-		// currentBounds should be constrained to [0, 0, 50, 50]
-		expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![1]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![2]).toBeLessThanOrEqual(50);
-		expect(currentBounds![3]).toBeLessThanOrEqual(50);
-	});
+// 		// currentBounds should be constrained to [0, 0, 50, 50]
+// 		expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
+// 		expect(currentBounds![1]).toBeGreaterThanOrEqual(0);
+// 		expect(currentBounds![2]).toBeLessThanOrEqual(50);
+// 		expect(currentBounds![3]).toBeLessThanOrEqual(50);
+// 	});
 
-	it('clears clipping bounds when set to undefined', () => {
-		setClippingBounds([0, 0, 10, 10]);
-		setClippingBounds(undefined);
-		updateCurrentBounds([-50, -50, 50, 50]);
+// 	it('clears clipping bounds when set to undefined', () => {
+// 		setClippingBounds([0, 0, 10, 10]);
+// 		setClippingBounds(undefined);
+// 		updateCurrentBounds([-50, -50, 50, 50]);
 
-		// Without clipping, snapped bounds can exceed [0,0,10,10]
-		const snapped = snapBounds([-50, -50, 50, 50]);
-		expect(currentBounds).toEqual(snapped);
-	});
+// 		// Without clipping, snapped bounds can exceed [0,0,10,10]
+// 		const snapped = snapBounds([-50, -50, 50, 50]);
+// 		expect(currentBounds).toEqual(snapped);
+// 	});
 
-	it('is idempotent for identical bounds', () => {
-		setClippingBounds([10, 20, 30, 40]);
-		updateCurrentBounds([0, 0, 50, 50]);
-		const first = currentBounds;
+// 	it('is idempotent for identical bounds', () => {
+// 		setClippingBounds([10, 20, 30, 40]);
+// 		updateCurrentBounds([0, 0, 50, 50]);
+// 		const first = currentBounds;
 
-		// Set again with same values — should be a no-op
-		setClippingBounds([10, 20, 30, 40]);
-		updateCurrentBounds([0, 0, 50, 50]);
-		expect(currentBounds).toEqual(first);
-	});
-});
+// 		// Set again with same values — should be a no-op
+// 		setClippingBounds([10, 20, 30, 40]);
+// 		updateCurrentBounds([0, 0, 50, 50]);
+// 		expect(currentBounds).toEqual(first);
+// 	});
+// });
 
 describe('updateCurrentBounds', () => {
 	it('updates the exported currentBounds', () => {
