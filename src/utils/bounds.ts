@@ -38,8 +38,6 @@ export const snapBounds = (viewportBounds: Bounds): Bounds => {
 	const snapMaxLon = (maxTileX / numTiles) * 360 - 180;
 
 	// If snapped bounds cross the dateline, fall back to full-world longitude
-	// since a single Bounds tuple can't represent a wrapped range and
-	// getCoveringRanges doesn't handle wrap-around.
 	if (snapMinLon < -180 || snapMaxLon > 180) {
 		return [-180, snapMinLat, 180, snapMaxLat];
 	}
