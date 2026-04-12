@@ -61,7 +61,7 @@ export const createClippingTester = (
 	const sp = clippingOptions?.polygons;
 	if (!sp || sp.polygonOffsets.length <= 1) return undefined;
 
-	// Build the polygon array(s) for point-in-polygon testing.
+	// Project polygon vertices to Mercator space
 	const polygons: number[][][][] = [];
 	const numPolygons = sharedPolygonsPolygonCount(sp);
 	for (let p = 0; p < numPolygons; p++) {
@@ -69,7 +69,8 @@ export const createClippingTester = (
 		const lastRing = sp.polygonOffsets[p + 1];
 		const rings: number[][][] = [];
 		for (let r = firstRing; r < lastRing; r++) {
-			rings.push(sharedPolygonsRing(sp, r));
+			const geoRing = sharedPolygonsRing(sp, r);
+			rings.push(geoRing.map(([lon, lat]) => [lon2tile(lon, 0), lat2tile(lat, 0)]));
 		}
 		polygons.push(rings);
 	}
@@ -83,15 +84,16 @@ export const createClippingTester = (
 	const fillRule = clippingOptions?.fillRule ?? 'nonzero';
 
 	return (lon: number, lat: number): boolean => {
-		// Fast bounds rejection
+		// Fast bounds rejection (geographic coordinates are fine here)
 		if (bounds) {
 			const [minLon, minLat, maxLon, maxLat] = bounds;
 			if (lat < minLat || lat > maxLat) return false;
 			if (lon < minLon || lon > maxLon) return false;
 		}
 
-		point[0] = lon;
-		point[1] = lat;
+		// Project the test point to the same Mercator space as the polygon
+		point[0] = lon2tile(lon, 0);
+		point[1] = lat2tile(lat, 0);
 
 		if (fillRule === 'evenodd') {
 			let count = 0;
