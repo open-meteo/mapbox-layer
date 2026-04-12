@@ -1,5 +1,6 @@
 import Pbf from 'pbf';
 
+import { ResolvedClippingOptions, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { lat2tile, lon2tile } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -14,10 +15,13 @@ export const generateGridPoints = (
 	x: number,
 	y: number,
 	z: number,
+	clippingOptions?: ResolvedClippingOptions,
 	extent: number = VECTOR_TILE_EXTENT,
 	margin: number = 0
 ) => {
 	const features = [];
+
+	const isInsideClip = createClippingTester(clippingOptions);
 
 	for (let j = 0; j < grid.ny; j++) {
 		const lat = grid.latMin + grid.dy * j;
@@ -27,6 +31,10 @@ export const generateGridPoints = (
 		if (py > -margin && py <= extent + margin) {
 			for (let i = 0; i < grid.nx; i++) {
 				const lon = grid.lonMin + grid.dx * i;
+
+				if (isInsideClip && !isInsideClip(lon, lat)) {
+					continue;
+				}
 				// if (lon > minLonTile && lon < maxLonTile) {
 				const worldPx = Math.floor(lon2tile(lon, z) * extent);
 				const px = worldPx - x * extent;

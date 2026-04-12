@@ -2,7 +2,7 @@ import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
 import { checkAgainstBounds } from './utils/bounds';
-import { clipRasterToGeojson } from './utils/clipping';
+import { clipRasterToPolygons } from './utils/clipping';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { tile2lat, tile2lon } from './utils/math';
@@ -79,7 +79,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		let imageBitmap;
 		if (clippingOptions?.polygons) {
-			imageBitmap = clipRasterToGeojson(canvas, tileSize, z, x, y, clippingOptions);
+			imageBitmap = clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions);
 		} else {
 			imageBitmap = canvas.transferToImageBitmap();
 		}
@@ -90,18 +90,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
+		const grid = GridFactory.create(domain.grid, ranges);
 		if (message.data.renderOptions.drawGrid) {
 			if (domain.grid.type !== 'regular') {
 				throw new Error('Only regular grid types supported');
 			}
-			generateGridPoints(pbf, values, directions, domain.grid, x, y, z);
+			generateGridPoints(pbf, values, directions, domain.grid, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
-			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
+			generateArrows(pbf, values, directions, grid, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawContours) {
 			const intervals = message.data.renderOptions.intervals;
-			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
 		}
 
