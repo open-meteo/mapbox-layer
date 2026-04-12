@@ -2,15 +2,22 @@ import { GridInterface } from '../grids';
 import Pbf from 'pbf';
 
 import { VECTOR_TILE_EXTENT } from './constants';
-import { lat2tile, lon2tile, tile2lat, tile2lon } from './math';
+import { lat2tile, lon2tile, tile2lat } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
 import { Bounds } from '../types';
 
 /**
+ * Convert tile x coordinate to longitude without modular wrapping.
+ * Unlike tile2lon, this does NOT wrap via % 360, so tile2lonUnwrapped(2^z, z) = 180
+ */
+const tile2lonUnwrapped = (x: number, z: number): number => {
+	return (x / Math.pow(2, z)) * 360 - 180;
+};
+
+/**
  * Generate the PBF grid-point layer for a single tile.
- * Computes tile geographic bounds and intersects with `clippingBounds`
- * to iterate only relevant grid points via `forEachPoint`.
+ * Computes tile geographic bounds that intersects with `clippingBounds` if defined
  */
 export const generateGridPoints = (
 	pbf: Pbf,
@@ -35,11 +42,12 @@ export const generateGridPoints = (
 	const tileOffsetY = y * extent;
 
 	// Tile geographic bounds with margin.
+	// Use unwrapped longitude to avoid the east edge of the last tile
 	const marginFrac = margin / extent;
 	const tileBounds: Bounds = [
-		tile2lon(x - marginFrac, z),
+		tile2lonUnwrapped(x - marginFrac, z),
 		tile2lat(y + 1 + marginFrac, z),
-		tile2lon(x + 1 + marginFrac, z),
+		tile2lonUnwrapped(x + 1 + marginFrac, z),
 		tile2lat(y - marginFrac, z)
 	];
 
