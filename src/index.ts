@@ -20,7 +20,7 @@ export * from './om-file-reader';
 export * from './om-protocol';
 export * from './om-protocol-state';
 
-export * from './domains';
+// export * from './domains';
 
 export * from './worker-pool';
 

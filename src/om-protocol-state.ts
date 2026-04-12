@@ -96,7 +96,7 @@ export const getOrCreateState = (
 
 	evictStaleStates(stateByKey, stateKey);
 
-	const ranges = getRanges(dataOptions.domain.grid, dataOptions.bounds);
+	const ranges = getRanges(dataOptions.grid, dataOptions.bounds);
 	const state: OmUrlState = {
 		dataOptions,
 		ranges,
@@ -214,7 +214,7 @@ export const getValueFromLatLong = async (
 		return { value: NaN };
 	}
 
-	const grid = GridFactory.create(state.dataOptions.domain.grid, state.ranges);
+	const grid = GridFactory.create(state.dataOptions.grid, state.ranges);
 	const lonNormalized = normalizeLon(lon);
 	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
 
