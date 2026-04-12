@@ -154,6 +154,6 @@ export const generateArrows = (
 	pbf.writeMessage(3, writeLayer, {
 		name: 'wind-arrows',
 		extent,
-		features: features
+		features
 	});
 };

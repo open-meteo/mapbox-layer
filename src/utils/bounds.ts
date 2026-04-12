@@ -68,7 +68,7 @@ export const updateCurrentBounds = (viewportBounds: Bounds) => {
 
 	// Then constrain to clipping bounds
 	if (clippingBounds) {
-		effectiveBounds = constrainBounds(effectiveBounds, clippingBounds);
+		effectiveBounds = constrainBounds(effectiveBounds, clippingBounds) ?? effectiveBounds;
 	}
 
 	currentBounds = effectiveBounds;

@@ -286,6 +286,6 @@ export const generateContours = (
 	pbf.writeMessage(3, writeLayer, {
 		name: 'contours',
 		extent,
-		features: features
+		features
 	});
 };
