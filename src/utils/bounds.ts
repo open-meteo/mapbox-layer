@@ -82,16 +82,58 @@ export const boundsIncluded = (innerBounds: Bounds, outerBounds: Bounds): boolea
 };
 
 /*
-Compares domain bounds against bounds limitation set in clippingOptions
+Compares domain bounds against bounds limitation set in clippingOptions.
+Returns undefined when the two bounds do not overlap at all.
+Handles dateline-crossing bounds (minLon > maxLon) for both inputs.
 */
-export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds => {
+export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds | undefined => {
 	let [minLon, minLat, maxLon, maxLat] = bounds;
 	const [clipMinLon, clipMinLat, clipMaxLon, clipMaxLat] = constraint;
 
+	// Latitude is always a simple clamp — no dateline complexity.
 	if (minLat < clipMinLat) minLat = clipMinLat;
 	if (maxLat > clipMaxLat) maxLat = clipMaxLat;
-	if (minLon < clipMinLon) minLon = clipMinLon;
-	if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+
+	const boundsWraps = minLon > maxLon;
+	const clipWraps = clipMinLon > clipMaxLon;
+
+	if (!boundsWraps && !clipWraps) {
+		// Standard case: both non-crossing.
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+		if (minLon > maxLon) return undefined;
+	} else if (clipWraps && !boundsWraps) {
+		// Clip crosses dateline: valid zone is [clipMinLon..180] ∪ [-180..clipMaxLon].
+		// Bounds is fully in the gap when it sits between clipMaxLon and clipMinLon.
+		if (minLon > clipMaxLon && maxLon < clipMinLon) return undefined;
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+	} else if (!clipWraps && boundsWraps) {
+		// Bounds crosses dateline: covers [minLon..180] ∪ [-180..maxLon].
+		// Intersect each half with the non-crossing clip.
+		const rightMin = Math.max(minLon, clipMinLon);
+		const rightMax = Math.min(180, clipMaxLon);
+		const leftMin = Math.max(-180, clipMinLon);
+		const leftMax = Math.min(maxLon, clipMaxLon);
+		const hasRight = rightMin <= rightMax;
+		const hasLeft = leftMin <= leftMax;
+		if (!hasRight && !hasLeft) return undefined;
+		if (hasRight && !hasLeft) {
+			minLon = rightMin;
+			maxLon = rightMax;
+		} else if (!hasRight && hasLeft) {
+			minLon = leftMin;
+			maxLon = leftMax;
+		} else {
+			// Both halves survived — result stays dateline-crossing.
+			minLon = rightMin;
+			maxLon = leftMax;
+		}
+	} else {
+		// Both cross dateline: intersect by clamping each edge independently.
+		if (minLon < clipMinLon) minLon = clipMinLon;
+		if (maxLon > clipMaxLon) maxLon = clipMaxLon;
+	}
 
 	return [minLon, minLat, maxLon, maxLat];
 };

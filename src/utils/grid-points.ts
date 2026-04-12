@@ -28,7 +28,7 @@ export const generateGridPoints = (
 		// if (lat > minLatTile && lat < maxLatTile) {
 		const worldPy = Math.floor(lat2tile(lat, z) * extent);
 		const py = worldPy - y * extent;
-		if (py > -margin && py <= extent + margin) {
+		if (py >= -margin && py <= extent + margin) {
 			for (let i = 0; i < grid.nx; i++) {
 				const lon = grid.lonMin + grid.dx * i;
 
@@ -38,7 +38,7 @@ export const generateGridPoints = (
 				// if (lon > minLonTile && lon < maxLonTile) {
 				const worldPx = Math.floor(lon2tile(lon, z) * extent);
 				const px = worldPx - x * extent;
-				if (px > -margin && px <= extent + margin) {
+				if (px >= -margin && px <= extent + margin) {
 					const index = j * grid.nx + i;
 					const value = values[index];
 

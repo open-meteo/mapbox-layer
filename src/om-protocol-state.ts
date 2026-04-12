@@ -66,7 +66,7 @@ export const getRanges = (gridData: GridData, bounds: Bounds | undefined): Dimen
 	if (bounds) {
 		const gridGetter = GridFactory.create(gridData, null);
 		// Clamp to grid extent so padded snap bounds don't produce out-of-range indices
-		const clampedBounds = constrainBounds(bounds, gridGetter.getBounds());
+		const clampedBounds = constrainBounds(bounds, gridGetter.getBounds()) ?? bounds;
 		return gridGetter.getCoveringRanges(
 			clampedBounds[1],
 			clampedBounds[0],
