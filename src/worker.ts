@@ -1,20 +1,15 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
-import { checkAgainstBounds, constrainBounds } from './utils/bounds';
+import { checkAgainstBounds } from './utils/bounds';
 import { generateContours } from './utils/contours';
-import { CachedGridPoint, generateGridPoints, prepareGridPoints } from './utils/grid-points';
+import { generateGridPoints, prepareGridPoints } from './utils/grid-points';
 import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
 
 import { TileRequest } from './types';
-
-// Module-level cache for precomputed grid-point world coordinates.
-// Keyed by grid config + ranges + zoom so it's reused across tiles at the same zoom.
-let gridPointCache: CachedGridPoint[] | undefined;
-let gridPointCacheKey: string | undefined;
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const key = message.data.key;
@@ -124,18 +119,18 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 		const grid = GridFactory.create(domain.grid, ranges);
 		if (message.data.renderOptions.drawGrid) {
 			const cacheKey = JSON.stringify(domain.grid) + JSON.stringify(ranges) + z;
-			if (cacheKey !== gridPointCacheKey) {
-				gridPointCache = prepareGridPoints(grid, z);
-				gridPointCacheKey = cacheKey;
-			}
-			// Constrain currentBounds to clippingOptions.bounds if both are present
-			let effectiveBounds = message.data.currentBounds;
-			if (effectiveBounds && clippingOptions?.bounds) {
-				effectiveBounds = constrainBounds(effectiveBounds, clippingOptions.bounds);
-			} else if (clippingOptions?.bounds) {
-				effectiveBounds = clippingOptions.bounds;
-			}
-			generateGridPoints(pbf, values, directions, gridPointCache!, x, y, z, effectiveBounds);
+			const gridPointCache = prepareGridPoints(grid, z, cacheKey);
+			generateGridPoints(
+				pbf,
+				values,
+				directions,
+				gridPointCache,
+				x,
+				y,
+				z,
+				message.data.currentBounds,
+				clippingOptions?.bounds
+			);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);

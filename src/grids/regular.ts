@@ -150,25 +150,10 @@ export class RegularGrid implements GridInterface {
 		return ranges;
 	}
 
-	forEachPoint(callback: (point: GridPoint) => void | false, bounds?: Bounds): void {
-		let jStart = 0,
-			jEnd = this.ny,
-			iStart = 0,
-			iEnd = this.nx;
-
-		if (bounds) {
-			const [minLon, minLat, maxLon, maxLat] = bounds;
-			jStart = Math.max(0, Math.floor((minLat - this.bounds[1]) / this.dy));
-			jEnd = Math.min(this.ny, Math.ceil((maxLat - this.bounds[1]) / this.dy) + 1);
-			if (!this.longitudeWrap) {
-				iStart = Math.max(0, Math.floor((minLon - this.bounds[0]) / this.dx));
-				iEnd = Math.min(this.nx, Math.ceil((maxLon - this.bounds[0]) / this.dx) + 1);
-			}
-		}
-
-		for (let j = jStart; j < jEnd; j++) {
+	forEachPoint(callback: (point: GridPoint) => void | false): void {
+		for (let j = 0; j < this.ny; j++) {
 			const lat = this.bounds[1] + this.dy * j;
-			for (let i = iStart; i < iEnd; i++) {
+			for (let i = 0; i < this.nx; i++) {
 				const lon = this.bounds[0] + this.dx * i;
 				const result = callback({ index: j * this.nx + i, lat, lon });
 				if (result === false) return;

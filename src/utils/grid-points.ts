@@ -1,11 +1,12 @@
 import { GridInterface } from '../grids';
 import Pbf from 'pbf';
 
+import { Bounds } from '../types';
+
+import { constrainBounds } from './bounds';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { lat2tile, lon2tile } from './math';
 import { command, writeLayer, zigzag } from './pbf';
-
-import { Bounds } from '../types';
 
 /**
  * Precomputed world-pixel coordinates for a single grid point.
@@ -16,30 +17,42 @@ export interface CachedGridPoint {
 	worldPy: number;
 }
 
+// Module-level cache for precomputed grid-point world coordinates.
+// Keyed by grid config + ranges + zoom so it's reused across tiles at the same zoom.
+let _gridPointCache: CachedGridPoint[] | undefined;
+let _gridPointCacheKey: string | undefined;
+
 /**
- * Precompute world-pixel coordinates for all grid points at a given zoom level.
- * This is independent of which tile is being rendered and can be reused
- * across all tiles at the same zoom level.
+ * Return cached world-pixel coordinates for all grid points at a given zoom level,
+ * recomputing only when the grid config, ranges, or zoom level changes.
+ * The `cacheKey` should uniquely identify the grid + ranges + zoom combination.
  */
 export const prepareGridPoints = (
 	grid: GridInterface,
 	z: number,
+	cacheKey: string,
 	extent: number = VECTOR_TILE_EXTENT
 ): CachedGridPoint[] => {
-	const points: CachedGridPoint[] = [];
+	if (cacheKey === _gridPointCacheKey && _gridPointCache) {
+		return _gridPointCache;
+	}
 
+	const points: CachedGridPoint[] = [];
 	grid.forEachPoint(({ index, lat, lon }) => {
 		const worldPx = Math.floor(lon2tile(lon, z) * extent);
 		const worldPy = Math.floor(lat2tile(lat, z) * extent);
 		points.push({ index, worldPx, worldPy });
 	});
 
+	_gridPointCache = points;
+	_gridPointCacheKey = cacheKey;
 	return points;
 };
 
 /**
  * Generate the PBF grid-point layer for a single tile from precomputed points.
- * When `bounds` is provided, only points within those geographic bounds are emitted.
+ * Points are filtered to the intersection of `currentBounds` and `clippingBounds`
+ * when provided. Either bound may be omitted independently.
  */
 export const generateGridPoints = (
 	pbf: Pbf,
@@ -49,7 +62,8 @@ export const generateGridPoints = (
 	x: number,
 	y: number,
 	z: number,
-	bounds?: Bounds,
+	currentBounds?: Bounds,
+	clippingBounds?: Bounds,
 	extent: number = VECTOR_TILE_EXTENT,
 	margin: number = 0
 ) => {
@@ -63,17 +77,25 @@ export const generateGridPoints = (
 	const tileOffsetX = x * extent;
 	const tileOffsetY = y * extent;
 
-	// Pre-compute bounds in world-pixel space for fast rejection.
+	// Compute effective bounds: intersection of viewport and clipping bounds.
+	let effectiveBounds: Bounds | undefined;
+	if (currentBounds && clippingBounds) {
+		effectiveBounds = constrainBounds(currentBounds, clippingBounds);
+	} else {
+		effectiveBounds = currentBounds ?? clippingBounds;
+	}
+
+	// Pre-compute effective bounds in world-pixel space for fast rejection.
 	let boundsMinPx: number | undefined,
 		boundsMaxPx: number | undefined,
 		boundsMinPy: number | undefined,
 		boundsMaxPy: number | undefined;
-	if (bounds) {
-		boundsMinPx = Math.floor(lon2tile(bounds[0], z) * extent);
-		boundsMaxPx = Math.ceil(lon2tile(bounds[2], z) * extent);
+	if (effectiveBounds) {
+		boundsMinPx = Math.floor(lon2tile(effectiveBounds[0], z) * extent);
+		boundsMaxPx = Math.ceil(lon2tile(effectiveBounds[2], z) * extent);
 		// lat2tile is inverted (higher lat → smaller tile y)
-		boundsMinPy = Math.floor(lat2tile(bounds[3], z) * extent);
-		boundsMaxPy = Math.ceil(lat2tile(bounds[1], z) * extent);
+		boundsMinPy = Math.floor(lat2tile(effectiveBounds[3], z) * extent);
+		boundsMaxPy = Math.ceil(lat2tile(effectiveBounds[1], z) * extent);
 	}
 
 	for (const { index, worldPx, worldPy } of cachedPoints) {
