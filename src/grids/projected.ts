@@ -215,12 +215,16 @@ export class ProjectionGrid implements GridInterface {
 		};
 	}
 
-	forEachPoint(callback: (point: GridPoint) => void | false): void {
+	forEachPoint(callback: (point: GridPoint) => void | false, bounds?: Bounds): void {
 		for (let j = 0; j < this.ny; j++) {
 			const projY = this.minY + this.dy * j;
 			for (let i = 0; i < this.nx; i++) {
 				const projX = this.minX + this.dx * i;
 				const [lat, lon] = this.projection.reverse(projX, projY);
+				if (bounds) {
+					if (lat < bounds[1] || lat > bounds[3] || lon < bounds[0] || lon > bounds[2])
+						continue;
+				}
 				const result = callback({ index: j * this.nx + i, lat, lon });
 				if (result === false) return;
 			}

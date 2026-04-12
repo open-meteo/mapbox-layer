@@ -2,13 +2,25 @@ import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
 import { generateContours } from './utils/contours';
-import { generateGridPoints } from './utils/grid-points';
-import { checkAgainstBounds, lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
+import { CachedGridPoint, generateGridPoints, prepareGridPoints } from './utils/grid-points';
+import {
+	checkAgainstBounds,
+	clipBounds,
+	lat2tile,
+	lon2tile,
+	tile2lat,
+	tile2lon
+} from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
 
 import { TileRequest } from './types';
+
+// Module-level cache for precomputed grid-point world coordinates.
+// Keyed by grid config + ranges + zoom so it's reused across tiles at the same zoom.
+let gridPointCache: CachedGridPoint[] | undefined;
+let gridPointCacheKey: string | undefined;
 
 self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 	const key = message.data.key;
@@ -115,16 +127,27 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const pbf = new Pbf();
 
+		const grid = GridFactory.create(domain.grid, ranges);
 		if (message.data.renderOptions.drawGrid) {
-			const grid = GridFactory.create(domain.grid, ranges);
-			generateGridPoints(pbf, values, directions, grid, x, y, z);
+			const cacheKey = JSON.stringify(domain.grid) + JSON.stringify(ranges) + z;
+			if (cacheKey !== gridPointCacheKey) {
+				gridPointCache = prepareGridPoints(grid, z);
+				gridPointCacheKey = cacheKey;
+			}
+			// Constrain currentBounds to clippingOptions.bounds if both are present
+			let effectiveBounds = message.data.currentBounds;
+			if (effectiveBounds && clippingOptions?.bounds) {
+				effectiveBounds = clipBounds(effectiveBounds, clippingOptions.bounds);
+			} else if (clippingOptions?.bounds) {
+				effectiveBounds = clippingOptions.bounds;
+			}
+			generateGridPoints(pbf, values, directions, gridPointCache!, x, y, z, effectiveBounds);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
 		}
 		if (message.data.renderOptions.drawContours) {
 			const intervals = message.data.renderOptions.intervals;
-			const grid = GridFactory.create(domain.grid, ranges);
 			generateContours(pbf, values, grid, x, y, z, tileSize, intervals, clippingOptions);
 		}
 
