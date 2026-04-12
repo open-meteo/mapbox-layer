@@ -1,16 +1,10 @@
 import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
+import { checkAgainstBounds, constrainBounds } from './utils/bounds';
 import { generateContours } from './utils/contours';
 import { CachedGridPoint, generateGridPoints, prepareGridPoints } from './utils/grid-points';
-import {
-	checkAgainstBounds,
-	clipBounds,
-	lat2tile,
-	lon2tile,
-	tile2lat,
-	tile2lon
-} from './utils/math';
+import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
 import { GridFactory } from './grids/index';
@@ -137,7 +131,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 			// Constrain currentBounds to clippingOptions.bounds if both are present
 			let effectiveBounds = message.data.currentBounds;
 			if (effectiveBounds && clippingOptions?.bounds) {
-				effectiveBounds = clipBounds(effectiveBounds, clippingOptions.bounds);
+				effectiveBounds = constrainBounds(effectiveBounds, clippingOptions.bounds);
 			} else if (clippingOptions?.bounds) {
 				effectiveBounds = clippingOptions.bounds;
 			}

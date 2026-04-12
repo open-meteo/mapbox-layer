@@ -1,7 +1,7 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { clipBounds } from './utils/math';
 import { currentBounds } from './utils/bounds';
+import { constrainBounds } from './utils/bounds';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { parseMetaJson } from './utils/parse-url';
 import { COLOR_SCALES_WITH_ALIASES as defaultColorScales } from './utils/styling';
@@ -117,7 +117,7 @@ export const normalizeUrl = async (url: string): Promise<string> => {
 const makeTileAbortedResponse = (): TileResult => {
 	return { data: undefined, cancelled: true };
 };
-const makeEmptyVectorLayResponse = (): TileResult => {
+const makeEmptyVectorLayerResponse = (): TileResult => {
 	return { data: new ArrayBuffer(0), cancelled: false };
 };
 
@@ -147,7 +147,7 @@ const requestTile = async (
 			!request.renderOptions.drawContours &&
 			!request.renderOptions.drawGrid
 		) {
-			return makeEmptyVectorLayResponse();
+			return makeEmptyVectorLayerResponse();
 		}
 	}
 
@@ -175,7 +175,7 @@ const getTilejson = async (
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
 	let bounds;
 	if (clippingOptions && clippingOptions.bounds) {
-		bounds = clipBounds(grid.getBounds(), clippingOptions.bounds);
+		bounds = constrainBounds(grid.getBounds(), clippingOptions.bounds) ?? grid.getBounds();
 	} else {
 		bounds = grid.getBounds();
 	}
