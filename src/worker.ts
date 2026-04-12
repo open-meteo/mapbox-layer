@@ -2,7 +2,7 @@ import Pbf from 'pbf';
 
 import { generateArrows } from './utils/arrows';
 import { checkAgainstBounds } from './utils/bounds';
-import { clipRasterToPolygons } from './utils/clipping';
+import { clipRasterToGeojson } from './utils/clipping';
 import { generateContours } from './utils/contours';
 import { generateGridPoints } from './utils/grid-points';
 import { tile2lat, tile2lon } from './utils/math';
@@ -79,7 +79,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		let imageBitmap;
 		if (clippingOptions?.polygons) {
-			imageBitmap = clipRasterToPolygons(canvas, tileSize, z, x, y, clippingOptions);
+			imageBitmap = clipRasterToGeojson(canvas, tileSize, z, x, y, clippingOptions);
 		} else {
 			imageBitmap = canvas.transferToImageBitmap();
 		}

@@ -260,7 +260,7 @@ export const resolveClippingOptions = (
 	return { polygons: sharedPolygons, bounds, fillRule: options.fillRule ?? 'nonzero' };
 };
 
-export const clipRasterToPolygons = (
+export const clipRasterToGeojson = (
 	canvas: OffscreenCanvas,
 	tileSize: number,
 	z: number,

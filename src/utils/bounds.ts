@@ -1,6 +1,49 @@
-import { bboxToTile, tileToBBOX } from '@mapbox/tilebelt';
+import { lat2tile, lon2tile, tile2lat } from './math';
 
 import { Bounds } from '../types';
+
+/**
+ * Snap bounds to tile boundaries for stable, padded data fetching.
+ */
+export const snapBounds = (viewportBounds: Bounds): Bounds => {
+	const [minLon, minLat, maxLon, maxLat] = viewportBounds;
+
+	const lonSpan = maxLon - minLon;
+
+	// Pick a zoom where tiles are closest to viewport-sized
+	const z = Math.max(0, Math.round(Math.log2(360 / lonSpan)));
+	const numTiles = Math.pow(2, z);
+
+	// Snap latitude via tile boundaries
+	const minTileY = Math.max(0, Math.floor(lat2tile(maxLat, z)));
+	const maxTileY = Math.min(numTiles, Math.ceil(lat2tile(minLat, z)));
+	const snapMinLat = tile2lat(maxTileY, z);
+	const snapMaxLat = tile2lat(minTileY, z);
+
+	// Full-world longitude: use [-180, 180] but still snap latitude
+	if (lonSpan >= 360) {
+		return [-180, snapMinLat, 180, snapMaxLat];
+	}
+
+	// Snap longitude via tile boundaries
+	const minTileX = Math.floor(lon2tile(minLon, z));
+	const maxTileX = Math.ceil(lon2tile(maxLon, z));
+
+	if (maxTileX - minTileX >= numTiles) {
+		return [-180, snapMinLat, 180, snapMaxLat];
+	}
+
+	// Convert tile X range without modular wrap
+	const snapMinLon = (minTileX / numTiles) * 360 - 180;
+	const snapMaxLon = (maxTileX / numTiles) * 360 - 180;
+
+	// If snapped bounds cross the dateline, fall back to full-world longitude
+	if (snapMinLon < -180 || snapMaxLon > 180) {
+		return [-180, snapMinLat, 180, snapMaxLat];
+	}
+
+	return [snapMinLon, snapMinLat, snapMaxLon, snapMaxLat];
+};
 
 let clippingBounds: Bounds | undefined = undefined;
 export const setClippingBounds = (newClippingBounds?: Bounds): void => {
@@ -21,9 +64,7 @@ export const setClippingBounds = (newClippingBounds?: Bounds): void => {
 export let currentBounds: Bounds | undefined = undefined;
 export const updateCurrentBounds = (viewportBounds: Bounds) => {
 	// Snap to a stable grid first so small pans don't change the request
-	let effectiveBounds = tileToBBOX(
-		bboxToTile([viewportBounds[0], viewportBounds[1], viewportBounds[2], viewportBounds[3]])
-	) as Bounds;
+	let effectiveBounds = snapBounds(viewportBounds);
 
 	// Then constrain to clipping bounds
 	if (clippingBounds) {
