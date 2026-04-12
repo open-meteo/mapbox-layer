@@ -14,9 +14,11 @@ export interface GridInterface {
 	getCoveringRanges(south: number, west: number, north: number, east: number): DimensionRange[];
 
 	/**
-	 * Iterates over all grid points, invoking the callback with the flat array index
+	 * Iterates over grid points, invoking the callback with the flat array index
 	 * and the geographic coordinates for each point.
+	 * When `bounds` is provided, only points within the geographic bounding box
+	 * are visited (implementations may use this for efficient index-range skipping).
 	 * Return `false` from the callback to stop iteration early.
 	 */
-	forEachPoint(callback: (point: GridPoint) => void | false): void;
+	forEachPoint(callback: (point: GridPoint) => void | false, bounds?: Bounds): void;
 }

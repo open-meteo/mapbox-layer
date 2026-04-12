@@ -3,7 +3,7 @@ import Pbf from 'pbf';
 import { generateArrows } from './utils/arrows';
 import { checkAgainstBounds } from './utils/bounds';
 import { generateContours } from './utils/contours';
-import { generateGridPoints, prepareGridPoints } from './utils/grid-points';
+import { generateGridPoints } from './utils/grid-points';
 import { lat2tile, lon2tile, tile2lat, tile2lon } from './utils/math';
 import { getColor } from './utils/styling';
 
@@ -118,13 +118,11 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 		if (message.data.renderOptions.drawGrid) {
-			const cacheKey = JSON.stringify(domain.grid) + JSON.stringify(ranges) + z;
-			const gridPointCache = prepareGridPoints(grid, z, cacheKey);
 			generateGridPoints(
 				pbf,
+				grid,
 				values,
 				directions,
-				gridPointCache,
 				x,
 				y,
 				z,
