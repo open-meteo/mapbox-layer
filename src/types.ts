@@ -113,7 +113,6 @@ export interface TileRequest {
 	dataOptions: DataIdentityOptions;
 	ranges: DimensionRange[];
 	clippingOptions: ClippingOptions;
-	currentBounds?: Bounds;
 	signal?: AbortSignal;
 }
 

@@ -1,7 +1,6 @@
 import { GridInterface } from '../grids';
 import Pbf from 'pbf';
 
-import { constrainBounds } from './bounds';
 import { VECTOR_TILE_EXTENT } from './constants';
 import { lat2tile, lon2tile, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
@@ -10,8 +9,8 @@ import { Bounds } from '../types';
 
 /**
  * Generate the PBF grid-point layer for a single tile.
- * Computes tile geographic bounds and intersects with `currentBounds` and
- * `clippingBounds` to iterate only relevant grid points via `forEachPoint`.
+ * Computes tile geographic bounds and intersects with `clippingBounds`
+ * to iterate only relevant grid points via `forEachPoint`.
  */
 export const generateGridPoints = (
 	pbf: Pbf,
@@ -21,7 +20,6 @@ export const generateGridPoints = (
 	x: number,
 	y: number,
 	z: number,
-	currentBounds?: Bounds,
 	clippingBounds?: Bounds,
 	extent: number = VECTOR_TILE_EXTENT,
 	margin: number = 0
@@ -36,14 +34,6 @@ export const generateGridPoints = (
 	const tileOffsetX = x * extent;
 	const tileOffsetY = y * extent;
 
-	// Compute effective bounds: intersection of viewport and clipping bounds.
-	let effectiveBounds: Bounds | undefined;
-	if (currentBounds && clippingBounds) {
-		effectiveBounds = constrainBounds(currentBounds, clippingBounds);
-	} else {
-		effectiveBounds = currentBounds ?? clippingBounds;
-	}
-
 	// Tile geographic bounds with margin.
 	const marginFrac = margin / extent;
 	const tileBounds: Bounds = [
@@ -53,13 +43,13 @@ export const generateGridPoints = (
 		tile2lat(y - marginFrac, z)
 	];
 
-	// Intersect tile bounds with effective bounds for tighter iteration.
-	const iterBounds: Bounds = effectiveBounds
+	// Intersect tile bounds with clippingBounds when defined.
+	const iterBounds: Bounds = clippingBounds
 		? [
-				Math.max(tileBounds[0], effectiveBounds[0]),
-				Math.max(tileBounds[1], effectiveBounds[1]),
-				Math.min(tileBounds[2], effectiveBounds[2]),
-				Math.min(tileBounds[3], effectiveBounds[3])
+				Math.max(tileBounds[0], clippingBounds[0]),
+				Math.max(tileBounds[1], clippingBounds[1]),
+				Math.min(tileBounds[2], clippingBounds[2]),
+				Math.min(tileBounds[3], clippingBounds[3])
 			]
 		: tileBounds;
 

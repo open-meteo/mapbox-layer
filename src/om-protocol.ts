@@ -1,6 +1,5 @@
 import { type GetResourceResponse, type RequestParameters } from 'maplibre-gl';
 
-import { currentBounds } from './utils/bounds';
 import { constrainBounds } from './utils/bounds';
 import { defaultResolveRequest, parseRequest } from './utils/parse-request';
 import { parseMetaJson } from './utils/parse-url';
@@ -160,7 +159,6 @@ const requestTile = async (
 		dataOptions: request.dataOptions,
 		renderOptions: request.renderOptions,
 		clippingOptions: request.clippingOptions,
-		currentBounds: currentBounds,
 		signal
 	});
 };

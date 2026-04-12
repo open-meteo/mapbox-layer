@@ -118,17 +118,7 @@ self.onmessage = async (message: MessageEvent<TileRequest>): Promise<void> => {
 
 		const grid = GridFactory.create(domain.grid, ranges);
 		if (message.data.renderOptions.drawGrid) {
-			generateGridPoints(
-				pbf,
-				grid,
-				values,
-				directions,
-				x,
-				y,
-				z,
-				message.data.currentBounds,
-				clippingOptions?.bounds
-			);
+			generateGridPoints(pbf, grid, values, directions, x, y, z, clippingOptions?.bounds);
 		}
 		if (message.data.renderOptions.drawArrows && directions) {
 			generateArrows(pbf, values, directions, domain, ranges, x, y, z, clippingOptions);
