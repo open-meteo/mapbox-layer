@@ -209,8 +209,8 @@ To restrict weather data to a geometric boundary, the clipping parameters can be
 ```ts
 const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
 omProtocolOptions.clippingOptions = {
-	geojson: geojson, // optionally clip raster / vector data to this geojson
-	bounds: clipBbox // optionally limit tile generation to these bbox bounds
+	geojson: geojson, // optionally clip weather data to geojson
+	bounds: clipBbox // optionally limit tile generation to bbox bounds, automatically generated from geojson when left blank
 };
 ...
 ```

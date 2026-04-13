@@ -105,7 +105,6 @@ export const constrainBounds = (bounds: Bounds, constraint: Bounds): Bounds | un
 	} else if (clipWraps && !boundsWraps) {
 		// Clip crosses dateline: valid zone is [clipMinLon..180] ∪ [-180..clipMaxLon].
 		// Bounds is fully in the gap when it sits between clipMaxLon and clipMinLon.
-		// Intersect the non-crossing bounds with each clip segment independently.
 		const rightMin = Math.max(minLon, clipMinLon);
 		const rightMax = Math.min(maxLon, 180);
 		const leftMin = Math.max(minLon, -180);
