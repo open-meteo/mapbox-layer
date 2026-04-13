@@ -29,7 +29,7 @@ npm install @openmeteo/weather-map-layer
 // ...
 import { omProtocol } from '@openmeteo/weather-map-layer';
 
-// Standard Mapbox / MapLibre GL JS setup
+// Standard MapLibre GL JS setup
 // ...
 
 maplibregl.addProtocol('om', omProtocol);
@@ -70,7 +70,7 @@ For a standalone example, see `examples/temperature.html`.
 
 ```html
 <script>
-	// Standard Mapbox / MapLibre GL JS setup
+	// Standard MapLibre GL JS setup
 	// ...
 
 	maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
