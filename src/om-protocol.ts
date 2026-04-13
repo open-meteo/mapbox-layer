@@ -78,11 +78,7 @@ export const omProtocol = async (
 	// Handle TileJSON request
 	if (params.type == 'json') {
 		return {
-			data: await getTilejson(
-				params.url,
-				request.dataOptions,
-				settings.clippingOptions as ResolvedClippingOptions
-			)
+			data: await getTilejson(params.url, request.dataOptions, request.clippingOptions)
 		};
 	}
 
@@ -175,7 +171,6 @@ const getTilejson = async (
 	clippingOptions?: ResolvedClippingOptions
 ): Promise<TileJSON> => {
 	// We initialize the grid with the ranges set to null, because we want to find out the maximum bounds of this grid
-	// Also parse ranges here
 	const grid = GridFactory.create(dataOptions.domain.grid, null);
 	let bounds;
 	if (clippingOptions && clippingOptions.bounds) {

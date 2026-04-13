@@ -88,7 +88,13 @@ export const createClippingTester = (
 		if (bounds) {
 			const [minLon, minLat, maxLon, maxLat] = bounds;
 			if (lat < minLat || lat > maxLat) return false;
-			if (lon < minLon || lon > maxLon) return false;
+			// Handle dateline-crossing bounds (minLon > maxLon):
+			// valid range is [minLon..180] ∪ [-180..maxLon].
+			if (minLon <= maxLon) {
+				if (lon < minLon || lon > maxLon) return false;
+			} else {
+				if (lon > maxLon && lon < minLon) return false;
+			}
 		}
 
 		// Project the test point to the same Mercator space as the polygon

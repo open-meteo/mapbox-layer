@@ -12,6 +12,7 @@ import type { Bounds } from '../types';
 
 // Reset module-level state between tests
 afterEach(() => {
+	setClippingBounds(undefined);
 	updateCurrentBounds([0, 0, 1, 1]); // reset currentBounds to a known value
 });
 
@@ -134,7 +135,6 @@ describe('updateCurrentBounds', () => {
 	});
 
 	it('applies snapBounds before setting currentBounds', () => {
-		setClippingBounds(undefined);
 		updateCurrentBounds([5, 40, 15, 50]);
 
 		// currentBounds should be the snapped version, not the raw input

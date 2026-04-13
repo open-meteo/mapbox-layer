@@ -23,10 +23,10 @@ import type {
 
 let cachedClippingInput: ClippingOptions = undefined;
 let cachedClippingResult: ResolvedClippingOptions | undefined = undefined;
+let useSAB: boolean | undefined = undefined;
 
 const getCachedResolvedClipping = (
-	options: ClippingOptions,
-	useSAB: boolean | undefined
+	options: ClippingOptions
 ): ResolvedClippingOptions | undefined => {
 	if (options === cachedClippingInput) {
 		return cachedClippingResult;
@@ -41,10 +41,8 @@ export const parseRequest = (url: string, settings: OmProtocolSettings): ParsedR
 	const resolver = settings.resolveRequest ?? defaultResolveRequest;
 	const { dataOptions, renderOptions } = resolver(urlComponents, settings);
 
-	const resolvedClippingOptions = getCachedResolvedClipping(
-		settings.clippingOptions,
-		settings.fileReaderConfig.useSAB
-	);
+	useSAB = settings.fileReaderConfig.useSAB;
+	const resolvedClippingOptions = getCachedResolvedClipping(settings.clippingOptions);
 	setClippingBounds(resolvedClippingOptions?.bounds);
 
 	return {
