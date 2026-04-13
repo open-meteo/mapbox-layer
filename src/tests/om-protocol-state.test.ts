@@ -2,7 +2,14 @@ import type { WeatherMapLayerFileReader } from '../om-file-reader';
 import { ensureData, getOrCreateState, getRanges } from '../om-protocol-state';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Data, DataIdentityOptions, Domain, GridData, OmUrlState } from '../types';
+import type {
+	Data,
+	DataIdentityOptions,
+	Domain,
+	GridData,
+	OmUrlState,
+	RegularGridData
+} from '../types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -268,7 +275,7 @@ describe('ensureData – data already cached', () => {
 // ---------------------------------------------------------------------------
 
 describe('getRanges', () => {
-	const makeGrid = (overrides: Partial<GridData> = {}): GridData => ({
+	const makeGrid = (overrides: Partial<RegularGridData> = {}): GridData => ({
 		type: 'regular',
 		nx: 360,
 		ny: 180,

@@ -12,9 +12,7 @@ import type { Bounds } from '../types';
 
 // Reset module-level state between tests
 afterEach(() => {
-	setClippingBounds(undefined);
 	updateCurrentBounds([0, 0, 1, 1]); // reset currentBounds to a known value
-	setClippingBounds(undefined); // clear again after updateCurrentBounds
 });
 
 describe('snapBounds', () => {
@@ -104,10 +102,7 @@ describe('setClippingBounds', () => {
 		updateCurrentBounds([-10, -10, 60, 60]);
 
 		// currentBounds should be constrained to [0, 0, 50, 50]
-		expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![1]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![2]).toBeLessThanOrEqual(50);
-		expect(currentBounds![3]).toBeLessThanOrEqual(50);
+		expect(currentBounds).toEqual([0, 0, 50, 50]);
 	});
 
 	it('clears clipping bounds when set to undefined', () => {
@@ -139,6 +134,7 @@ describe('updateCurrentBounds', () => {
 	});
 
 	it('applies snapBounds before setting currentBounds', () => {
+		setClippingBounds(undefined);
 		updateCurrentBounds([5, 40, 15, 50]);
 
 		// currentBounds should be the snapped version, not the raw input
@@ -150,9 +146,7 @@ describe('updateCurrentBounds', () => {
 		setClippingBounds([0, 0, 20, 60]);
 		updateCurrentBounds([-10, 30, 30, 70]);
 
-		expect(currentBounds![0]).toBeGreaterThanOrEqual(0);
-		expect(currentBounds![2]).toBeLessThanOrEqual(20);
-		expect(currentBounds![3]).toBeLessThanOrEqual(60);
+		expect(currentBounds).toEqual([0, 0, 20, 60]);
 	});
 });
 
