@@ -1,3 +1,19 @@
+export * from './domains';
+
+export * from './om-file-reader';
+export * from './om-protocol';
+export * from './om-protocol-state';
+
+export * from './types';
+
+export * from './worker-pool';
+
+export * from './adapters/leaflet';
+export * from './adapters/mapbox';
+export * from './adapters/openlayers';
+
+export * from './grids/index';
+
 export * from './utils/arrows';
 export * from './utils/bounds';
 export * from './utils/clipping';
@@ -11,18 +27,3 @@ export * from './utils/parse-request';
 export * from './utils/pbf';
 export * from './utils/styling';
 export * from './utils/variables';
-export * from './grids/index';
-
-export * from './adapters/leaflet';
-export * from './adapters/mapbox';
-export * from './adapters/openlayers';
-
-export * from './om-file-reader';
-export * from './om-protocol';
-export * from './om-protocol-state';
-
-export * from './domains';
-
-export * from './worker-pool';
-
-export * from './types';
