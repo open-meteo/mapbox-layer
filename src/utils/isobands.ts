@@ -66,7 +66,7 @@ function computeCase(tl: number, tr: number, br: number, bl: number): CaseRings 
 	// If all corners are 0 or all are 2, no band region exists → empty.
 	// If all corners are 1, the entire cell is in the band → full quad.
 
-	const code = tl * 27 + tr * 9 + br * 3 + bl;
+	// const code = tl * 27 + tr * 9 + br * 3 + bl;
 
 	// All same → no band or full band
 	if (tl === 0 && tr === 0 && br === 0 && bl === 0) return []; // all below
