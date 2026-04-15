@@ -1,6 +1,5 @@
-import Pbf from 'pbf';
-
 import { GridInterface } from '../grids/index';
+import Pbf from 'pbf';
 
 import { type ResolvedClippingOptions, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
@@ -137,18 +136,38 @@ function traceSaddleRings(tl: number, tr: number, br: number, bl: number): CaseR
 	if (tl === 0 && tr === 2 && br === 0 && bl === 2) {
 		return [
 			// TL strip: left-hi → left-lo → top-lo → top-hi (CW in screen coords)
-			[[0, 1], [0, 0], [1, 0], [1, 1]],
+			[
+				[0, 1],
+				[0, 0],
+				[1, 0],
+				[1, 1]
+			],
 			// BR strip: right-hi → right-lo → bottom-lo → bottom-hi
-			[[2, 1], [2, 0], [3, 0], [3, 1]]
+			[
+				[2, 1],
+				[2, 0],
+				[3, 0],
+				[3, 1]
+			]
 		];
 	}
 	// 2-0-2-0: band strips near TR and BL corners
 	if (tl === 2 && tr === 0 && br === 2 && bl === 0) {
 		return [
 			// TR strip: top-hi → top-lo → right-lo → right-hi
-			[[1, 1], [1, 0], [2, 0], [2, 1]],
+			[
+				[1, 1],
+				[1, 0],
+				[2, 0],
+				[2, 1]
+			],
 			// BL strip: bottom-hi → bottom-lo → left-lo → left-hi
-			[[3, 1], [3, 0], [0, 0], [0, 1]]
+			[
+				[3, 1],
+				[3, 0],
+				[0, 0],
+				[0, 1]
+			]
 		];
 	}
 	return [];
@@ -404,12 +423,7 @@ function classify(value: number, lo: number, hi: number): number {
 	return 1;
 }
 
-function cornerCoord(
-	corner: string,
-	j: number,
-	i: number,
-	multiplier: number
-): [number, number] {
+function cornerCoord(corner: string, j: number, i: number, multiplier: number): [number, number] {
 	// Matches contour coordinate system: cell (j, i) spans from
 	// (j-1)*m to j*m in x, (i-1)*m to i*m in y
 	switch (corner) {
