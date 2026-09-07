@@ -37,7 +37,7 @@ export const rasterizeClipMask = (
 	const h = y1 - y0;
 	if (!(w > 0) || !(h > 0)) return undefined;
 
-	const scale = MASK_MAX_PX / Math.max(w, h);
+	const scale = (clipping.maskMaxPx ?? MASK_MAX_PX) / Math.max(w, h);
 	const innerW = Math.max(1, Math.round(w * scale));
 	const innerH = Math.max(1, Math.round(h * scale));
 	const canvas = new OffscreenCanvas(innerW + 2 * PAD_PX, innerH + 2 * PAD_PX);

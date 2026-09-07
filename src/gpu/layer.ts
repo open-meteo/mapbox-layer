@@ -318,9 +318,14 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	 * Note the crop caveat: the on-screen data was loaded for the previous
 	 * clipping's bounds, so regions a drag exposes beyond that crop stay empty
 	 * until the finishing reload.
+	 *
+	 * `maskMaxPx` caps the clip-mask resolution: interactive previews pass a
+	 * lower cap so each restyle re-rasterises and uploads a fraction of the
+	 * full-quality mask the finishing reload will build.
 	 */
-	setClipping(options: ClippingOptions): void {
+	setClipping(options: ClippingOptions, maskMaxPx?: number): void {
 		const resolved = resolveClippingOptions(options);
+		if (resolved && maskMaxPx !== undefined) resolved.maskMaxPx = maskMaxPx;
 		const apply = (frame: RenderStyle | undefined): void => {
 			if (!frame) return;
 			frame.clipping = resolved;
@@ -1055,8 +1060,11 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		if (!still) {
 			this.drawArrowPass(gl, projection, frame.sampler, mix, opacity, frame.clipBounds, frame);
 			// A domain or variable switch reseeds the particles: the old
-			// population would visibly disperse out of the previous field.
-			this.resetParticlesOnDataChange(frame.dataKey);
+			// population would visibly disperse out of the previous field. So
+			// does polygon clipping appearing or clearing — the spawn window
+			// jumps between the clip bounds and the whole viewport, and gradual
+			// respawn would leave the new region sparse for a lifetime.
+			this.resetParticlesOnDataChange(frame.dataKey + (frame.clipping?.polygons ? '|clip' : ''));
 			this.drawParticlePass(
 				projection,
 				this.plainParticleLayers(frame),
@@ -1069,7 +1077,10 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		}
 	}
 
-	/** Reseed the particle population when the advected field's identity changes. */
+	/**
+	 * Reseed the particle population when the advected field's identity changes
+	 * (domain/variable/sub-layer set, or polygon clipping appearing/clearing).
+	 */
 	private resetParticlesOnDataChange(dataKey: string): void {
 		if (this.particleDataKey === dataKey) return;
 		if (this.particleDataKey !== undefined) this.particleSystem?.reset();
@@ -1199,11 +1210,11 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			// A lazily loaded (or zoom-toggled) sub-layer changes the field the
 			// particles advect through; reseed instead of letting the population
 			// visibly disperse out of the previous composite's flow. The variable
-			// is part of the identity, like the plain frame's dataKey.
+			// and clip presence are part of the identity, like the plain frame's.
 			this.resetParticlesOnDataChange(
 				`${String(frame.request.dataOptions.variable)}|${drawnData
 					.map((data) => data.domain.value)
-					.join('|')}`
+					.join('|')}${frame.clipping?.polygons ? '|clip' : ''}`
 			);
 			this.drawParticlePass(
 				projection,
