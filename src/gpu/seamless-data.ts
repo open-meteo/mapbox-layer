@@ -75,17 +75,36 @@ export interface GpuSeamlessLayerData {
 // NaN-distance fields keyed per data array (stable per timestep/viewport).
 const nanFieldCache = new WeakMap<Float32Array, Float32Array | null>();
 
-const getNanField = (
+const getNanField = async (
 	layerDef: SeamlessLayer,
 	domain: Domain,
 	values: Float32Array,
-	gridUniforms: GpuGridUniforms
-): Float32Array | undefined => {
+	gridUniforms: GpuGridUniforms,
+	settings: OmProtocolSettings
+): Promise<Float32Array | undefined> => {
 	// Same condition as seamless-sampling.ts getNanField: only blending
 	// regular-grid layers carry a field.
 	if (layerDef.blendWidthDeg <= 0 || domain.grid.type !== 'regular') return undefined;
 	const cached = nanFieldCache.get(values);
 	if (cached !== undefined) return cached ?? undefined;
+	// The chamfer passes over the whole crop are main-thread jank on mobile;
+	// prefer the decode worker (SAB in and out, zero copies).
+	const decodeWorker = getProtocolInstance(settings).decodeWorker;
+	if (decodeWorker && !decodeWorker.broken) {
+		try {
+			const field = await decodeWorker.nanField(
+				values,
+				gridUniforms.nx,
+				gridUniforms.ny,
+				domain.grid.dx!,
+				domain.grid.dy!
+			);
+			nanFieldCache.set(values, field ?? null);
+			return field;
+		} catch {
+			// Inline fallback below.
+		}
+	}
 	const field = computeNanDistanceField(
 		values,
 		gridUniforms.nx,
@@ -201,7 +220,7 @@ export const loadSeamlessLayer = async (
 			scaleFactor: data.scaleFactor,
 			gridUniforms,
 			blendWidthDeg: layerDef.blendWidthDeg,
-			nanField: getNanField(layerDef, concreteDomain, values, gridUniforms),
+			nanField: await getNanField(layerDef, concreteDomain, values, gridUniforms, settings),
 			domainBounds
 		};
 	} catch {

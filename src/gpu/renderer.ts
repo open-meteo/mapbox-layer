@@ -355,8 +355,14 @@ export class WeatherGpuRenderer {
 		return texture;
 	}
 
-	/** Texels per upload chunk (~4 MB of R32F); also the sync/async threshold. */
-	private static readonly WARM_CHUNK_TEXELS = 1 << 20;
+	/** Texels above which a warm upload streams in chunks instead of one call
+	 *  (~1 MB of R32F — mobile viewport crops land in the chunked path too). */
+	private static readonly WARM_SYNC_TEXELS = 1 << 18;
+	/** Texels per streamed chunk (~2 MB of R32F per texSubImage2D). */
+	private static readonly WARM_CHUNK_TEXELS = 1 << 19;
+	/** Reused sanitize scratch: one allocation instead of one per warm — the
+	 *  multi-MB churn showed up as GC pauses on mobile data loads. */
+	private warmScratch = new Float32Array(0);
 
 	/**
 	 * Upload (or reuse) the value texture like getValueTexture, but stream
@@ -381,7 +387,7 @@ export class WeatherGpuRenderer {
 		}
 		const texels = nx * ny;
 		if (
-			texels <= WeatherGpuRenderer.WARM_CHUNK_TEXELS ||
+			texels <= WeatherGpuRenderer.WARM_SYNC_TEXELS ||
 			typeof requestAnimationFrame === 'undefined'
 		) {
 			this.getValueTexture(values, nx, ny, label);
@@ -408,7 +414,10 @@ export class WeatherGpuRenderer {
 		this.labelTexture(entry, values, label);
 
 		const rowsPerChunk = Math.max(1, Math.floor(WeatherGpuRenderer.WARM_CHUNK_TEXELS / nx));
-		const scratch = new Float32Array(rowsPerChunk * nx);
+		if (this.warmScratch.length < rowsPerChunk * nx) {
+			this.warmScratch = new Float32Array(rowsPerChunk * nx);
+		}
+		const scratch = this.warmScratch;
 		for (let row = 0; row < ny; row += rowsPerChunk) {
 			// Evicted mid-warm (budget pressure): the texture is gone; a later
 			// getValueTexture re-uploads synchronously as before.
