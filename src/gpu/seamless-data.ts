@@ -70,6 +70,8 @@ export interface GpuSeamlessLayerData {
 	nanField?: Float32Array;
 	/** Full geographic bounds, for the render-time viewport gate. */
 	domainBounds: Bounds;
+	/** Origin of the uncropped grid, anchoring the downsampled contour blocks. */
+	fullOrigin?: [number, number];
 }
 
 // NaN-distance fields keyed per data array (stable per timestep/viewport).
@@ -210,6 +212,10 @@ export const loadSeamlessLayer = async (
 		if (!values) return null;
 
 		const gridUniforms = computeGridUniforms(concreteDomain.grid, state.ranges);
+		const fullUniforms =
+			gridUniforms.gridKind === 'gaussian'
+				? undefined
+				: computeGridUniforms(concreteDomain.grid, null);
 		return {
 			layerDef,
 			domain: concreteDomain,
@@ -221,7 +227,8 @@ export const loadSeamlessLayer = async (
 			gridUniforms,
 			blendWidthDeg: layerDef.blendWidthDeg,
 			nanField: await getNanField(layerDef, concreteDomain, values, gridUniforms, settings),
-			domainBounds
+			domainBounds,
+			fullOrigin: fullUniforms ? [fullUniforms.originX, fullUniforms.originY] : undefined
 		};
 	} catch {
 		return null;

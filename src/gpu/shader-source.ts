@@ -548,6 +548,7 @@ export const layerUniformNames = (
 	edgeDeg: string;
 	blendWidth: string;
 	nan: string;
+	reveal: string;
 } => ({
 	values: `u_values${i}`,
 	n: `u_n${i}`,
@@ -561,7 +562,8 @@ export const layerUniformNames = (
 	edgeProj: `u_edgeProj${i}`,
 	edgeDeg: `u_edgeDeg${i}`,
 	blendWidth: `u_blendWidth${i}`,
-	nan: `u_nan${i}`
+	nan: `u_nan${i}`,
+	reveal: `u_reveal${i}`
 });
 
 const generateLayer = (
@@ -772,11 +774,20 @@ export const samplingSource = (spec: SamplingShaderSpec): string => {
 	// covers the point mixes over it with its edge weight. A single plain layer
 	// reduces to one sample. Parameterised by the samplers so the temporal path
 	// can evaluate the same composite for the previous timestep's textures.
+	// Every finer layer's weight is scaled by a reveal factor (default 1), so a
+	// sub-layer joining or leaving the composite (lazy load, zoom crossing its
+	// range) morphs out of the coarser field instead of popping.
+	const revealUniforms = layers
+		.slice(0, -1)
+		.map((_, i) => `uniform float u_reveal${i};`)
+		.join('\n');
+	if (revealUniforms) parts.push(revealUniforms);
 	const texParams = layers.map((_, i) => `, sampler2D tex${i}`).join('');
 	const blendLines: string[] = [];
 	for (let i = layers.length - 1; i >= 0; i--) {
+		const edge = i === layers.length - 1 || !layers[i].blends ? '1.0' : `edgeWeight${i}(lat, lon)`;
 		const weight =
-			i === layers.length - 1 || !layers[i].blends ? '1.0' : `edgeWeight${i}(lat, lon)`;
+			i === layers.length - 1 ? '1.0' : edge === '1.0' ? `u_reveal${i}` : `${edge} * u_reveal${i}`;
 		blendLines.push(`	{
 		float v = sampleValue${i}(tex${i}, lat, lon);
 		if (!isMissing(v)) {

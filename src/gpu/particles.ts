@@ -93,6 +93,9 @@ export interface ParticleFieldLayer {
 	blendWidthDeg?: number;
 	/** NaN-distance texture refining the blend edge (like the raster pass). */
 	nanTexture?: WebGLTexture;
+	/** Reveal factor 0..1 of the raster pass (sub-layer zoom morph), so the
+	 *  particles advect through the same composite the raster shows. */
+	reveal?: number;
 }
 
 export interface ParticleRenderOptions {

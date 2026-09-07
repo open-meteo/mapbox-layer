@@ -114,6 +114,13 @@ export interface GpuLayerDraw {
 	 * `mix` (single-layer draws use GpuDrawOptions.prevTexture instead).
 	 */
 	prevTexture?: WebGLTexture;
+	/**
+	 * Reveal factor 0..1 (default 1) scaling this layer's blend weight in a
+	 * multi-layer composite: a sub-layer joining or leaving (lazy load, zoom
+	 * crossing its range) morphs against the coarser field instead of popping.
+	 * Ignored on the coarsest layer (it seeds the composite).
+	 */
+	reveal?: number;
 }
 
 export interface GpuDrawOptions {
@@ -191,11 +198,16 @@ export const uploadGridLayerUniforms = (
 	u: (name: string) => WebGLUniformLocation | null,
 	i: number,
 	spec: LayerShaderSpec,
-	layer: Pick<GpuLayerDraw, 'gridUniforms' | 'blendWidthDeg' | 'nanTexture'>,
+	layer: Pick<GpuLayerDraw, 'gridUniforms' | 'blendWidthDeg' | 'nanTexture' | 'reveal'>,
 	bindTexture: (name: string, texture: WebGLTexture) => void
 ): void => {
 	const g = layer.gridUniforms;
 	const names = layerUniformNames(i);
+
+	// The uniform only exists for the finer layers of a multi-layer composite;
+	// elsewhere the null location makes this a no-op. Must always be set — a
+	// float uniform defaults to 0, which would blank the layer entirely.
+	gl.uniform1f(u(names.reveal), layer.reveal ?? 1);
 
 	if (g.gridKind === 'gaussian') {
 		gl.uniform4i(u(names.gauss), g.gauss[0], g.gauss[1], g.gauss[2], g.gauss[3]);

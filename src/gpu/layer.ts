@@ -249,6 +249,17 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	 */
 	private seamlessPrev: Map<string, { values: Float32Array; nx: number; ny: number }> | undefined;
 	/**
+	 * Per sub-domain reveal factor 0..1: a finer sub-layer joining the drawn
+	 * composite (lazy load finishing, zoom entering its range) ramps up and
+	 * morphs out of the coarser field; one leaving ramps down and morphs back —
+	 * instead of the resolution popping. The composite identity resets the map
+	 * (a domain/variable switch dissolves as a whole and must not also morph).
+	 */
+	private seamlessReveal = new Map<string, number>();
+	private seamlessRevealKey: string | undefined;
+	private seamlessRevealTime = 0;
+	private static readonly SEAMLESS_REVEAL_MS = 500;
+	/**
 	 * The replaced visual when a commit cannot value-morph (variable or domain
 	 * switch): it keeps rendering underneath while the new one dissolves in on
 	 * top, with the FrameManager's opacity compensation so the combined
@@ -1009,6 +1020,91 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		return { layer, draw, prevTexture };
 	}
 
+	/**
+	 * Contour source layers for a seamless composite: every drawn sub-layer
+	 * whose cells span too few screen pixels is replaced by a box-downsampled
+	 * copy on the same axes (per-layer factor, blocks anchored to the full
+	 * grid), the rest reuse the raster textures as they are. The result renders
+	 * as one extra lines-only multi-layer pass, so the isolines cross
+	 * sub-domain edges with the same blend (and reveal morph) as the raster.
+	 */
+	private seamlessContourLayers(
+		frame: SeamlessFrame,
+		drawLayers: GpuLayerDraw[],
+		drawnData: GpuSeamlessLayerData[],
+		opacity: number,
+		mix: number
+	): { layers: GpuLayerDraw[]; draw: GpuContourDraw } | undefined {
+		const draw = this.contourStyleDraw(frame.intervals, opacity);
+		if (!draw) return undefined;
+		// Same crowding-band shift as contourDownsampledDraw: the box-averaged
+		// field is smooth, so the anti-speckle fade would only tear where the
+		// coarse cells put dense isobars.
+		draw.minGap *= 2.5;
+
+		const renderer = this.renderer!;
+		const layers = drawnData.map((data, i): GpuLayerDraw => {
+			const g = data.gridUniforms;
+			const cellPx = this.cellPxOf(g);
+			// Gaussian rows differ in length; that sub-layer keeps full res (in
+			// practice seamless sub-layers are regular or projected lattices).
+			if (cellPx >= WeatherGpuLayer.CONTOUR_TARGET_CELL_PX || g.gridKind === 'gaussian') {
+				return drawLayers[i];
+			}
+			const factor = Math.min(
+				32,
+				Math.pow(2, Math.ceil(Math.log2(WeatherGpuLayer.CONTOUR_TARGET_CELL_PX / cellPx)))
+			);
+			let skipX = 0;
+			let skipY = 0;
+			if (data.fullOrigin) {
+				const kx = Math.round((g.originX - data.fullOrigin[0]) / g.dx);
+				const ky = Math.round((g.originY - data.fullOrigin[1]) / g.dy);
+				skipX = ((-kx % factor) + factor) % factor;
+				skipY = ((-ky % factor) + factor) % factor;
+			}
+			const ds = downsampleRegular(data.values, g.nx, g.ny, factor, skipX, skipY);
+			if (!ds) return drawLayers[i]; // crop too small to coarsen further
+			const gridUniforms: GpuGridUniforms = {
+				...g,
+				nx: ds.nx,
+				ny: ds.ny,
+				originX: g.originX + g.dx * (skipX + (factor - 1) / 2),
+				originY: g.originY + g.dy * (skipY + (factor - 1) / 2),
+				dx: g.dx * factor,
+				dy: g.dy * factor,
+				wrapLastCellDouble: g.lonWrap
+			};
+			// Morph the coarse isolines with the temporal blend, like the raster.
+			let prevTexture: WebGLTexture | undefined;
+			const prev = mix < 1 ? this.seamlessPrev?.get(data.domain.value) : undefined;
+			if (prev && prev.nx === g.nx && prev.ny === g.ny) {
+				const prevDs = downsampleRegular(prev.values, g.nx, g.ny, factor, skipX, skipY);
+				if (prevDs) prevTexture = renderer.getValueTexture(prevDs.values, prevDs.nx, prevDs.ny);
+			}
+			return {
+				gridUniforms,
+				valuesTexture: renderer.getValueTexture(
+					ds.values,
+					ds.nx,
+					ds.ny,
+					`${data.stateKey}#ds${factor}`
+				),
+				// The NaN-distance texture lives on the full-res lattice; the
+				// coarse copy blends on the domain rectangle alone.
+				blendWidthDeg: data.blendWidthDeg,
+				prevTexture,
+				reveal: drawLayers[i].reveal
+			};
+		});
+		// A layer without a downsampled previous still morphs the rest: blend
+		// from itself (identity), like the raster composite.
+		if (mix < 1) {
+			for (const layer of layers) layer.prevTexture ??= layer.valuesTexture;
+		}
+		return { layers, draw };
+	}
+
 	onAdd(map: MapLibreMap, gl: WebGLRenderingContext | WebGL2RenderingContext): void {
 		if (!(gl instanceof WebGL2RenderingContext)) {
 			throw new Error('gpu: WeatherGpuLayer requires a WebGL2 map context');
@@ -1372,13 +1468,52 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			}
 		}
 
-		const active = activeSeamlessLayers(frame.domain, zoom);
+		// Advance the reveal factors first: they decide which loaded sub-layers
+		// still draw. A fresh composite identity snaps them (that commit already
+		// dissolves as a whole); within one identity a layer joining or leaving
+		// the active set ramps over SEAMLESS_REVEAL_MS, morphing the fine field
+		// out of (or back into) the coarser composite. The outgoing crossfade
+		// (still) renders with the factors as they stand.
+		const activeSet = new Set(activeSeamlessLayers(frame.domain, zoom).map((l) => l.domainValue));
+		const globalLayer = frame.domain.layers[frame.domain.layers.length - 1];
+		let revealAnimating = false;
+		if (!still) {
+			const revealKey = `${frame.domain.value}|${String(frame.request.dataOptions.variable)}`;
+			const now = performance.now();
+			const step =
+				this.seamlessRevealKey === revealKey
+					? Math.min(100, now - this.seamlessRevealTime) / WeatherGpuLayer.SEAMLESS_REVEAL_MS
+					: 1;
+			if (this.seamlessRevealKey !== revealKey) this.seamlessReveal.clear();
+			this.seamlessRevealKey = revealKey;
+			this.seamlessRevealTime = now;
+			for (const layerDef of frame.domain.layers) {
+				const entry = frame.entries.get(layerDef.domainValue);
+				const target =
+					activeSet.has(layerDef.domainValue) && entry?.status === 'loaded' && entry.data ? 1 : 0;
+				const value = this.seamlessReveal.get(layerDef.domainValue) ?? 0;
+				const next =
+					target > value ? Math.min(target, value + step) : Math.max(target, value - step);
+				if (next !== value) revealAnimating = true;
+				this.seamlessReveal.set(layerDef.domainValue, next);
+			}
+			if (revealAnimating) this.map!.triggerRepaint();
+		}
+
 		const drawLayers: GpuLayerDraw[] = [];
 		const drawnData: GpuSeamlessLayerData[] = [];
 		let finestScaleFactor: number | undefined;
-		for (const layerDef of active) {
+		for (const layerDef of frame.domain.layers) {
 			const entry = frame.entries.get(layerDef.domainValue);
 			if (entry?.status !== 'loaded' || !entry.data) continue;
+			const isBase = layerDef === globalLayer;
+			// A still (outgoing) frame has no factors of its own; it draws its
+			// active set as committed.
+			const reveal = isBase
+				? 1
+				: (this.seamlessReveal.get(layerDef.domainValue) ??
+					(activeSet.has(layerDef.domainValue) ? 1 : 0));
+			if (reveal <= 0.001) continue;
 			const data = entry.data;
 			const g = data.gridUniforms;
 			const prev = mix < 1 ? this.seamlessPrev?.get(layerDef.domainValue) : undefined;
@@ -1387,7 +1522,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				valuesTexture: renderer.getValueTexture(data.values, g.nx, g.ny, data.stateKey),
 				blendWidthDeg: data.blendWidthDeg,
 				nanTexture: data.nanField ? renderer.getValueTexture(data.nanField, g.nx, g.ny) : undefined,
-				prevTexture: prev ? renderer.getValueTexture(prev.values, prev.nx, prev.ny) : undefined
+				prevTexture: prev ? renderer.getValueTexture(prev.values, prev.nx, prev.ny) : undefined,
+				reveal: isBase ? undefined : reveal
 			});
 			drawnData.push(data);
 			finestScaleFactor ??= data.scaleFactor;
@@ -1402,7 +1538,23 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		}
 
 		const clipMask = frame.clipping?.polygons ? renderer.getClipMask(frame.clipping) : undefined;
-		const contours = this.contourDrawOf(frame.intervals, opacity, drawLayers[0].gridUniforms);
+		// Isolines: when every drawn sub-layer's cells span enough pixels they
+		// share the main pass; otherwise (the finest layers activate right at
+		// their legibility limit, where the full-res bilinear derivative
+		// speckles) the lines come from per-layer downsampled copies in an
+		// extra lines-only pass — the seamless counterpart of the plain path's
+		// contourDownsampledDraw.
+		let contours: GpuContourDraw | undefined;
+		let extraContours: { layers: GpuLayerDraw[]; draw: GpuContourDraw } | undefined;
+		if (
+			drawnData.every(
+				(data) => this.cellPxOf(data.gridUniforms) >= WeatherGpuLayer.CONTOUR_TARGET_CELL_PX
+			)
+		) {
+			contours = this.contourStyleDraw(frame.intervals, opacity);
+		} else {
+			extraContours = this.seamlessContourLayers(frame, drawLayers, drawnData, opacity, mix);
+		}
 		if (this.drawRaster || contours) {
 			renderer.draw({
 				projection,
@@ -1418,6 +1570,24 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				clipMask,
 				worldOffsets: this.worldOffsets(projection),
 				contours
+			});
+		}
+
+		if (extraContours) {
+			renderer.draw({
+				projection,
+				layers: extraContours.layers,
+				// Monotone (C1) sampling: bilinear isolines kink at every coarse
+				// cell and their jumping derivative makes the crowding fade tear.
+				interpolation: 'monotone',
+				mix,
+				lut: renderer.getLut(frame.colorScale, frame.colorBlend),
+				halfQuantum: computeHalfQuantum(finestScaleFactor),
+				opacity: 0,
+				clipBounds: frame.clipBounds,
+				clipMask,
+				worldOffsets: this.worldOffsets(projection),
+				contours: extraContours.draw
 			});
 		}
 
@@ -1439,7 +1609,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			);
 			this.drawParticlePass(
 				projection,
-				this.seamlessParticleLayers(drawnData),
+				this.seamlessParticleLayers(drawnData, drawLayers),
 				undefined,
 				1,
 				opacity,
@@ -1455,11 +1625,15 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	 * the wind components. All drawn sub-layers must carry directions, or the
 	 * composite would blend against missing layers differently than the raster.
 	 */
-	private seamlessParticleLayers(drawn: GpuSeamlessLayerData[]): ParticleFieldLayer[] {
+	private seamlessParticleLayers(
+		drawn: GpuSeamlessLayerData[],
+		/** The raster draw layers (parallel to `drawn`), carrying the reveals. */
+		drawLayers: GpuLayerDraw[]
+	): ParticleFieldLayer[] {
 		if (!this.particles || drawn.length === 0) return [];
 		if (drawn.some((data) => !data.data.directions)) return [];
 		const renderer = this.renderer!;
-		return drawn.map((data) => {
+		return drawn.map((data, i) => {
 			const uv = windComponentsOf(data.values, data.data.directions!);
 			const g = data.gridUniforms;
 			return {
@@ -1467,7 +1641,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				uTexture: renderer.getValueTexture(uv.u, g.nx, g.ny),
 				vTexture: renderer.getValueTexture(uv.v, g.nx, g.ny),
 				blendWidthDeg: data.blendWidthDeg,
-				nanTexture: data.nanField ? renderer.getValueTexture(data.nanField, g.nx, g.ny) : undefined
+				nanTexture: data.nanField ? renderer.getValueTexture(data.nanField, g.nx, g.ny) : undefined,
+				reveal: drawLayers[i].reveal
 			};
 		});
 	}
@@ -1766,11 +1941,19 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	private async ensureSeamlessLoads(frame: SeamlessFrame, zoom: number): Promise<void> {
 		const active = activeSeamlessLayers(frame.domain, zoom);
 		const globalLayer = frame.domain.layers[frame.domain.layers.length - 1];
+		// Sub-layers mid fade-out are loaded like active ones: a crop refresh
+		// commits a fresh frame during the reveal ramp, and without an entry the
+		// fading layer would pop out of the new composite instead of finishing
+		// its morph back into the coarser field.
+		const wanted = frame.domain.layers.filter(
+			(layerDef) =>
+				active.includes(layerDef) || (this.seamlessReveal.get(layerDef.domainValue) ?? 0) > 0
+		);
 		const loads: Promise<void>[] = [];
-		for (const layerDef of active) {
+		for (const layerDef of wanted) {
 			if (frame.entries.has(layerDef.domainValue)) continue;
 			frame.entries.set(layerDef.domainValue, { status: 'loading' });
-			loads.push(this.loadSeamlessEntry(frame, layerDef, layerDef === globalLayer, active.length));
+			loads.push(this.loadSeamlessEntry(frame, layerDef, layerDef === globalLayer, wanted.length));
 		}
 		await Promise.all(loads);
 	}
