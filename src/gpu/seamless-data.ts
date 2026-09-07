@@ -140,7 +140,10 @@ export const loadSeamlessLayer = async (
 	isGlobal: boolean,
 	settings: OmProtocolSettings,
 	activeLayerCount: number,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	/** Require the exact current crop (see getOrCreateState) — used when
+	 *  re-resolving the outgoing composite for a temporal morph. */
+	exactCrop = false
 ): Promise<GpuSeamlessLayerData | null> => {
 	const concreteDomain = resolveConcreteDomain(layerDef.domainValue, settings.domainOptions);
 	if (!concreteDomain) {
@@ -178,7 +181,8 @@ export const loadSeamlessLayer = async (
 		concreteKey,
 		concreteDataOptions,
 		concreteBaseUrl,
-		Math.max(settings.maxStatesWithData ?? DEFAULT_MAX_STATES_WITH_DATA, activeLayerCount)
+		Math.max(settings.maxStatesWithData ?? DEFAULT_MAX_STATES_WITH_DATA, activeLayerCount),
+		exactCrop
 	);
 
 	try {

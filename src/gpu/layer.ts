@@ -391,6 +391,12 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			// them in sync when the zoom changes later.
 			await this.ensureSeamlessLoads(frame, this.map?.getZoom() ?? 0);
 			if (sequence !== this.loadSequence) return null;
+			// A crop change breaks per-sub-layer geometry equality, which used to
+			// degrade every pan/zoom-adjacent commit into a crossfade: re-resolve
+			// the outgoing composite's sub-layers on the incoming crop (mostly
+			// cache-served) so the commit can morph values instead.
+			const recroppedPrev = await this.recropSeamlessPrev(frame, signal);
+			if (sequence !== this.loadSequence) return null;
 			return () => {
 				if (sequence !== this.loadSequence) return;
 				const old = this.seamless;
@@ -404,7 +410,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				}
 				// A commit landing mid-blend continues from the values on screen.
 				const snapshot = this.seamlessBlendSnapshot(old);
-				this.seamlessPrev = this.seamlessPrevOf(old, frame, snapshot);
+				this.seamlessPrev = this.seamlessPrevOf(old, frame, snapshot, recroppedPrev);
 				this.arrowPrevSampler = this.seamlessPrev ? old?.sampler : undefined;
 				this.particlePrev = undefined; // seamless particles sample the target field
 				if (this.seamlessPrev) {
@@ -534,7 +540,11 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		const shown = this.current;
 		if (shown && this.fadeMs > 0 && shown.gridSignature !== frame.gridSignature) {
 			try {
-				const prev = await loadOmUrl(shown.url, this.settings, signal);
+				// exactCrop: on zoom-in the shown URL's state still holds its old,
+				// larger crop and included-bounds reuse would hand that back — the
+				// geometry check below then fails and the commit dissolves instead
+				// of morphing.
+				const prev = await loadOmUrl(shown.url, this.settings, signal, true);
 				if (sequence !== this.loadSequence) return null;
 				const prevUniforms = computeGridUniforms(prev.domain.grid, prev.ranges);
 				const prevSignature = WeatherGpuLayer.frameSignature(
@@ -1373,7 +1383,9 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		old: SeamlessFrame | undefined,
 		next: SeamlessFrame,
 		/** Mid-blend snapshot values overriding the old frame's, per sub-domain. */
-		snapshot?: Map<string, Float32Array>
+		snapshot?: Map<string, Float32Array>,
+		/** Old values re-resolved on next's crop, for entries whose crop changed. */
+		recropped?: Map<string, { values: Float32Array; nx: number; ny: number }>
 	): Map<string, { values: Float32Array; nx: number; ny: number }> | undefined {
 		if (!old || this.fadeMs <= 0) return undefined;
 		if (old.domain.value !== next.domain.value) return undefined;
@@ -1386,7 +1398,12 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			const oldEntry = old.entries.get(domainValue);
 			if (oldEntry?.status !== 'loaded' || !oldEntry.data) continue;
 			const g = oldEntry.data.gridUniforms;
-			if (uniformsKey(entry.data.gridUniforms) !== uniformsKey(g)) continue;
+			if (uniformsKey(entry.data.gridUniforms) !== uniformsKey(g)) {
+				// Crop changed: morph from the re-resolved copy on the new geometry.
+				const recroppedEntry = recropped?.get(domainValue);
+				if (recroppedEntry) prev.set(domainValue, recroppedEntry);
+				continue;
+			}
 			prev.set(domainValue, {
 				values: snapshot?.get(domainValue) ?? oldEntry.data.values,
 				nx: g.nx,
@@ -1394,6 +1411,56 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			});
 		}
 		return prev.size > 0 ? prev : undefined;
+	}
+
+	/**
+	 * The outgoing composite's sub-layer values re-resolved on the incoming
+	 * frame's crop (mostly cache-served): geometry-compatible morph sources
+	 * for sub-layers whose crop a pan/zoom changed. Same-timestep refreshes
+	 * resolve to the incoming values themselves — an identity morph.
+	 */
+	private async recropSeamlessPrev(
+		frame: SeamlessFrame,
+		signal?: AbortSignal
+	): Promise<Map<string, { values: Float32Array; nx: number; ny: number }> | undefined> {
+		const old = this.seamless;
+		if (!old || old === frame || this.fadeMs <= 0) return undefined;
+		if (old.domain.value !== frame.domain.value) return undefined;
+		if (old.request.dataOptions.variable !== frame.request.dataOptions.variable) return undefined;
+
+		const uniformsKey = (g: GpuGridUniforms): string => JSON.stringify({ ...g, quad: undefined });
+		const active = activeSeamlessLayers(frame.domain, this.map?.getZoom() ?? 0);
+		const globalLayer = frame.domain.layers[frame.domain.layers.length - 1];
+		const recropped = new Map<string, { values: Float32Array; nx: number; ny: number }>();
+		for (const layerDef of active) {
+			const entry = frame.entries.get(layerDef.domainValue);
+			if (entry?.status !== 'loaded' || !entry.data) continue;
+			const oldEntry = old.entries.get(layerDef.domainValue);
+			if (oldEntry?.status !== 'loaded' || !oldEntry.data) continue;
+			const g = entry.data.gridUniforms;
+			if (uniformsKey(oldEntry.data.gridUniforms) === uniformsKey(g)) continue;
+			try {
+				const prev = await loadSeamlessLayer(
+					{
+						...old.request,
+						dataOptions: { ...old.request.dataOptions, bounds: frame.request.dataOptions.bounds }
+					},
+					frame.domain,
+					layerDef,
+					layerDef === globalLayer,
+					this.settings,
+					active.length,
+					signal,
+					true
+				);
+				if (!prev || uniformsKey(prev.gridUniforms) !== uniformsKey(g)) continue;
+				await this.renderer?.warmValueTexture(prev.values, g.nx, g.ny);
+				recropped.set(layerDef.domainValue, { values: prev.values, nx: g.nx, ny: g.ny });
+			} catch {
+				// This sub-layer dissolves in via its self-prev; the rest still morph.
+			}
+		}
+		return recropped.size > 0 ? recropped : undefined;
 	}
 
 	/** Rebuild the blended wind sampler when the drawn sub-layer set changes. */

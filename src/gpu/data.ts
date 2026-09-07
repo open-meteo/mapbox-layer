@@ -36,7 +36,10 @@ export const isGpuRenderable = (request: ParsedRequest): boolean => {
 export const loadOmUrl = async (
 	omUrl: string,
 	settings: OmProtocolSettings = defaultOmProtocolSettings,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	/** Require the exact current crop (see getOrCreateState) — used when
+	 *  re-resolving the outgoing frame for a temporal morph. */
+	exactCrop = false
 ): Promise<LoadedOmData> => {
 	const url = await normalizeUrl(omUrl, settings.domainOptions);
 	const request = parseRequest(url, settings);
@@ -52,7 +55,8 @@ export const loadOmUrl = async (
 		request.fileAndVariableKey,
 		request.dataOptions,
 		request.baseUrl,
-		settings.maxStatesWithData
+		settings.maxStatesWithData,
+		exactCrop
 	);
 	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
 
