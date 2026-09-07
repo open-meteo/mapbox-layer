@@ -104,13 +104,21 @@ export const buildArrowAnchors = (
 	/** Polygon clip: anchors outside are dropped (createClippingTester). */
 	insideClip?: (lon: number, lat: number) => boolean,
 	/** Globe projection active: build the equal-area geographic lattice. */
-	globe = false
+	globe = false,
+	/**
+	 * The previous call's result: returned as-is when the lattice identity is
+	 * unchanged, so a static view (particle animation repaints every frame)
+	 * skips the lattice scan — and with polygon clipping the per-anchor
+	 * point-in-polygon tests, the expensive part — entirely. The caller must
+	 * drop it when `insideClip` changes (the key only records its presence).
+	 */
+	previous?: ArrowAnchors
 ): ArrowAnchors => {
 	const zFine = Math.max(0, Math.floor(zoom)) + 1;
 	// World pixels at the fine integer zoom (512px tiles).
 	const spacing = spacingPx / (512 * Math.pow(2, zFine));
 	if (globe) {
-		return buildGlobeAnchors(view, zFine, spacing, clipBounds, insideClip);
+		return buildGlobeAnchors(view, zFine, spacing, clipBounds, insideClip, previous);
 	}
 
 	const minY = Math.max(0, view.minY);
@@ -128,6 +136,9 @@ export const buildArrowAnchors = (
 	}
 	const firstY = Math.floor(minY / spacing);
 	const lastY = Math.ceil(maxY / spacing);
+
+	const key = `${zFine}|${spacing}|${firstX}|${lastX}|${firstY}|${lastY}|${clipBounds?.join(',') ?? ''}${insideClip ? '|p' : ''}`;
+	if (previous?.key === key) return previous;
 
 	const cols = lastX - firstX + 1;
 	const rows = lastY - firstY + 1;
@@ -165,12 +176,7 @@ export const buildArrowAnchors = (
 		}
 	}
 
-	return {
-		positions,
-		thresholds,
-		count,
-		key: `${zFine}|${spacing}|${firstX}|${lastX}|${firstY}|${lastY}|${clipBounds?.join(',') ?? ''}${insideClip ? '|p' : ''}`
-	};
+	return { positions, thresholds, count, key };
 };
 
 /**
@@ -188,7 +194,8 @@ const buildGlobeAnchors = (
 	zFine: number,
 	spacing: number,
 	clipBounds?: [number, number, number, number],
-	insideClip?: (lon: number, lat: number) => boolean
+	insideClip?: (lon: number, lat: number) => boolean,
+	previous?: ArrowAnchors
 ): ArrowAnchors => {
 	// The globe matches the mercator scale at the view-centre latitude, so a
 	// degree there renders 1/cos(lat0) larger than the equatorial mercator
@@ -205,6 +212,9 @@ const buildGlobeAnchors = (
 	const minY = Math.max(0, view.minY) - spacing;
 	const maxY = Math.min(1, view.maxY) + spacing;
 	const spanX = Math.min(1, view.maxX - view.minX + 2 * spacing);
+
+	const key = `g${zFine}.${band}|${view.minX}|${view.maxX}|${view.minY}|${view.maxY}|${clipBounds?.join(',') ?? ''}${insideClip ? '|p' : ''}`;
+	if (previous?.key === key) return previous;
 
 	const positions = new Float64Array(MAX_ANCHORS * 2);
 	const thresholds = new Float32Array(MAX_ANCHORS);
@@ -238,12 +248,7 @@ const buildGlobeAnchors = (
 		}
 	}
 
-	return {
-		positions,
-		thresholds,
-		count,
-		key: `g${zFine}.${band}|${view.minX}|${view.maxX}|${view.minY}|${view.maxY}|${clipBounds?.join(',') ?? ''}${insideClip ? '|p' : ''}`
-	};
+	return { positions, thresholds, count, key };
 };
 
 /**

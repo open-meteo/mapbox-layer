@@ -800,7 +800,15 @@ export const fragmentSource = (spec: FragmentShaderSpec): string => {
 	const layers = spec.layers;
 	const single = layers.length === 1;
 
-	const parts: string[] = ['#version 300 es', 'precision highp float;', 'precision highp int;'];
+	const parts: string[] = [
+		'#version 300 es',
+		'precision highp float;',
+		'precision highp int;',
+		// Samplers default to lowp in GLSL ES: desktop drivers ignore precision,
+		// but mobile GPUs honour it and clamp the 3.0e38 missing sentinel read
+		// from R32F textures to a finite value that then colours as scale min/max.
+		'precision highp sampler2D;'
+	];
 	parts.push(samplingSource(spec));
 
 	// In-shader temporal blend between two timesteps on the same grids.

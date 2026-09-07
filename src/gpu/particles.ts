@@ -124,6 +124,12 @@ export interface ParticleRenderOptions {
 	dashLenDevicePx: number;
 	/** Whole-world x offsets to draw (antimeridian copies). */
 	worldOffsets: number[];
+	/**
+	 * Polygon clip mask of the raster pass (base-world mercator rect): particle
+	 * draws multiply its alpha in, so the animation follows the exact clip
+	 * outline instead of the rectangular clip bounds.
+	 */
+	clipMask?: { texture: WebGLTexture; rect: [number, number, number, number] };
 }
 
 // ─── CPU wind components ─────────────────────────────────────────────────────
@@ -175,6 +181,7 @@ void main() {
 
 const FADE_FRAGMENT = `#version 300 es
 precision highp float;
+precision highp sampler2D;
 in vec2 v_uv;
 uniform sampler2D u_trail;
 uniform float u_fade;
@@ -241,6 +248,7 @@ void main() {
 
 const UNWARP_FRAGMENT = `#version 300 es
 precision highp float;
+precision highp sampler2D;
 in vec4 v_prevClip;
 uniform sampler2D u_trail;
 out vec4 outColor;
@@ -274,6 +282,7 @@ void main() {
 
 const REWARP_FRAGMENT = `#version 300 es
 precision highp float;
+precision highp sampler2D;
 in vec2 v_wuv;
 uniform sampler2D u_warp;
 uniform float u_fade;
@@ -389,6 +398,7 @@ export const updateFragmentSource = (
 	return `#version 300 es
 precision highp float;
 precision highp int;
+precision highp sampler2D;
 ${samplingSource(spec)}
 ${decls}
 ${temporal ? 'uniform sampler2D u_uPrev0;\nuniform sampler2D u_vPrev0;\nuniform float u_mix;' : ''}
@@ -480,10 +490,12 @@ uniform float u_worldOffset;
 uniform float u_sizePx;
 
 out float v_alive;
+out vec2 v_merc;
 
 void main() {
 	vec4 s = texelFetch(u_state, ivec2(gl_VertexID % u_stateW, gl_VertexID / u_stateW), 0);
 	v_alive = s.z > 0.0 ? 1.0 : 0.0;
+	v_merc = vec2(s.x, s.y);
 	gl_Position = projectTile(vec2(s.x + u_worldOffset, s.y));
 	gl_PointSize = u_sizePx;
 }
@@ -494,10 +506,12 @@ const pointVertexSource = (shaderData?: ProjectionShaderData): string => {
 		return `#version 300 es
 ${shaderData.vertexShaderPrelude}
 ${shaderData.define}
+precision highp sampler2D;
 ${POINT_VERTEX_BODY}`;
 	}
 	return `#version 300 es
 precision highp float;
+precision highp sampler2D;
 
 uniform mat4 u_matrix;
 
@@ -507,14 +521,35 @@ vec4 projectTile(vec2 pos) {
 ${POINT_VERTEX_BODY}`;
 };
 
+// Same lookup as the raster pass's clip mask (wrap-aware base-world mercator):
+// particles outside the polygons vanish, so the animation follows the exact
+// clip outline rather than just the rectangular clip bounds. Needs highp — in
+// mediump the mercator coordinate only resolves ~1/1000 of the world, which
+// staircases the edge at higher zooms.
+const CLIP_MASK_CHUNK = `
+uniform float u_clipMaskEnabled;
+uniform sampler2D u_clipMask;
+uniform vec4 u_clipMaskRect; // (x0, y0, 1/w, 1/h) in mercator [0..1]
+in vec2 v_merc;
+float clipMaskAlpha() {
+	if (u_clipMaskEnabled < 0.5) return 1.0;
+	float dx = v_merc.x - u_clipMaskRect.x;
+	dx -= floor(dx);
+	vec2 uv = vec2(dx * u_clipMaskRect.z, (v_merc.y - u_clipMaskRect.y) * u_clipMaskRect.w);
+	return (uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) ? 0.0 : texture(u_clipMask, uv).a;
+}
+`;
+
 const POINT_FRAGMENT = `#version 300 es
-precision mediump float;
+precision highp float;
+precision highp sampler2D;
 in float v_alive;
 uniform vec3 u_color;
 out vec4 outColor;
+${CLIP_MASK_CHUNK}
 void main() {
 	vec2 d = gl_PointCoord * 2.0 - 1.0;
-	float a = v_alive * (1.0 - smoothstep(0.5, 1.0, length(d)));
+	float a = v_alive * (1.0 - smoothstep(0.5, 1.0, length(d))) * clipMaskAlpha();
 	outColor = vec4(u_color * a, a);
 }
 `;
@@ -535,9 +570,11 @@ uniform float u_mode;    // 0 = flow (state.w = bearing), 1 = rain (state.w = al
 
 out vec2 v_uv;
 out float v_alpha;
+out vec2 v_merc;
 
 void main() {
 	vec4 s = texelFetch(u_state, ivec2(gl_InstanceID % u_stateW, gl_InstanceID / u_stateW), 0);
+	v_merc = vec2(s.x, s.y);
 	float alive = s.z > 0.0 ? 1.0 : 0.0;
 	v_alpha = alive * (u_mode > 0.5 ? s.w : 1.0);
 	float bearing = u_mode > 0.5 ? 0.0 : s.w;
@@ -564,10 +601,12 @@ const dashVertexSource = (shaderData?: ProjectionShaderData): string => {
 		return `#version 300 es
 ${shaderData.vertexShaderPrelude}
 ${shaderData.define}
+precision highp sampler2D;
 ${DASH_VERTEX_BODY}`;
 	}
 	return `#version 300 es
 precision highp float;
+precision highp sampler2D;
 
 uniform mat4 u_matrix;
 
@@ -578,15 +617,17 @@ ${DASH_VERTEX_BODY}`;
 };
 
 const DASH_FRAGMENT = `#version 300 es
-precision mediump float;
+precision highp float;
+precision highp sampler2D;
 in vec2 v_uv;
 in float v_alpha;
 uniform vec3 u_color;
 out vec4 outColor;
+${CLIP_MASK_CHUNK}
 void main() {
 	float ax = 1.0 - smoothstep(0.3, 0.5, abs(v_uv.x));
 	float ay = 1.0 - smoothstep(0.3, 0.5, abs(v_uv.y));
-	float a = v_alpha * ax * ay;
+	float a = v_alpha * ax * ay * clipMaskAlpha();
 	outColor = vec4(u_color * a, a);
 }
 `;
@@ -792,6 +833,18 @@ export class ParticleSystem {
 
 	/** Drop the trail history (e.g. the data changed identity). */
 	clearTrails(): void {
+		this.trailDirty = true;
+	}
+
+	/**
+	 * Reseed the whole particle population and drop the trails — for
+	 * data-identity changes (domain/variable switch, a seamless composite's
+	 * drawn sub-layer set), where the old distribution would visibly disperse
+	 * out of the previous field.
+	 */
+	reset(): void {
+		this.deletePingPong(this.state);
+		this.state = undefined;
 		this.trailDirty = true;
 	}
 
@@ -1282,6 +1335,13 @@ ${body}`;
 		gl.uniform1i(u('u_stateW'), this.stateW);
 		gl.uniform1f(u('u_sizePx'), opts.sizeDevicePx);
 		gl.uniform3f(u('u_color'), ...opts.config.color);
+		gl.uniform1f(u('u_clipMaskEnabled'), opts.clipMask ? 1 : 0);
+		if (opts.clipMask) {
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, opts.clipMask.texture);
+			gl.uniform1i(u('u_clipMask'), 1);
+			gl.uniform4f(u('u_clipMaskRect'), ...opts.clipMask.rect);
+		}
 		if (dash) {
 			gl.uniform2f(u('u_viewport'), this.trailW, this.trailH);
 			gl.uniform1f(u('u_dashLen'), opts.dashLenDevicePx);

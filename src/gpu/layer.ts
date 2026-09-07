@@ -30,7 +30,7 @@
 import { isSeamlessDomain } from '../domain-helpers';
 import { GridFactory } from '../grids/index';
 import { defaultOmProtocolSettings } from '../om-protocol';
-import { createClippingTester } from '../utils/clipping';
+import { createClippingTester, resolveClippingOptions } from '../utils/clipping';
 import type { ResolvedClippingOptions } from '../utils/clipping';
 import { halfQuantum as computeHalfQuantum, lat2tile } from '../utils/math';
 import { parseRequest } from '../utils/parse-request';
@@ -43,7 +43,7 @@ import type {
 } from 'maplibre-gl';
 
 import { buildArrowAnchors, buildArrowInstances } from './arrows';
-import type { ArrowSampler, GpuArrowConfig } from './arrows';
+import type { ArrowAnchors, ArrowSampler, GpuArrowConfig } from './arrows';
 import { loadOmUrl } from './data';
 import { downsampleRegular } from './downsample';
 import { computeGridUniforms } from './grid-uniforms';
@@ -63,6 +63,7 @@ import type { GpuSeamlessLayerData } from './seamless-data';
 
 import type {
 	Bounds,
+	ClippingOptions,
 	GridData,
 	InterpolationMethod,
 	OmProtocolSettings,
@@ -121,6 +122,8 @@ interface PlainFrame extends RenderStyle {
 	sampler?: ArrowSampler;
 	/** URL-state key, labelling the texture for residency queries. */
 	stateKey: string;
+	/** Domain + variable identity, for the particle reseed on data switches. */
+	dataKey: string;
 	/** Contour levels of the request (a single entry means a step interval). */
 	intervals: number[];
 	/** Normalized om:// URL of this frame, for re-resolving on a new crop. */
@@ -235,6 +238,9 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	private particleSystem: ParticleSystem | undefined;
 	/** Last particle-update timestamp; 0 restarts the step clock. */
 	private particleLastTime = 0;
+	/** Identity of the field the particles advect through (seamless sub-layer
+	 *  set); a change reseeds the population. undefined = nothing drawn yet. */
+	private particleDataKey: string | undefined;
 	/** Previous-timestep wind of a blendable commit, for the particle morph. */
 	private particlePrev: { values: Float32Array; directions: Float32Array } | undefined;
 	/** Sampler of the outgoing frame, for rebuilding instances mid-blend. */
@@ -242,6 +248,10 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	/** Bumped whenever the arrow data changes; part of the instance identity. */
 	private arrowGeneration = 0;
 	private arrowInstanceKey = '';
+	/** Last anchor lattice, reused while the view/lattice identity holds. */
+	private arrowAnchors: ArrowAnchors | undefined;
+	/** Tester the cached lattice was filtered with (identity check only). */
+	private arrowAnchorTester: ((lon: number, lat: number) => boolean) | null | undefined;
 
 	/** Guards against out-of-order setUrl loads; only the latest wins. */
 	private loadSequence = 0;
@@ -295,6 +305,32 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	 */
 	setSettings(settings: OmProtocolSettings): void {
 		this.settings = settings;
+	}
+
+	/**
+	 * Restyle the clipping of what is already on screen, without reloading any
+	 * data: the polygons re-rasterise into a fresh clip mask, the arrow lattice
+	 * re-filters, and the next frame draws with the new outline. This is the
+	 * live path for interactive polygon draws/drags — the host still updates
+	 * its settings (and re-issues the URL) when the edit is finished, so the
+	 * data crop catches up then.
+	 *
+	 * Note the crop caveat: the on-screen data was loaded for the previous
+	 * clipping's bounds, so regions a drag exposes beyond that crop stay empty
+	 * until the finishing reload.
+	 */
+	setClipping(options: ClippingOptions): void {
+		const resolved = resolveClippingOptions(options);
+		const apply = (frame: RenderStyle | undefined): void => {
+			if (!frame) return;
+			frame.clipping = resolved;
+			frame.clipBounds = resolved?.bounds;
+			frame.clipTester = undefined;
+		};
+		apply(this.current);
+		apply(this.seamless);
+		apply(this.pendingSeamless);
+		this.map?.triggerRepaint();
 	}
 
 	/**
@@ -450,6 +486,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			clipping: loaded.request.clippingOptions,
 			sampler,
 			stateKey: loaded.request.fileAndVariableKey,
+			dataKey: `${loaded.domain.value}|${loaded.request.dataOptions.variable}`,
 			intervals: renderOptions.intervals,
 			url,
 			fullOrigin: WeatherGpuLayer.fullOriginOf(loaded.domain.grid, gridUniforms)
@@ -1017,15 +1054,26 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 
 		if (!still) {
 			this.drawArrowPass(gl, projection, frame.sampler, mix, opacity, frame.clipBounds, frame);
+			// A domain or variable switch reseeds the particles: the old
+			// population would visibly disperse out of the previous field.
+			this.resetParticlesOnDataChange(frame.dataKey);
 			this.drawParticlePass(
 				projection,
 				this.plainParticleLayers(frame),
 				this.plainParticlePrev(frame, mix),
 				mix,
 				opacity,
-				frame.clipBounds
+				frame.clipBounds,
+				clipMask
 			);
 		}
+	}
+
+	/** Reseed the particle population when the advected field's identity changes. */
+	private resetParticlesOnDataChange(dataKey: string): void {
+		if (this.particleDataKey === dataKey) return;
+		if (this.particleDataKey !== undefined) this.particleSystem?.reset();
+		this.particleDataKey = dataKey;
 	}
 
 	/** The particle pass's field layer for a plain frame. */
@@ -1123,6 +1171,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			for (const layer of drawLayers) layer.prevTexture ??= layer.valuesTexture;
 		}
 
+		const clipMask = frame.clipping?.polygons ? renderer.getClipMask(frame.clipping) : undefined;
 		const contours = this.contourDrawOf(frame.intervals, opacity, drawLayers[0].gridUniforms);
 		if (this.drawRaster || contours) {
 			renderer.draw({
@@ -1136,7 +1185,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				halfQuantum: computeHalfQuantum(finestScaleFactor),
 				opacity: this.drawRaster ? opacity : 0,
 				clipBounds: frame.clipBounds,
-				clipMask: frame.clipping?.polygons ? renderer.getClipMask(frame.clipping) : undefined,
+				clipMask,
 				worldOffsets: this.worldOffsets(projection),
 				contours
 			});
@@ -1147,13 +1196,23 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			this.drawArrowPass(gl, projection, frame.sampler, mix, opacity, frame.clipBounds, frame);
 		}
 		if (!still) {
+			// A lazily loaded (or zoom-toggled) sub-layer changes the field the
+			// particles advect through; reseed instead of letting the population
+			// visibly disperse out of the previous composite's flow. The variable
+			// is part of the identity, like the plain frame's dataKey.
+			this.resetParticlesOnDataChange(
+				`${String(frame.request.dataOptions.variable)}|${drawnData
+					.map((data) => data.domain.value)
+					.join('|')}`
+			);
 			this.drawParticlePass(
 				projection,
 				this.seamlessParticleLayers(drawnData),
 				undefined,
 				1,
 				opacity,
-				frame.clipBounds
+				frame.clipBounds,
+				clipMask
 			);
 		}
 	}
@@ -1280,6 +1339,12 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		// Anchors outside the clip polygons are dropped like the rect clip drops
 		// them — arrows over a masked-out raster would look detached.
 		style.clipTester ??= createClippingTester(style.clipping) ?? null;
+		// The anchors' key only records that a tester was present, so the cached
+		// lattice must be dropped when the tester itself changes (new clipping).
+		if (this.arrowAnchorTester !== style.clipTester) {
+			this.arrowAnchorTester = style.clipTester;
+			this.arrowAnchors = undefined;
+		}
 		const anchors = buildArrowAnchors(
 			view,
 			map.getZoom(),
@@ -1288,8 +1353,10 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			style.clipTester ?? undefined,
 			// On the globe the lattice turns geographic (equal-area, no polar
 			// convergence, bounded anchor count for globe-wide views).
-			(projection?.data.projectionTransition ?? 0) > 0
+			(projection?.data.projectionTransition ?? 0) > 0,
+			this.arrowAnchors
 		);
+		this.arrowAnchors = anchors;
 		const instanceKey = `${anchors.key}#${this.arrowGeneration}#${mix < 1 ? 'blend' : 'still'}`;
 		this.arrowInstances ??= renderer.createArrowInstances();
 		if (instanceKey !== this.arrowInstanceKey) {
@@ -1328,7 +1395,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		prev: { uTexture: WebGLTexture; vTexture: WebGLTexture } | undefined,
 		mix: number,
 		opacity: number,
-		clipBounds: Bounds | undefined
+		clipBounds: Bounds | undefined,
+		clipMask?: { texture: WebGLTexture; rect: [number, number, number, number] }
 	): void {
 		const config = this.particles;
 		if (!config || layers.length === 0 || !this.rendererGl) return;
@@ -1389,6 +1457,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			mix,
 			projection,
 			config,
+			clipMask,
 			dtSeconds: dt,
 			mercPerMps,
 			bounds: [minX, minY, maxX, maxY],
