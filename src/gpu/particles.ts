@@ -426,6 +426,8 @@ uniform vec4 u_bounds;     // respawn window (x0, y0, x1, y1); x0 may be negativ
 // old viewport. 1 - oldArea/newArea keeps the density per screen constant.
 uniform float u_shed;
 uniform float u_budget;    // alive share 0..1 (limited-area domain zoomed out)
+uniform float u_churn;     // aging multiplier; > 1 turns the population over
+                           // quickly after a data-identity change
 uniform float u_globe;     // projection transition: 0 flat mercator, 1 globe
 
 out vec4 outState;
@@ -464,7 +466,7 @@ void main() {
 	}
 
 	vec2 pos = s.xy;
-	float age = s.z + u_dt;
+	float age = s.z + u_dt * u_churn;
 
 	float lat = mercToLat(pos.y);
 	float lon = pos.x * 360.0 - 180.0;
@@ -873,6 +875,35 @@ export class ParticleSystem {
 		this.trailDirty = true;
 	}
 
+	/** Accelerated aging while a churn window is open (see churn). */
+	private static readonly CHURN_AGE_FACTOR = 4;
+	private churnStart = 0;
+
+	/**
+	 * The fluent alternative to reset(): open a window in which particles age
+	 * several times faster, so the old population drains out at staggered
+	 * moments while respawns sample the new field and window — a smooth
+	 * crossover instead of a blank-and-repopulate. Trails are kept and fade
+	 * on their normal per-frame decay. The window closes once even the
+	 * longest-lived particle of the old population has cycled.
+	 */
+	churn(): void {
+		this.churnStart = performance.now();
+	}
+
+	/** The aging multiplier for this step; 1 outside a churn window. */
+	private churnFactor(config: GpuParticleConfig): number {
+		if (this.churnStart <= 0) return 1;
+		// Lifetimes randomize up to 1.7x maxAge; past that (churn-compressed),
+		// every pre-churn particle has died and the window can close.
+		const windowSec = ((config.maxAgeSec ?? 5) * 1.7) / ParticleSystem.CHURN_AGE_FACTOR;
+		if ((performance.now() - this.churnStart) / 1000 >= windowSec) {
+			this.churnStart = 0;
+			return 1;
+		}
+		return ParticleSystem.CHURN_AGE_FACTOR;
+	}
+
 	dispose(): void {
 		const gl = this.gl;
 		this.deletePingPong(this.state);
@@ -1249,6 +1280,7 @@ ${body}`;
 		this.prevBoundsArea = area;
 		gl.uniform1f(u('u_shed'), shed);
 		gl.uniform1f(u('u_budget'), Math.min(1, Math.max(0, opts.budget ?? 1)));
+		gl.uniform1f(u('u_churn'), this.churnFactor(opts.config));
 
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
 		state.head = 1 - state.head;

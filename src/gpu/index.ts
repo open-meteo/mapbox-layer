@@ -1,5 +1,5 @@
 export { WeatherGpuLayer } from './layer';
-export type { WeatherGpuLayerOptions } from './layer';
+export type { GpuAdvectionSource, WeatherGpuLayerOptions } from './layer';
 export { buildArrowAnchors, buildArrowInstances, arrowLengthFor } from './arrows';
 export type { GpuArrowConfig, GpuArrowLevel, ArrowSampler } from './arrows';
 export { ParticleSystem, windComponentsOf } from './particles';

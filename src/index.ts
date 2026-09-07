@@ -73,6 +73,7 @@ export {
 export type {
 	WeatherGpuLayerOptions,
 	LoadedOmData,
+	GpuAdvectionSource,
 	GpuArrowConfig,
 	GpuArrowLevel,
 	GpuParticleConfig,

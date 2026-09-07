@@ -31,6 +31,7 @@ import { isSeamlessDomain } from '../domain-helpers';
 import { GridFactory } from '../grids/index';
 import { defaultOmProtocolSettings } from '../om-protocol';
 import { getProtocolInstance } from '../om-protocol-state';
+import { boundsIncluded } from '../utils/bounds';
 import { createClippingTester, resolveClippingOptions } from '../utils/clipping';
 import type { ResolvedClippingOptions } from '../utils/clipping';
 import { halfQuantum as computeHalfQuantum, lat2tile } from '../utils/math';
@@ -95,6 +96,20 @@ export interface WeatherGpuLayerOptions {
 	textureCacheMb?: number;
 }
 
+/** One candidate wind for the advected temporal blend (see setAdvection). */
+export interface GpuAdvectionSource {
+	/** u-component variable name; the v sibling derives via the protocol rules. */
+	variable: string;
+	/**
+	 * Multiplier on the advection displacement. Precipitation cells move with
+	 * the steering-level flow (~700 hPa); a surface-wind fallback
+	 * underestimates that, the two blended copies misalign, and the visual
+	 * peak see-saws around high-value cores while the envelope translates
+	 * smoothly. ~1.7 roughly compensates for 10 m winds. @default 1
+	 */
+	speedFactor?: number;
+}
+
 interface RenderStyle {
 	interpolation: InterpolationMethod;
 	colorScale: RenderableColorScale;
@@ -113,6 +128,8 @@ interface PlainFrame extends RenderStyle {
 	/** Wind components for the advected temporal blend (setAdvection). */
 	advU?: Float32Array;
 	advV?: Float32Array;
+	/** Displacement multiplier of the advection wind that loaded (steering factor). */
+	advectFactor?: number;
 	/** Valid time parsed from the URL, for the advection displacement scale. */
 	timeMs?: number;
 	gridUniforms: GpuGridUniforms;
@@ -128,6 +145,8 @@ interface PlainFrame extends RenderStyle {
 	/** Full domain extent (lon/lat), for the particle budget of limited-area
 	 *  domains zoomed far out. */
 	domainBounds?: Bounds;
+	/** The crop the data was loaded for, for the particle churn on expansion. */
+	cropBounds?: Bounds;
 	/** Contour levels of the request (a single entry means a step interval). */
 	intervals: number[];
 	/** Normalized om:// URL of this frame, for re-resolving on a new crop. */
@@ -162,6 +181,12 @@ interface SeamlessFrame extends RenderStyle {
 const sharedRenderers = new Map<
 	WebGL2RenderingContext,
 	{ renderer: WeatherGpuRenderer; refs: number }
+>();
+
+/** Optical-flow results keyed by the incoming values array (one pair each). */
+const flowCache = new WeakMap<
+	Float32Array,
+	{ prev: Float32Array; u: Float32Array; v: Float32Array }
 >();
 
 const acquireSharedRenderer = (
@@ -235,8 +260,10 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	private arrows: GpuArrowConfig | undefined;
 	private contours: GpuContourStyle | undefined;
 	private particles: GpuParticleConfig | undefined;
-	/** Wind variable powering the advected temporal blend, if configured. */
-	private advectWindVariable: string | undefined;
+	/** Wind candidates powering the advected temporal blend, tried in order. */
+	private advectSources: GpuAdvectionSource[] = [];
+	/** `domain|variable` advection candidates that failed, skipped from then on. */
+	private advectUnavailable = new Set<string>();
 	/** Valid time of the frame the current blend morphs from. */
 	private previousTimeMs: number | undefined;
 	private particleSystem: ParticleSystem | undefined;
@@ -459,17 +486,67 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			});
 		}
 
-		// Advected blend: side-load the wind variable of the same file/crop and
-		// derive its components. Any failure (variable missing on the domain,
-		// grid mismatch) silently keeps the plain in-place blend.
+		// Advected blend. Preferred displacement source: optical flow between
+		// the outgoing and incoming fields themselves — a steering wind only
+		// approximates how the features move, and any mismatch either splits
+		// peaks into lobes (under-shoot) or makes the interior race and snap
+		// back (over-shoot). Falls back to the wind candidates below when no
+		// compatible previous frame or worker is available.
 		let advU: Float32Array | undefined;
 		let advV: Float32Array | undefined;
-		if (this.advectWindVariable) {
+		let advectFactor: number | undefined;
+		if (this.advectSources.length > 0 && gridUniforms.gridKind === 'regular') {
+			const shownFrame = this.current;
+			const timeMs = WeatherGpuLayer.timeOf(url);
+			const flowDtSec =
+				shownFrame?.timeMs !== undefined && timeMs !== undefined
+					? (timeMs - shownFrame.timeMs) / 1000
+					: 0;
+			if (
+				shownFrame &&
+				shownFrame.gridSignature === gridSignature &&
+				shownFrame.values !== values &&
+				flowDtSec !== 0 &&
+				Math.abs(flowDtSec) <= 6 * 3600
+			) {
+				const cached = flowCache.get(values);
+				if (cached && cached.prev === shownFrame.values) {
+					advU = cached.u;
+					advV = cached.v;
+					advectFactor = 1;
+				} else {
+					const decodeWorker = getProtocolInstance(this.settings).decodeWorker;
+					if (decodeWorker && !decodeWorker.broken) {
+						try {
+							const flow = await decodeWorker.flow(
+								shownFrame.values,
+								values,
+								gridUniforms.nx,
+								gridUniforms.ny,
+								gridUniforms.dx,
+								gridUniforms.dy,
+								gridUniforms.originY,
+								flowDtSec
+							);
+							if (sequence !== this.loadSequence) return null;
+							if (flow) {
+								flowCache.set(values, { prev: shownFrame.values, u: flow.u, v: flow.v });
+								advU = flow.u;
+								advV = flow.v;
+								advectFactor = 1;
+							}
+						} catch {
+							// Wind fallback below.
+						}
+					}
+				}
+			}
+		}
+		for (const source of advU ? [] : this.advectSources) {
+			const unavailableKey = `${loaded.domain.value}|${source.variable}`;
+			if (this.advectUnavailable.has(unavailableKey)) continue;
 			try {
-				const windUrl = url.replace(
-					/([?&])variable=[^&]*/,
-					`$1variable=${this.advectWindVariable}`
-				);
+				const windUrl = url.replace(/([?&])variable=[^&]*/, `$1variable=${source.variable}`);
 				const wind = await loadOmUrl(windUrl, this.settings, signal);
 				if (sequence !== this.loadSequence) return null;
 				if (wind.data.values && wind.data.directions) {
@@ -480,10 +557,14 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 						const uv = windComponentsOf(wind.data.values, wind.data.directions);
 						advU = uv.u;
 						advV = uv.v;
+						advectFactor = source.speedFactor;
+						break;
 					}
 				}
-			} catch {
-				// Advection unavailable for this domain; plain blend.
+				this.advectUnavailable.add(unavailableKey);
+			} catch (error) {
+				if (error instanceof Error && error.name === 'AbortError') return null;
+				this.advectUnavailable.add(unavailableKey);
 			}
 		}
 
@@ -492,6 +573,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			directions,
 			advU,
 			advV,
+			advectFactor,
 			timeMs: WeatherGpuLayer.timeOf(url),
 			gridUniforms,
 			gridSignature,
@@ -505,6 +587,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			stateKey: loaded.request.fileAndVariableKey,
 			dataKey: `${loaded.domain.value}|${loaded.request.dataOptions.variable}`,
 			domainBounds: GridFactory.create(loaded.domain.grid, null).getBounds() as Bounds,
+			cropBounds: loaded.request.dataOptions.bounds,
 			intervals: renderOptions.intervals,
 			url,
 			fullOrigin: WeatherGpuLayer.fullOriginOf(loaded.domain.grid, gridUniforms)
@@ -731,12 +814,14 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	 * Configure (or remove) the wind-advected temporal blend: while a timestep
 	 * morph is in flight, the scalar field (precipitation, cloud cover, …) is
 	 * sampled upstream/downstream of the wind displacement so features drift
-	 * with the flow instead of cross-fading in place. The wind loads as a
-	 * sibling variable of each prepared URL; failures fall back silently to
-	 * the plain blend. Takes effect on the next prepareUrl/setUrl.
+	 * with the flow instead of cross-fading in place. Candidates are tried in
+	 * order per prepared URL (e.g. a steering-level wind first, the surface
+	 * wind with a speed factor as fallback); a candidate that fails for a
+	 * domain is remembered and skipped, and with none left the blend stays
+	 * plain. Takes effect on the next prepareUrl/setUrl.
 	 */
-	setAdvection(windVariable: string | undefined): void {
-		this.advectWindVariable = windVariable;
+	setAdvection(wind: GpuAdvectionSource[] | string | undefined): void {
+		this.advectSources = typeof wind === 'string' ? [{ variable: wind }] : wind ? [...wind] : [];
 	}
 
 	/**
@@ -1041,7 +1126,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 					: 0;
 			if (dtSec !== 0 && Math.abs(dtSec) <= 6 * 3600) {
 				const g = frame.gridUniforms;
-				const degPerMps = dtSec / 111_320;
+				const degPerMps = (dtSec / 111_320) * (frame.advectFactor ?? 1);
 				advect = {
 					uTexture: renderer.getValueTexture(frame.advU, g.nx, g.ny),
 					vTexture: renderer.getValueTexture(frame.advV, g.nx, g.ny),
@@ -1096,16 +1181,17 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 
 		if (!still) {
 			this.drawArrowPass(gl, projection, frame.sampler, mix, opacity, frame.clipBounds, frame);
-			// A domain or variable switch reseeds the particles: the old
+			// A domain or variable switch churns the particles: the old
 			// population would visibly disperse out of the previous field. So
 			// does polygon clipping appearing or clearing — the spawn window
 			// jumps between the clip bounds and the whole viewport — and a crop
-			// change (new data after a pan/zoom): dead slots would otherwise fill
-			// the newly covered region only over a lifetime.
-			const g = frame.gridUniforms;
-			this.resetParticlesOnDataChange(
-				`${frame.dataKey}|${g.originX},${g.originY},${g.nx}x${g.ny}` +
-					(frame.clipping?.polygons ? '|clip' : '')
+			// that EXPANDS past the previous one (new data after a pan or
+			// zoom-out): dead slots would otherwise fill the newly covered
+			// region only over a lifetime. A zoom-in (crop shrinks within the
+			// old coverage) churns nothing.
+			this.churnParticlesOnDataChange(
+				frame.dataKey + (frame.clipping?.polygons ? '|clip' : ''),
+				frame.cropBounds
 			);
 			this.drawParticlePass(
 				projection,
@@ -1195,14 +1281,29 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		}
 	}
 
+	/** Crop bounds the particle population last settled on. */
+	private particleCropBounds: Bounds | undefined;
+
 	/**
-	 * Reseed the particle population when the advected field's identity changes
-	 * (domain/variable/sub-layer set, or polygon clipping appearing/clearing).
+	 * Churn the particle population — a fast but fluent turnover that keeps
+	 * the trails (see ParticleSystem.churn) — when the advected field's
+	 * identity changes (domain/variable/sub-layer set, polygon clipping
+	 * appearing/clearing) or the data crop expands past the previous coverage
+	 * (a pan or zoom-out that brought new data). A crop that shrinks within
+	 * the old coverage (zoom-in) changes nothing worth churning for.
 	 */
-	private resetParticlesOnDataChange(dataKey: string): void {
-		if (this.particleDataKey === dataKey) return;
-		if (this.particleDataKey !== undefined) this.particleSystem?.reset();
+	private churnParticlesOnDataChange(dataKey: string, cropBounds?: Bounds): void {
+		const cropExpanded =
+			this.particleCropBounds !== undefined &&
+			cropBounds !== undefined &&
+			!boundsIncluded(cropBounds, this.particleCropBounds);
+		if (this.particleDataKey === dataKey && !cropExpanded) {
+			this.particleCropBounds = cropBounds ?? this.particleCropBounds;
+			return;
+		}
+		if (this.particleDataKey !== undefined) this.particleSystem?.churn();
 		this.particleDataKey = dataKey;
+		this.particleCropBounds = cropBounds;
 	}
 
 	/** The particle pass's field layer for a plain frame. */
@@ -1326,17 +1427,15 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		}
 		if (!still) {
 			// A lazily loaded (or zoom-toggled) sub-layer changes the field the
-			// particles advect through; reseed instead of letting the population
-			// visibly disperse out of the previous composite's flow. The variable,
-			// per-layer crop and clip presence are part of the identity, like the
-			// plain frame's.
-			this.resetParticlesOnDataChange(
+			// particles advect through; churn instead of letting the population
+			// visibly disperse out of the previous composite's flow. The variable
+			// and clip presence are part of the identity, the crop expansion is
+			// checked separately — like the plain frame's.
+			this.churnParticlesOnDataChange(
 				`${String(frame.request.dataOptions.variable)}|${drawnData
-					.map(
-						(data) =>
-							`${data.domain.value}@${data.gridUniforms.originX},${data.gridUniforms.originY},${data.gridUniforms.nx}x${data.gridUniforms.ny}`
-					)
-					.join('|')}${frame.clipping?.polygons ? '|clip' : ''}`
+					.map((data) => data.domain.value)
+					.join('|')}${frame.clipping?.polygons ? '|clip' : ''}`,
+				frame.request.dataOptions.bounds
 			);
 			this.drawParticlePass(
 				projection,
