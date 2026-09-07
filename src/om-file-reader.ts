@@ -46,10 +46,21 @@ export interface FileReaderConfig {
 	 * with the main-thread reader.
 	 */
 	workerCacheOptions?: ConstructorParameters<typeof BrowserBlockCache>[0];
+
+	/**
+	 * Absolute URL of `om_reader_wasm.web.wasm` for the decode worker. The
+	 * bundled worker cannot locate the wasm itself (a blob-URL worker has no
+	 * usable `import.meta.url`), so the host resolves it through its own
+	 * bundler, e.g. Vite:
+	 * `new URL((await import('@openmeteo/file-format-wasm/dist/om_reader_wasm.web.wasm?url')).default, location.href).href`.
+	 * Without it the worker's first read fails and decoding falls back to the
+	 * main thread.
+	 */
+	workerWasmUrl?: string;
 }
 
 export const defaultFileReaderConfig: Required<
-	Omit<FileReaderConfig, 'cache' | 'workerCacheOptions'>
+	Omit<FileReaderConfig, 'cache' | 'workerCacheOptions' | 'workerWasmUrl'>
 > = {
 	useSAB: typeof SharedArrayBuffer !== 'undefined',
 	retries: 2,
@@ -61,7 +72,9 @@ export const defaultFileReaderConfig: Required<
  */
 export class WeatherMapLayerFileReader {
 	readonly cache: BlockCache;
-	readonly config: Required<Omit<FileReaderConfig, 'cache' | 'workerCacheOptions'>>;
+	readonly config: Required<
+		Omit<FileReaderConfig, 'cache' | 'workerCacheOptions' | 'workerWasmUrl'>
+	>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 	/** Memoizes one backend per URL, so repeat reads skip the HEAD request. */
 	private readonly backendPool: OmHttpBackendPool;

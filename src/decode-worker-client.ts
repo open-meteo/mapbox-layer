@@ -40,32 +40,55 @@ export class DecodeWorkerClient {
 	private pending = new Map<number, Pending>();
 	private failed = false;
 
+	/** True once any request completed; earlier failures count as boot failures. */
+	private everSucceeded = false;
+	/** Pre-success failures; a few in a row mean the worker cannot boot here. */
+	private bootFailures = 0;
+
 	constructor(init: Omit<DecodeWorkerInitMessage, 'type'>) {
 		this.worker = new DecodeWorker();
 		this.worker.onmessage = (message: MessageEvent<DecodeWorkerResponse>) => {
 			const response = message.data;
+			if (response.type === 'fatal') {
+				this.markBroken();
+				return;
+			}
 			const entry = this.pending.get(response.id);
 			if (!entry) return;
 			this.pending.delete(response.id);
 			if (response.type === 'error') {
+				if (response.name !== 'AbortError' && !this.everSucceeded) {
+					// The worker has not managed a single read yet, so this may be a
+					// broken environment (wasm cannot boot in a worker here) rather
+					// than a data error. Reject as broken — the caller retries on the
+					// main thread either way — and only write the worker off after a
+					// few strikes, so a genuinely missing first file (404) does not
+					// disable it for the whole session.
+					if (++this.bootFailures >= 3) this.markBroken();
+					entry.reject(brokenError());
+					return;
+				}
 				const error =
 					response.name === 'AbortError'
 						? abortError()
 						: Object.assign(new Error(response.message), { name: response.name });
 				entry.reject(error);
 			} else {
+				this.everSucceeded = true;
 				entry.resolve(response);
 			}
 		};
-		this.worker.onerror = () => {
-			// The worker itself is unusable (e.g. wasm failed to initialise in a
-			// worker context): fail everything over to the main-thread reader.
-			this.failed = true;
-			for (const entry of this.pending.values()) entry.reject(brokenError());
-			this.pending.clear();
-			this.worker.terminate();
-		};
+		this.worker.onerror = () => this.markBroken();
 		this.send({ type: 'init', ...init });
+	}
+
+	/** The worker is unusable: fail everything over to the main-thread reader. */
+	private markBroken(): void {
+		if (this.failed) return;
+		this.failed = true;
+		for (const entry of this.pending.values()) entry.reject(brokenError());
+		this.pending.clear();
+		this.worker.terminate();
 	}
 
 	/** True once the worker crashed; callers use the main-thread reader instead. */
@@ -158,7 +181,8 @@ export const createDecodeWorkerClient = (
 			useSAB: config.useSAB ?? typeof SharedArrayBuffer !== 'undefined',
 			retries: config.retries,
 			eTagValidation: config.eTagValidation,
-			cacheOptions: config.workerCacheOptions
+			cacheOptions: config.workerCacheOptions,
+			wasmUrl: config.workerWasmUrl
 		});
 	} catch {
 		return undefined;

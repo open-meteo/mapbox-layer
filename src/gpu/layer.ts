@@ -1089,9 +1089,14 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			// A domain or variable switch reseeds the particles: the old
 			// population would visibly disperse out of the previous field. So
 			// does polygon clipping appearing or clearing — the spawn window
-			// jumps between the clip bounds and the whole viewport, and gradual
-			// respawn would leave the new region sparse for a lifetime.
-			this.resetParticlesOnDataChange(frame.dataKey + (frame.clipping?.polygons ? '|clip' : ''));
+			// jumps between the clip bounds and the whole viewport — and a crop
+			// change (new data after a pan/zoom): dead slots would otherwise fill
+			// the newly covered region only over a lifetime.
+			const g = frame.gridUniforms;
+			this.resetParticlesOnDataChange(
+				`${frame.dataKey}|${g.originX},${g.originY},${g.nx}x${g.ny}` +
+					(frame.clipping?.polygons ? '|clip' : '')
+			);
 			this.drawParticlePass(
 				projection,
 				this.plainParticleLayers(frame),
@@ -1312,11 +1317,15 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		if (!still) {
 			// A lazily loaded (or zoom-toggled) sub-layer changes the field the
 			// particles advect through; reseed instead of letting the population
-			// visibly disperse out of the previous composite's flow. The variable
-			// and clip presence are part of the identity, like the plain frame's.
+			// visibly disperse out of the previous composite's flow. The variable,
+			// per-layer crop and clip presence are part of the identity, like the
+			// plain frame's.
 			this.resetParticlesOnDataChange(
 				`${String(frame.request.dataOptions.variable)}|${drawnData
-					.map((data) => data.domain.value)
+					.map(
+						(data) =>
+							`${data.domain.value}@${data.gridUniforms.originX},${data.gridUniforms.originY},${data.gridUniforms.nx}x${data.gridUniforms.ny}`
+					)
 					.join('|')}${frame.clipping?.polygons ? '|clip' : ''}`
 			);
 			this.drawParticlePass(

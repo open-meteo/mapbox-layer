@@ -25,6 +25,12 @@ export interface DecodeWorkerInitMessage {
 	retries?: number;
 	eTagValidation?: boolean;
 	cacheOptions?: ConstructorParameters<typeof BrowserBlockCache>[0];
+	/**
+	 * Absolute URL of om_reader_wasm.web.wasm, injected into the loader (the
+	 * build rewrites its `import.meta.url` lookup, which cannot work from a
+	 * blob-URL worker — see injectedWorkerWasmUrl in vite.config.ts).
+	 */
+	wasmUrl?: string;
 }
 
 export interface DecodeWorkerReadMessage {
@@ -56,10 +62,22 @@ export type DecodeWorkerRequest =
 export type DecodeWorkerResponse =
 	| { type: 'data'; id: number; data: Data }
 	| { type: 'uv'; id: number; u: Float32Array; v: Float32Array }
-	| { type: 'error'; id: number; name: string; message: string };
+	| { type: 'error'; id: number; name: string; message: string }
+	| { type: 'fatal'; id: -1; message: string };
 
 let reader: WeatherMapLayerFileReader | undefined;
 const aborts = new Map<number, AbortController>();
+
+// A worker-side crash outside a request handler (wasm boot, an unawaited
+// rejection in a dependency) would otherwise hang its requests forever — the
+// parent's onerror only sees synchronous top-level throws. Surface both as a
+// fatal message so the client can fall back to main-thread decoding.
+self.addEventListener('error', (event) => {
+	post({ type: 'fatal', id: -1, message: String(event.message ?? 'worker error') });
+});
+self.addEventListener('unhandledrejection', (event) => {
+	post({ type: 'fatal', id: -1, message: String(event.reason?.message ?? event.reason) });
+});
 
 /** Non-SAB buffers of the arrays, for the postMessage transfer list. */
 const transferListOf = (arrays: (Float32Array | undefined)[]): ArrayBuffer[] => {
@@ -80,6 +98,9 @@ self.onmessage = async (message: MessageEvent<DecodeWorkerRequest>): Promise<voi
 	const request = message.data;
 
 	if (request.type === 'init') {
+		if (request.wasmUrl) {
+			(self as { __OM_WASM_URL__?: string }).__OM_WASM_URL__ = request.wasmUrl;
+		}
 		reader = new WeatherMapLayerFileReader({
 			useSAB: request.useSAB,
 			retries: request.retries,
