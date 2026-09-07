@@ -13,6 +13,8 @@
  */
 import { BrowserBlockCache } from '@openmeteo/file-reader';
 
+import { computeNanDistanceField } from './utils/nan-distance';
+import { estimateFlowMps } from './utils/optical-flow';
 import { deriveWindComponents } from './utils/wind-components';
 
 import { WeatherMapLayerFileReader } from './om-file-reader';
@@ -48,6 +50,29 @@ export interface DecodeWorkerDeriveUVMessage {
 	directions: Float32Array;
 }
 
+export interface DecodeWorkerFlowMessage {
+	type: 'flow';
+	id: number;
+	prev: Float32Array;
+	next: Float32Array;
+	nx: number;
+	ny: number;
+	dx: number;
+	dy: number;
+	originY: number;
+	dtSec: number;
+}
+
+export interface DecodeWorkerNanFieldMessage {
+	type: 'nanField';
+	id: number;
+	values: Float32Array;
+	nx: number;
+	ny: number;
+	dx: number;
+	dy: number;
+}
+
 export interface DecodeWorkerCancelMessage {
 	type: 'cancel';
 	id: number;
@@ -57,11 +82,15 @@ export type DecodeWorkerRequest =
 	| DecodeWorkerInitMessage
 	| DecodeWorkerReadMessage
 	| DecodeWorkerDeriveUVMessage
+	| DecodeWorkerFlowMessage
+	| DecodeWorkerNanFieldMessage
 	| DecodeWorkerCancelMessage;
 
 export type DecodeWorkerResponse =
 	| { type: 'data'; id: number; data: Data }
 	| { type: 'uv'; id: number; u: Float32Array; v: Float32Array }
+	| { type: 'flowResult'; id: number; u: Float32Array | null; v: Float32Array | null }
+	| { type: 'nanFieldResult'; id: number; field: Float32Array | null }
 	| { type: 'error'; id: number; name: string; message: string }
 	| { type: 'fatal'; id: -1; message: string };
 
@@ -147,5 +176,39 @@ self.onmessage = async (message: MessageEvent<DecodeWorkerRequest>): Promise<voi
 		// components go back the same way.
 		const uv = deriveWindComponents(request.values, request.directions);
 		post({ type: 'uv', id: request.id, u: uv.u, v: uv.v }, transferListOf([uv.u, uv.v]));
+		return;
+	}
+
+	if (request.type === 'flow') {
+		// Optical flow between two timesteps for the advected blend: block
+		// matching over the whole crop, too heavy for the main thread.
+		const flow = estimateFlowMps(
+			request.prev,
+			request.next,
+			request.nx,
+			request.ny,
+			request.dx,
+			request.dy,
+			request.originY,
+			request.dtSec
+		);
+		post(
+			{ type: 'flowResult', id: request.id, u: flow?.u ?? null, v: flow?.v ?? null },
+			transferListOf([flow?.u, flow?.v])
+		);
+		return;
+	}
+
+	if (request.type === 'nanField') {
+		// The seamless blend-edge distance field: a multi-pass chamfer over the
+		// whole crop, too heavy for the main thread on regional-layer loads.
+		const field = computeNanDistanceField(
+			request.values,
+			request.nx,
+			request.ny,
+			request.dx,
+			request.dy
+		);
+		post({ type: 'nanFieldResult', id: request.id, field: field ?? null }, transferListOf([field]));
 	}
 };

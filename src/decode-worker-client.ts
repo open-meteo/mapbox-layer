@@ -86,6 +86,10 @@ export class DecodeWorkerClient {
 	private markBroken(): void {
 		if (this.failed) return;
 		this.failed = true;
+		// Visible on purpose: without it a broken worker silently degrades every
+		// data load back to main-thread decoding (the mobile freeze this exists
+		// to avoid), which is hard to distinguish from the worker working.
+		console.warn('om decode worker unavailable — falling back to main-thread decoding');
 		for (const entry of this.pending.values()) entry.reject(brokenError());
 		this.pending.clear();
 		this.worker.terminate();
@@ -164,6 +168,39 @@ export class DecodeWorkerClient {
 			'uv'
 		);
 		return { u: response.u, v: response.v };
+	}
+
+	/** Optical flow between two timesteps, for the advected blend. */
+	async flow(
+		prev: Float32Array,
+		next: Float32Array,
+		nx: number,
+		ny: number,
+		dx: number,
+		dy: number,
+		originY: number,
+		dtSec: number
+	): Promise<{ u: Float32Array; v: Float32Array } | undefined> {
+		const response = await this.request(
+			(id) => ({ type: 'flow', id, prev, next, nx, ny, dx, dy, originY, dtSec }),
+			'flowResult'
+		);
+		return response.u && response.v ? { u: response.u, v: response.v } : undefined;
+	}
+
+	/** The seamless blend-edge chamfer pass in the worker. */
+	async nanField(
+		values: Float32Array,
+		nx: number,
+		ny: number,
+		dx: number,
+		dy: number
+	): Promise<Float32Array | undefined> {
+		const response = await this.request(
+			(id) => ({ type: 'nanField', id, values, nx, ny, dx, dy }),
+			'nanFieldResult'
+		);
+		return response.field ?? undefined;
 	}
 }
 

@@ -35,7 +35,10 @@ export const computeNanDistanceField = (
 	const hd = Math.hypot(hx, hy); // diagonal step
 	const INF = 1e9;
 
-	const dist = new Float32Array(n);
+	// Match the source array's backing (SharedArrayBuffer when SAB is on), so
+	// a worker-computed field posts back to the main thread zero-copy.
+	const BufferConstructor = values.buffer.constructor as typeof ArrayBuffer;
+	const dist = new Float32Array(new BufferConstructor(n * 4));
 	for (let i = 0; i < n; i++) dist[i] = Number.isNaN(values[i]) ? 0 : INF;
 
 	// Forward pass (top-left → bottom-right).
