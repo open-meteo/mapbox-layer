@@ -55,6 +55,33 @@ export const buildColorLut = (scale: RenderableColorScale, blend: boolean): Colo
 		// Scale colours carry alpha in 0..1 (multiplied by 255 in the CPU worker).
 		data[4 * i + 3] = Math.round(255 * color[3]);
 	}
+
+	// Fade the lowest band in instead of popping at its threshold: on scales
+	// that are transparent below their first band (precipitation-like), values
+	// hovering around the breakpoint flicker in and out during temporal blends
+	// and the band edge crawls. Ramp the alpha across the first flat band so
+	// the onset appears gradually; scales with no transparent floor (and blended
+	// gradients, whose alpha already ramps) are left untouched.
+	if (data[3] === 0) {
+		let start = 0;
+		while (start < LUT_SIZE && data[4 * start + 3] === 0) start++;
+		if (start > 0 && start < LUT_SIZE) {
+			let end = start;
+			while (
+				end < LUT_SIZE &&
+				data[4 * end] === data[4 * start] &&
+				data[4 * end + 1] === data[4 * start + 1] &&
+				data[4 * end + 2] === data[4 * start + 2] &&
+				data[4 * end + 3] === data[4 * start + 3]
+			) {
+				end++;
+			}
+			const bandAlpha = data[4 * start + 3];
+			for (let i = start; i < end; i++) {
+				data[4 * i + 3] = Math.round((bandAlpha * (i - start + 1)) / (end - start));
+			}
+		}
+	}
 	return { data, min, max };
 };
 
