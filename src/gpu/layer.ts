@@ -124,6 +124,9 @@ interface PlainFrame extends RenderStyle {
 	stateKey: string;
 	/** Domain + variable identity, for the particle reseed on data switches. */
 	dataKey: string;
+	/** Full domain extent (lon/lat), for the particle budget of limited-area
+	 *  domains zoomed far out. */
+	domainBounds?: Bounds;
 	/** Contour levels of the request (a single entry means a step interval). */
 	intervals: number[];
 	/** Normalized om:// URL of this frame, for re-resolving on a new crop. */
@@ -492,6 +495,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			sampler,
 			stateKey: loaded.request.fileAndVariableKey,
 			dataKey: `${loaded.domain.value}|${loaded.request.dataOptions.variable}`,
+			domainBounds: GridFactory.create(loaded.domain.grid, null).getBounds() as Bounds,
 			intervals: renderOptions.intervals,
 			url,
 			fullOrigin: WeatherGpuLayer.fullOriginOf(loaded.domain.grid, gridUniforms)
@@ -1072,9 +1076,68 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				mix,
 				opacity,
 				frame.clipBounds,
-				clipMask
+				clipMask,
+				this.particleBudget(frame.domainBounds)
 			);
 		}
+	}
+
+	/**
+	 * Budget falloff for limited-area domains: dead respawns retry until they
+	 * land on valid data, so the population always concentrates in the
+	 * footprint. budget = coverage^FALLOFF puts the density inside at
+	 * coverage^(FALLOFF - 1) times the whole-viewport norm — a smooth boost
+	 * that follows the zoom through the coverage itself: ~1x at full overlap,
+	 * ~1.7x at half, ~19x for the ~2% footprint a high-res domain has at a
+	 * world view. Lower = livelier when zoomed far out.
+	 */
+	private static readonly PARTICLE_BUDGET_FALLOFF = 0.25;
+	/** Density cap over the norm, so sub-percent footprints stay sane. */
+	private static readonly PARTICLE_DENSITY_MAX = 16;
+
+	/**
+	 * Particle budget (alive share, 0..1) for a frame's domain at the current
+	 * view, from the domain's share of the viewport. Mercator areas, wrap-aware
+	 * in x.
+	 */
+	private particleBudget(domainBounds: Bounds | undefined): number {
+		if (!domainBounds || !this.map) return 1;
+		const bounds = this.map.getBounds();
+		const vx0 = (bounds.getWest() + 180) / 360;
+		const vx1 = (bounds.getEast() + 180) / 360;
+		const vy0 = lat2tile(Math.min(85.051129, bounds.getNorth()), 0);
+		const vy1 = lat2tile(Math.max(-85.051129, bounds.getSouth()), 0);
+		const viewSpanX = Math.min(1, vx1 - vx0);
+		const viewArea = viewSpanX * (vy1 - vy0);
+		if (!(viewArea > 0)) return 1;
+
+		const dy0 = lat2tile(Math.min(85.051129, domainBounds[3]), 0);
+		const dy1 = lat2tile(Math.max(-85.051129, domainBounds[1]), 0);
+		const overlapY = Math.min(vy1, dy1) - Math.max(vy0, dy0);
+		if (overlapY <= 0) return 1; // domain off-screen: nothing spawns anyway
+
+		let dx0 = (domainBounds[0] + 180) / 360;
+		let dx1 = (domainBounds[2] + 180) / 360;
+		if (dx1 <= dx0) dx1 += 1; // dateline-crossing domain
+		// Shift the domain by whole worlds onto the (possibly unwrapped)
+		// viewport interval and take the best overlap.
+		let overlapX = viewSpanX >= 1 ? dx1 - dx0 : 0;
+		if (viewSpanX < 1) {
+			for (let world = Math.floor(vx0 - dx0); world <= Math.ceil(vx1 - dx0); world++) {
+				overlapX = Math.max(overlapX, Math.min(vx1, dx1 + world) - Math.max(vx0, dx0 + world));
+			}
+		}
+		if (overlapX <= 0) return 1;
+
+		const coverage = Math.min(1, (overlapX * overlapY) / viewArea);
+		// Near-full coverage is full coverage: a global grid's lon span is a
+		// cell short of 360° and must not gate anything.
+		if (coverage > 0.95) return 1;
+		return Math.min(
+			1,
+			Math.pow(coverage, WeatherGpuLayer.PARTICLE_BUDGET_FALLOFF),
+			WeatherGpuLayer.PARTICLE_DENSITY_MAX * coverage
+		);
 	}
 
 	/**
@@ -1407,7 +1470,9 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		mix: number,
 		opacity: number,
 		clipBounds: Bounds | undefined,
-		clipMask?: { texture: WebGLTexture; rect: [number, number, number, number] }
+		clipMask?: { texture: WebGLTexture; rect: [number, number, number, number] },
+		/** Alive share of the population (limited-area domain zoomed out). */
+		budget = 1
 	): void {
 		const config = this.particles;
 		if (!config || layers.length === 0 || !this.rendererGl) return;
@@ -1469,6 +1534,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			projection,
 			config,
 			clipMask,
+			budget,
 			dtSeconds: dt,
 			mercPerMps,
 			bounds: [minX, minY, maxX, maxY],

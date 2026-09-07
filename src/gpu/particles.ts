@@ -130,6 +130,15 @@ export interface ParticleRenderOptions {
 	 * outline instead of the rectangular clip bounds.
 	 */
 	clipMask?: { texture: WebGLTexture; rect: [number, number, number, number] };
+	/**
+	 * Share of the population kept alive (0..1, default 1). A limited-area
+	 * domain zoomed far out passes less than 1: dead respawns retry until they
+	 * land on valid data, so without a gate the whole budget piles into the
+	 * small footprint at 1/coverage times the intended density. Gated by a
+	 * static per-slot hash, so a moving budget toggles individual particles
+	 * instead of reseeding the population.
+	 */
+	budget?: number;
 }
 
 // ─── CPU wind components ─────────────────────────────────────────────────────
@@ -414,6 +423,7 @@ uniform vec4 u_bounds;     // respawn window (x0, y0, x1, y1); x0 may be negativ
 // redistributes immediately instead of lingering as a dense cluster of the
 // old viewport. 1 - oldArea/newArea keeps the density per screen constant.
 uniform float u_shed;
+uniform float u_budget;    // alive share 0..1 (limited-area domain zoomed out)
 uniform float u_globe;     // projection transition: 0 flat mercator, 1 globe
 
 out vec4 outState;
@@ -438,6 +448,19 @@ float latToMerc(float latDeg) {
 
 void main() {
 	vec4 s = texelFetch(u_state, ivec2(gl_FragCoord.xy), 0);
+
+	// Budget gate: each slot has a fixed hash; slots above the budget park as
+	// dead (age 0 hides them in the draw passes) and revive from where they
+	// were once the budget rises again. Checked before the field sampling so
+	// gated slots also skip that cost.
+	if (u_budget < 1.0) {
+		uint slot = hashU(uint(gl_FragCoord.y) * 8192u + uint(gl_FragCoord.x) + 1u);
+		if (float(slot) * (1.0 / 4294967296.0) > u_budget) {
+			outState = vec4(s.xy, 0.0, s.w);
+			return;
+		}
+	}
+
 	vec2 pos = s.xy;
 	float age = s.z + u_dt;
 
@@ -1223,6 +1246,7 @@ ${body}`;
 			this.prevBoundsArea > 0 && area > this.prevBoundsArea ? 1 - this.prevBoundsArea / area : 0;
 		this.prevBoundsArea = area;
 		gl.uniform1f(u('u_shed'), shed);
+		gl.uniform1f(u('u_budget'), Math.min(1, Math.max(0, opts.budget ?? 1)));
 
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
 		state.head = 1 - state.head;
