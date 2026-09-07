@@ -1,4 +1,3 @@
-// @ts-expect-error worker import
 import TileWorker from './worker?worker&inline';
 
 import { TilePromise, TileResult, WorkerRequest, WorkerResponse } from './types';

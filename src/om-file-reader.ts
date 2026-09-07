@@ -1,5 +1,6 @@
 import {
 	BlockCache,
+	type BrowserBlockCache,
 	LruBlockCache,
 	OmDataType,
 	OmFileReadOptions,
@@ -34,9 +35,22 @@ export interface FileReaderConfig {
 	 * If omitted, falls back to an in-memory LruBlockCache.
 	 */
 	cache?: BlockCache<string | bigint>;
+
+	/**
+	 * Serializable BrowserBlockCache options for the decode worker. Providing
+	 * this opts the protocol into decoding om variables in a worker (wasm
+	 * decompression + derivation loops off the main thread — they freeze
+	 * mobile for hundreds of ms per load when run inline). The worker cannot
+	 * share the live `cache` object, so it builds its own cache from these
+	 * options; using the same cacheName shares the persistent Cache API layer
+	 * with the main-thread reader.
+	 */
+	workerCacheOptions?: ConstructorParameters<typeof BrowserBlockCache>[0];
 }
 
-export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> = {
+export const defaultFileReaderConfig: Required<
+	Omit<FileReaderConfig, 'cache' | 'workerCacheOptions'>
+> = {
 	useSAB: typeof SharedArrayBuffer !== 'undefined',
 	retries: 2,
 	eTagValidation: false
@@ -47,7 +61,7 @@ export const defaultFileReaderConfig: Required<Omit<FileReaderConfig, 'cache'>> 
  */
 export class WeatherMapLayerFileReader {
 	readonly cache: BlockCache;
-	readonly config: Required<Omit<FileReaderConfig, 'cache'>>;
+	readonly config: Required<Omit<FileReaderConfig, 'cache' | 'workerCacheOptions'>>;
 	private readonly allDerivationRules: VariableDerivationRule[];
 	/** Memoizes one backend per URL, so repeat reads skip the HEAD request. */
 	private readonly backendPool: OmHttpBackendPool;

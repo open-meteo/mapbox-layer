@@ -30,6 +30,7 @@
 import { isSeamlessDomain } from '../domain-helpers';
 import { GridFactory } from '../grids/index';
 import { defaultOmProtocolSettings } from '../om-protocol';
+import { getProtocolInstance } from '../om-protocol-state';
 import { createClippingTester, resolveClippingOptions } from '../utils/clipping';
 import type { ResolvedClippingOptions } from '../utils/clipping';
 import { halfQuantum as computeHalfQuantum, lat2tile } from '../utils/math';
@@ -48,7 +49,7 @@ import { loadOmUrl } from './data';
 import { downsampleRegular } from './downsample';
 import { computeGridUniforms } from './grid-uniforms';
 import type { GpuGridUniforms } from './grid-uniforms';
-import { ParticleSystem, windComponentsOf } from './particles';
+import { ParticleSystem, getCachedWindUV, setCachedWindUV, windComponentsOf } from './particles';
 import type { GpuParticleConfig, ParticleFieldLayer } from './particles';
 import { WeatherGpuRenderer } from './renderer';
 import type {
@@ -468,6 +469,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				if (wind.data.values && wind.data.directions) {
 					const windUniforms = computeGridUniforms(wind.domain.grid, wind.ranges);
 					if (windUniforms.nx === gridUniforms.nx && windUniforms.ny === gridUniforms.ny) {
+						await this.primeWindUV(wind.data.values, wind.data.directions);
+						if (sequence !== this.loadSequence) return null;
 						const uv = windComponentsOf(wind.data.values, wind.data.directions);
 						advU = uv.u;
 						advV = uv.v;
@@ -501,8 +504,27 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			fullOrigin: WeatherGpuLayer.fullOriginOf(loaded.domain.grid, gridUniforms)
 		};
 
-		// Warm the value texture so the commit itself never uploads mid-frame.
-		this.renderer?.getValueTexture(values, gridUniforms.nx, gridUniforms.ny, frame.stateKey);
+		// Prime the wind components off the main thread while still preparing,
+		// so the render path's windComponentsOf is a cache hit instead of a trig
+		// loop over the whole grid.
+		if (this.particles && directions) {
+			await this.primeWindUV(values, directions);
+			if (sequence !== this.loadSequence) return null;
+		}
+
+		// Warm the value textures so the commit itself never uploads mid-frame;
+		// large grids stream in row chunks across frames instead of blocking a
+		// mobile main thread with one multi-MB texImage2D.
+		if (this.renderer) {
+			const g = gridUniforms;
+			await this.renderer.warmValueTexture(values, g.nx, g.ny, frame.stateKey);
+			if (sequence !== this.loadSequence) return null;
+			for (const extra of [advU, advV, getCachedWindUV(values)?.u, getCachedWindUV(values)?.v]) {
+				if (!extra) continue;
+				await this.renderer.warmValueTexture(extra, g.nx, g.ny);
+				if (sequence !== this.loadSequence) return null;
+			}
+		}
 
 		// A viewport-crop change cannot blend against the shown frame directly:
 		// it lives on different grid geometry. Re-resolve the shown URL — the
@@ -522,7 +544,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				);
 				if (prevSignature === frame.gridSignature && prev.data.values) {
 					recropped = prev.data.values;
-					this.renderer?.getValueTexture(recropped, prevUniforms.nx, prevUniforms.ny);
+					await this.renderer?.warmValueTexture(recropped, prevUniforms.nx, prevUniforms.ny);
+					if (sequence !== this.loadSequence) return null;
 				}
 			} catch {
 				// Fall back to the dissolve.
@@ -1141,6 +1164,23 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 	}
 
 	/**
+	 * Derive the wind components in the decode worker and seed the cache, so
+	 * the render path's windComponentsOf never runs its trig loop over the
+	 * whole grid on the main thread. No-ops without a worker (the sync
+	 * fallback in windComponentsOf still applies) and on failure.
+	 */
+	private async primeWindUV(values: Float32Array, directions: Float32Array): Promise<void> {
+		if (getCachedWindUV(values)) return;
+		const decodeWorker = getProtocolInstance(this.settings).decodeWorker;
+		if (!decodeWorker || decodeWorker.broken) return;
+		try {
+			setCachedWindUV(values, await decodeWorker.deriveUV(values, directions));
+		} catch {
+			// windComponentsOf computes inline on the next use.
+		}
+	}
+
+	/**
 	 * Reseed the particle population when the advected field's identity changes
 	 * (domain/variable/sub-layer set, or polygon clipping appearing/clearing).
 	 */
@@ -1576,6 +1616,23 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		);
 		// superseded by a newer setUrl
 		if (this.seamless !== frame && this.pendingSeamless !== frame) return;
+		if (data) {
+			// Same prepare-phase offloading as the plain path: derive the wind
+			// components in the worker and stream the texture upload in chunks
+			// before the entry becomes drawable.
+			if (this.particles && data.data.directions) {
+				await this.primeWindUV(data.values, data.data.directions);
+			}
+			if (this.renderer) {
+				const g = data.gridUniforms;
+				await this.renderer.warmValueTexture(data.values, g.nx, g.ny, data.stateKey);
+				const uv = getCachedWindUV(data.values);
+				for (const extra of [data.nanField, uv?.u, uv?.v]) {
+					if (extra) await this.renderer.warmValueTexture(extra, g.nx, g.ny);
+				}
+			}
+			if (this.seamless !== frame && this.pendingSeamless !== frame) return;
+		}
 		frame.entries.set(
 			layerDef.domainValue,
 			data ? { status: 'loaded', data } : { status: 'skipped' }

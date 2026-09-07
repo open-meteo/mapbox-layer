@@ -28,6 +28,8 @@
  * protocol's speed + direction arrays, cached per source array identity and
  * uploaded through the renderer's budgeted value-texture cache.
  */
+import { deriveWindComponents } from '../utils/wind-components';
+
 import type { GpuGridUniforms } from './grid-uniforms';
 import type { GpuDrawOptions, GpuProjectionData } from './renderer';
 import { layerSpecOf, uploadGridLayerUniforms } from './renderer';
@@ -147,8 +149,10 @@ const windUVCache = new WeakMap<Float32Array, { u: Float32Array; v: Float32Array
 
 /**
  * Eastward/northward components from the protocol's speed + direction arrays
- * (direction = where the wind comes from, so the flow bearing is +180°).
- * Cached per values-array identity, like the renderer's texture cache.
+ * (see deriveWindComponents). Cached per values-array identity, like the
+ * renderer's texture cache. Prefer priming the cache via the decode worker
+ * (`setCachedWindUV`) during a layer's prepare phase — a cache miss here runs
+ * the trig loop over the whole grid on the main thread.
  */
 export const windComponentsOf = (
 	values: Float32Array,
@@ -156,25 +160,23 @@ export const windComponentsOf = (
 ): { u: Float32Array; v: Float32Array } => {
 	const cached = windUVCache.get(values);
 	if (cached) return cached;
-	const n = values.length;
-	const u = new Float32Array(n);
-	const v = new Float32Array(n);
-	for (let i = 0; i < n; i++) {
-		const speed = values[i];
-		const direction = directions[i];
-		if (!isFinite(speed) || !isFinite(direction)) {
-			u[i] = NaN;
-			v[i] = NaN;
-			continue;
-		}
-		const bearing = ((direction + 180) * Math.PI) / 180;
-		u[i] = speed * Math.sin(bearing);
-		v[i] = speed * Math.cos(bearing);
-	}
-	const result = { u, v };
+	const result = deriveWindComponents(values, directions);
 	windUVCache.set(values, result);
 	return result;
 };
+
+/** Seed the component cache with a worker-derived result (see windComponentsOf). */
+export const setCachedWindUV = (
+	values: Float32Array,
+	uv: { u: Float32Array; v: Float32Array }
+): void => {
+	if (!windUVCache.has(values)) windUVCache.set(values, uv);
+};
+
+/** The cached components, without computing them on a miss. */
+export const getCachedWindUV = (
+	values: Float32Array
+): { u: Float32Array; v: Float32Array } | undefined => windUVCache.get(values);
 
 // ─── Shaders ─────────────────────────────────────────────────────────────────
 

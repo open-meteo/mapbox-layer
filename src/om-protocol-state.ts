@@ -4,6 +4,7 @@ import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
 import { normalizeUrl } from './utils/parse-url';
 
+import { createDecodeWorkerClient } from './decode-worker-client';
 import { GridFactory } from './grids';
 import { WeatherMapLayerFileReader } from './om-file-reader';
 
@@ -53,6 +54,7 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 
 	const instance = {
 		omFileReader: new WeatherMapLayerFileReader(settings.fileReaderConfig),
+		decodeWorker: createDecodeWorkerClient(settings.fileReaderConfig),
 		stateByKey: new Map()
 	};
 	omProtocolInstance = instance;
@@ -179,12 +181,31 @@ export const ensureData = async (
 		state.lastError = undefined;
 		state.dataPromise = (async () => {
 			try {
-				const data = await omFileReader.readVariable(
-					state.omFileUrl,
-					state.dataOptions.variable,
-					state.ranges,
-					controller.signal
-				);
+				// Decode in the worker when available: the wasm decompression and
+				// derivation loops freeze mobile for hundreds of ms when run here.
+				// An error the worker *posts* is a real data error and propagates;
+				// only a crash of the worker itself falls back to the inline read.
+				const readInline = (): Promise<Data> =>
+					omFileReader.readVariable(
+						state.omFileUrl,
+						state.dataOptions.variable,
+						state.ranges,
+						controller.signal
+					);
+				const decodeWorker = omProtocolInstance?.decodeWorker;
+				const data =
+					decodeWorker && !decodeWorker.broken
+						? await decodeWorker
+								.readVariable(
+									state.omFileUrl,
+									state.dataOptions.variable,
+									state.ranges,
+									controller.signal
+								)
+								.catch((error: Error) =>
+									error.name === 'DecodeWorkerBroken' ? readInline() : Promise.reject(error)
+								)
+						: await readInline();
 
 				if (postReadCallback) {
 					postReadCallback(omFileReader, data, state);

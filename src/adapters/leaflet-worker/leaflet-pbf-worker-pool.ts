@@ -1,5 +1,4 @@
 // ── Worker import ───────────────────────────────────────────────────
-// @ts-expect-error Vite worker import
 import LeafletPbfWorker from './leaflet-pbf-worker?worker&inline';
 
 /**

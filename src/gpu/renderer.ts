@@ -355,6 +355,108 @@ export class WeatherGpuRenderer {
 		return texture;
 	}
 
+	/** Texels per upload chunk (~4 MB of R32F); also the sync/async threshold. */
+	private static readonly WARM_CHUNK_TEXELS = 1 << 20;
+
+	/**
+	 * Upload (or reuse) the value texture like getValueTexture, but stream
+	 * large grids in row chunks across animation frames: a single texImage2D
+	 * of a world-view grid blocks a mobile main thread for a visible moment.
+	 * Meant for the prepare phase — the entry registers up front so repeated
+	 * warms and the later commit reuse it, and nothing samples the texture
+	 * before the commit, which only runs after this resolves.
+	 */
+	async warmValueTexture(
+		values: Float32Array,
+		nx: number,
+		ny: number,
+		label?: string
+	): Promise<void> {
+		const cached = this.valueTextures.get(values);
+		if (cached && cached.nx === nx && cached.ny === ny) {
+			this.valueTextures.delete(values);
+			this.valueTextures.set(values, cached);
+			this.labelTexture(cached, values, label);
+			return;
+		}
+		const texels = nx * ny;
+		if (
+			texels <= WeatherGpuRenderer.WARM_CHUNK_TEXELS ||
+			typeof requestAnimationFrame === 'undefined'
+		) {
+			this.getValueTexture(values, nx, ny, label);
+			return;
+		}
+
+		const gl = this.gl;
+		const maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+		if (nx > maxSize || ny > maxSize) {
+			throw new Error(`gpu: grid ${nx}x${ny} exceeds MAX_TEXTURE_SIZE ${maxSize}`);
+		}
+		const bytes = texels * 4;
+		this.evictValueTextures(this.valueTextureBudget - bytes);
+
+		let texture = this.allocValueTextureStorage(nx, ny);
+		if (!texture) {
+			this.evictValueTextures(0);
+			texture = this.allocValueTextureStorage(nx, ny);
+			if (!texture) throw new Error(`gpu: value texture allocation failed (${nx}x${ny})`);
+		}
+		const entry = { texture, nx, ny, bytes, label: undefined as string | undefined };
+		this.valueTextures.set(values, entry);
+		this.valueTextureBytes += bytes;
+		this.labelTexture(entry, values, label);
+
+		const rowsPerChunk = Math.max(1, Math.floor(WeatherGpuRenderer.WARM_CHUNK_TEXELS / nx));
+		const scratch = new Float32Array(rowsPerChunk * nx);
+		for (let row = 0; row < ny; row += rowsPerChunk) {
+			// Evicted mid-warm (budget pressure): the texture is gone; a later
+			// getValueTexture re-uploads synchronously as before.
+			if (this.valueTextures.get(values) !== entry) return;
+			const rows = Math.min(rowsPerChunk, ny - row);
+			const start = row * nx;
+			const count = rows * nx;
+			for (let i = 0; i < count; i++) {
+				const v = values[start + i];
+				scratch[i] = Number.isFinite(v) ? v : MISSING_SENTINEL;
+			}
+			gl.bindTexture(gl.TEXTURE_2D, entry.texture);
+			gl.texSubImage2D(
+				gl.TEXTURE_2D,
+				0,
+				0,
+				row,
+				nx,
+				rows,
+				gl.RED,
+				gl.FLOAT,
+				scratch.subarray(0, count)
+			);
+			if (row + rowsPerChunk < ny) {
+				await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+			}
+		}
+	}
+
+	/** Immutable R32F storage for the chunked warm path; null when allocation fails. */
+	private allocValueTextureStorage(nx: number, ny: number): WebGLTexture | null {
+		const gl = this.gl;
+		const texture = gl.createTexture();
+		if (!texture) return null;
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.getError();
+		gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, nx, ny);
+		if (gl.getError() !== gl.NO_ERROR) {
+			gl.deleteTexture(texture);
+			return null;
+		}
+		return texture;
+	}
+
 	private labelTexture(
 		entry: { label?: string },
 		values: Float32Array,
