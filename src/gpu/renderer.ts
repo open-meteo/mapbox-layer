@@ -475,7 +475,42 @@ export class WeatherGpuRenderer {
 			gl.deleteTexture(texture);
 			return null;
 		}
+		this.initValueTextureStorage(texture);
 		return texture;
+	}
+
+	private warmClearFbo: WebGLFramebuffer | null = null;
+	private warmClearSupported: boolean | undefined;
+
+	/**
+	 * Explicitly initialize fresh storage from the GPU side: the chunked warm
+	 * path fills it with partial texSubImage2D uploads, and the browser must
+	 * otherwise lazily clear the whole texture at the first one (a console
+	 * warning, and a forced clear it flags as potentially slow). Filled with
+	 * the missing sentinel so never-uploaded texels sample as "no data".
+	 * Needs R32F to be renderable (EXT_color_buffer_float — present wherever
+	 * the particle pass runs); without it the lazy clear applies as before.
+	 */
+	private initValueTextureStorage(texture: WebGLTexture): void {
+		const gl = this.gl;
+		this.warmClearSupported ??= gl.getExtension('EXT_color_buffer_float') !== null;
+		if (!this.warmClearSupported) return;
+		this.warmClearFbo ??= gl.createFramebuffer();
+		if (!this.warmClearFbo) return;
+		const prevFbo = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+		const scissor = gl.isEnabled(gl.SCISSOR_TEST);
+		const mask = gl.getParameter(gl.COLOR_WRITEMASK) as boolean[];
+		if (scissor) gl.disable(gl.SCISSOR_TEST);
+		gl.colorMask(true, true, true, true);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.warmClearFbo);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+		if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
+			gl.clearBufferfv(gl.COLOR, 0, [MISSING_SENTINEL, 0, 0, 0]);
+		}
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, prevFbo);
+		gl.colorMask(mask[0], mask[1], mask[2], mask[3]);
+		if (scissor) gl.enable(gl.SCISSOR_TEST);
 	}
 
 	private labelTexture(
@@ -851,6 +886,10 @@ export class WeatherGpuRenderer {
 		if (this.arrowTemplateBuffer) {
 			gl.deleteBuffer(this.arrowTemplateBuffer);
 			this.arrowTemplateBuffer = null;
+		}
+		if (this.warmClearFbo) {
+			gl.deleteFramebuffer(this.warmClearFbo);
+			this.warmClearFbo = null;
 		}
 	}
 
