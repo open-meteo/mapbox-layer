@@ -245,8 +245,32 @@ const traceFootprint = (values: Float32Array, grid: RegularGridData): Pt[] | und
 	const north = fitArch(lon, top, iNE, iNW);
 	const west = fitArch(lat, left, rNW, rSW).map(([la, lo]): Pt => [lo, la]);
 
-	const ring = [...south, ...east, ...north, ...west];
-	ring.push(ring[0]); // close
+	// The four arches are fitted independently, so at each corner the two
+	// adjacent fits give slightly different estimates of the same point; joined
+	// raw, the ring doubles back through a thin self-crossing wedge — an ugly
+	// spike once zoomed in. Weld each junction to the midpoint of both estimates.
+	const weld = (a: Pt[], b: Pt[]): void => {
+		const end = a[a.length - 1];
+		const start = b[0];
+		const corner: Pt = [(end[0] + start[0]) / 2, (end[1] + start[1]) / 2];
+		a[a.length - 1] = corner;
+		b[0] = corner;
+	};
+	weld(south, east);
+	weld(east, north);
+	weld(north, west);
+	weld(west, south);
+
+	// Welded junctions duplicate their corner vertex; keep one of each. The
+	// last west point equals the first south point, closing the ring itself.
+	const ring: Pt[] = [];
+	for (const pt of [...south, ...east, ...north, ...west]) {
+		const prev = ring[ring.length - 1];
+		if (!prev || prev[0] !== pt[0] || prev[1] !== pt[1]) ring.push(pt);
+	}
+	if (ring[ring.length - 1][0] !== ring[0][0] || ring[ring.length - 1][1] !== ring[0][1]) {
+		ring.push(ring[0]);
+	}
 	return ring.map(([l, la]) => [Number(l.toFixed(3)), Number(la.toFixed(3))]);
 };
 
