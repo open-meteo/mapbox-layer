@@ -184,10 +184,6 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	),
 	snowfall_height: freezingLevelHeightScale,
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
-	visibility: {
-		...COLOR_SCALES['geopotential_height'],
-		unit: 'W/m²'
-	},
 	// meteofrance_currents serves ocean_u_current/ocean_v_current, whose prefix
 	// lookup lands on 'ocean'; the explicit key also covers a future
 	// ocean_current_velocity/direction naming directly.

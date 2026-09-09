@@ -41,7 +41,7 @@ export { WeatherMapLayerFileReader } from './om-file-reader';
 export { currentBounds } from './utils/bounds';
 export { defaultOmProtocolSettings } from './om-protocol';
 export { domainOptions, domainGroups } from './domains';
-export { DOMAIN_FOOTPRINTS, getDomainFootprint } from './domain-footprints';
+export { getDomainBoundary } from './domain-footprints';
 export { variableOptions, levelGroupVariables } from './utils/variables';
 export {
 	VARIABLE_PREFIX,
