@@ -24,7 +24,7 @@ self.onmessage = async (message: MessageEvent<WorkerRequest>): Promise<void> => 
 	const { z, x, y } = message.data.tileIndex;
 	const values = message.data.data.values;
 	const ranges = message.data.ranges;
-	const domain = message.data.dataOptions.domain;
+	const gridData = message.data.dataOptions.grid;
 	const tileSize = message.data.renderOptions.tileSize;
 	const interpolation = message.data.renderOptions.interpolation;
 	const colorBlend = message.data.renderOptions.colorBlend;
@@ -40,7 +40,7 @@ self.onmessage = async (message: MessageEvent<WorkerRequest>): Promise<void> => 
 		// Initialized with zeros
 		const rgba = new Uint8ClampedArray(pixels * 4);
 
-		const grid = GridFactory.create(domain.grid, ranges);
+		const grid = GridFactory.create(gridData, ranges);
 
 		// Offset the colour threshold by half the data's quantization step so
 		// band edges fall inside grid cells (smooth) instead of snapping to the
@@ -115,7 +115,7 @@ self.onmessage = async (message: MessageEvent<WorkerRequest>): Promise<void> => 
 
 		const pbf = new PbfWriter();
 
-		const grid = GridFactory.create(domain.grid, ranges);
+		const grid = GridFactory.create(gridData, ranges);
 		if (message.data.renderOptions.drawGrid) {
 			generateGridPoints(pbf, grid, values, directions, x, y, z, clippingOptions);
 		}
