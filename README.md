@@ -11,7 +11,7 @@
 
 ## Overview
 
-This repository serves as a demonstration of the **Open-Meteo File Protocol** (`om://`) with Mapbox / MapLibre GL JS. The `om://` scheme is a custom [MapLibre protocol](https://maplibre.org/maplibre-gl-js/docs/API/functions/addProtocol/) registered via `addProtocol`. The `.om` files are hosted on an S3 bucket and can be accessed directly through the protocol handler.
+This package implements the **Open-Meteo File Protocol** (`om://`) for MapLibre GL JS, with adapters for Mapbox GL JS, Leaflet, OpenLayers and CesiumJS (see [Framework Adapters](#framework-adapters)). The `om://` scheme is a custom [MapLibre protocol](https://maplibre.org/maplibre-gl-js/docs/API/functions/addProtocol/) registered via `addProtocol`. The `.om` files are hosted on an S3 bucket and can be accessed directly through the protocol handler.
 
 The core weather data generation and API is hosted in the [open-meteo/open-meteo](https://github.com/open-meteo/open-meteo) repository.
 
@@ -54,7 +54,7 @@ map.on('load', () => {
 });
 ```
 
-Two files ship next to the module and are referenced with `new URL(..., import.meta.url)`: the tile render worker (`dist/worker.js`) and the file reader's WebAssembly binary (`dist/om_file_format.web.wasm`). Bundlers that understand that pattern (Vite, webpack 5, Rollup, Parcel) copy them into their output as assets without configuration. The worker starts with the protocol; the binary is fetched on the first data read, not at import time.
+Three files ship next to the module and are referenced with `new URL(..., import.meta.url)`: the tile render worker (`dist/worker.js`), the file reader's WebAssembly binary (`dist/om_file_format.web.wasm`) and the worker that draws vector tiles onto canvases for the Leaflet and Cesium adapters (`dist/leaflet-pbf-worker.mjs`). Bundlers that understand that pattern (Vite, webpack 5, Rollup, Parcel) copy them into their output as assets without configuration. The worker starts with the protocol; the binary is fetched on the first data read, not at import time.
 
 ### HTML / UNPKG
 
@@ -114,19 +114,20 @@ The repository contains an `examples` directory with ready-to-run demos:
 - `examples/combined-variables.html` – shows multiple data sources on the same map.
 - `examples/partial-requests.html` – demonstrates partial / incremental data requests.
 - `examples/interpolation.html` – switch the interpolation method live via the `interpolation` URL parameter.
+- `examples/popup.html` – reads the value under the cursor with `getValueFromLatLong` and shows it in a popup.
 
 Run the examples by opening the corresponding `.html` file in a browser.
 
 ### Vector sources
 
-For directional arrows / contouring / gridpoints, an additional source must be added, since these features use vector tiles instead of raster tiles.
+For directional arrows / contouring / gridpoints, an additional source must be added, since these features use vector tiles instead of raster tiles. The URL parameters `arrows=true`, `contours=true` and `grid=true` select which of the source layers `wind-arrows`, `contours` and `grid` the tiles carry.
 
 ```ts
 ...
 
 map.on('load', () => {
 	map.addSource('omFileVectorSource', {
-		url: 'om://' + omUrl,
+		url: 'om://' + omUrl + '&contours=true',
 		type: 'vector'
 	});
 
@@ -195,16 +196,19 @@ If you’re rendering tiles on a dark base‑map or simply want to experiment wi
 - `examples/colorscales/darkmode.html` – demonstrates the `dark=true` URL parameter, which automatically switches to palettes fine‑tuned for dark backgrounds.
 - `examples/colorscales/custom-rgba.html` – shows how to build a linear gradient from a user‑defined array of RGBA values.
 - `examples/colorscales/custom-breakpoints.html` – demonstrates how to insert your own breakpoints into the scale definitions.
+- `examples/colorscales/color-blending.html` – toggles `color_blend`, the interpolation between the colours of a breakpoint scale.
 
 ### Callbacks
 
 In scenarios where post‑loading transformations of weather data is required, the protocol provides a post‑read callback. This callback is invoked immediately after the data has been parsed by `omFileReader`, allowing transformations before the data is forwarded to the rendering pipeline. A typical usage pattern is illustrated below:
 
 ```ts
-const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
-omProtocolOptions.postReadCallback = (omFileReader, data, state) => {
-	if (data.values) {
-		data.values = data.values?.map((value) => value / 100);
+const omProtocolOptions = {
+	...OMWeatherMapLayer.defaultOmProtocolSettings,
+	postReadCallback: (omFileReader, data, state) => {
+		if (data.values) {
+			data.values = data.values?.map((value) => value / 100);
+		}
 	}
 };
 
@@ -220,10 +224,12 @@ An example implementation with a useful case is available in the `examples/callb
 To restrict weather data to a geometric boundary, the clipping parameters can be supplied during the instantiation of the omProtocol.
 
 ```ts
-const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
-omProtocolOptions.clippingOptions = {
-	geojson: geojson, // optionally clip weather data to geojson
-	bounds: clipBbox // optionally limit tile generation to bbox bounds, automatically generated from geojson when left blank
+const omProtocolOptions = {
+	...OMWeatherMapLayer.defaultOmProtocolSettings,
+	clippingOptions: {
+		geojson: geojson, // optionally clip weather data to geojson
+		bounds: clipBbox // optionally limit tile generation to bbox bounds, automatically generated from geojson when left blank
+	}
 };
 ...
 ```
@@ -238,7 +244,7 @@ The clipping examples require `npm run serve`, as they load GeoJSON files over H
 
 ## Capture API
 
-> **⚠️** Using the Capture API will add 0.5-1s delay for each request, because it must first fetch a metadata JSON file to resolve the latest model run before requesting the actual `.om` tile data.
+> **⚠️** The Capture API first fetches a metadata JSON file to resolve the latest model run before requesting the actual `.om` data, which adds 0.5-1s once; the metadata is cached for 60 seconds, so the tiles of a layer do not pay it again.
 
 Because the use of OM files on the S3 storage is often quite ambiguous, a Capture API is added, that will automatically produce the correct file paths for you.
 
