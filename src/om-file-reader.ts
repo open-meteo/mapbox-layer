@@ -550,9 +550,15 @@ const shortwaveSources = (stored: ReadonlySet<string>): string[] | null =>
 			: ['direct_radiation', 'diffuse_radiation']
 	);
 
-/** Shortwave radiation of cell `i` from the sources `shortwaveSources` chose. */
-const shortwaveAt = (radiation: Float32Array[], i: number): number =>
-	radiation.length === 2 ? radiation[0][i] + radiation[1][i] : radiation[0][i];
+/**
+ * Shortwave radiation of cell `i`: the sum of the parts `shortwaveSources`
+ * chose, zero for a file storing none.
+ */
+const shortwaveAt = (radiation: Float32Array[], i: number): number => {
+	let sum = 0;
+	for (const part of radiation) sum += part[i];
+	return sum;
+};
 
 /** Relative humidity of cell `i` from the sources `humiditySources` chose. */
 const relativeHumidityAt = (
@@ -774,16 +780,15 @@ export const defaultDerivationRules: VariableDerivationRule[] = [
 		provides: scalar,
 		scaleFactor: 'primary',
 		// The 10 m wind as u/v components or, on models storing it so, as speed,
-		// and the radiation as a sum or as its parts; the first file of a run
-		// has no radiation yet.
+		// and the radiation as a sum, as its parts, or not at all: a file storing
+		// no radiation, like the first one of a run, counts none, as the API does.
 		getSourceVars: ({ stored }) => {
 			const humidity = humiditySources(stored);
-			const radiation = shortwaveSources(stored);
-			if (!humidity || !radiation) return null;
+			if (!humidity) return null;
 			const wind = stored.has('wind_speed_10m')
 				? ['wind_speed_10m']
 				: ['wind_u_component_10m', 'wind_v_component_10m'];
-			return allStored(stored, [...humidity, ...wind, ...radiation]);
+			return allStored(stored, [...humidity, ...wind, ...(shortwaveSources(stored) ?? [])]);
 		},
 		process: ([temperature, humidity, ...rest], { stored }) => {
 			const wind = rest.splice(0, stored.has('wind_speed_10m') ? 1 : 2);

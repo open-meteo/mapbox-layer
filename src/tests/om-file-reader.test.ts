@@ -309,6 +309,17 @@ describe('humidity-derived default rules', () => {
 		expect(variableHasDirections('apparent_temperature')).toBe(false);
 	});
 
+	it('counts no radiation for the apparent temperature where a file stores none, like the API', async () => {
+		file.set('temperature_2m', new FakeVariable([30], 20));
+		file.set('relative_humidity_2m', new FakeVariable([70], 1));
+		file.set('wind_speed_10m', new FakeVariable([5], 10));
+
+		const data = await createReader().readVariable('file.om', 'apparent_temperature');
+
+		// The first file of a run has no radiation yet: `apparentTemperature(30, 70, 5, 0)`
+		expect(data.values?.[0]).toBeCloseTo(33.426, 2);
+	});
+
 	it('derives vapour pressure deficit and wet-bulb temperature from temperature and humidity', async () => {
 		file.set('temperature_2m', new FakeVariable([25, 30], 20));
 		file.set('relative_humidity_2m', new FakeVariable([60, 70], 1));
