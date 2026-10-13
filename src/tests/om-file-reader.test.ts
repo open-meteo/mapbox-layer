@@ -103,6 +103,17 @@ describe('custom derivation rules', () => {
 		expect(waterEquivalent.disposed).toBe(true);
 	});
 
+	it("moves a rule's plain output into a SharedArrayBuffer where the reader uses them", async () => {
+		file.set('snowfall_water_equivalent', new FakeVariable([0, 1, 10], 10));
+		// `snowfallRule` builds its values with `Float32Array.map`, a plain buffer
+		const reader = new WeatherMapLayerFileReader({ useSAB: true, derivationRules: rules });
+
+		const data = await reader.readVariable('file.om', 'snowfall');
+
+		expect(data.values?.buffer).toBeInstanceOf(SharedArrayBuffer);
+		expect(Array.from(data.values ?? [])).toEqual([0, 1, 10]);
+	});
+
 	it('reads the source variable itself without the rule', async () => {
 		file.set('snowfall_water_equivalent', new FakeVariable([0, 1, 10], 10));
 

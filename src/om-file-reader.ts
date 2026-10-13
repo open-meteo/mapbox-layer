@@ -203,6 +203,14 @@ export class WeatherMapLayerFileReader {
 			// Process using the rule
 			const data = rule.process(sourceData, context);
 
+			// A rule may build its output with plain typed-array methods. Moving it
+			// into shared memory once per read keeps the grid zero-copy for the tile
+			// workers, which would otherwise clone it per tile.
+			if (this.config.useSAB) {
+				data.values = intoSharedBuffer(data.values);
+				data.directions = intoSharedBuffer(data.directions);
+			}
+
 			// Every derivation rule defines its quantization scale factor so the
 			// half-quantum threshold offset is always available. `'primary'` inherits
 			// the first source variable's stored scale factor — exact when `values`
@@ -407,6 +415,8 @@ export interface VariableDerivationRule {
 
 	/**
 	 * Process the raw data from the source variables into values and directions.
+	 * Plain arrays are fine: where the reader uses SharedArrayBuffers, it moves
+	 * the output into one.
 	 * @param sources - Data per source variable, in `getSourceVars` order
 	 * @param context - The file the sources came from, as `getSourceVars` saw it
 	 * @returns Data object with values and optional directions
@@ -511,9 +521,17 @@ const uvRule = (postfix: string, barbs: boolean): VariableDerivationRule => ({
 
 const SPEED_OR_DIRECTION = /_(?:speed|direction)_/;
 
+/** `array` in a SharedArrayBuffer: itself when it already is, otherwise a copy. */
+const intoSharedBuffer = (array: Float32Array | undefined): Float32Array | undefined => {
+	if (!array || array.buffer instanceof SharedArrayBuffer) return array;
+	const shared = new Float32Array(new SharedArrayBuffer(array.byteLength));
+	shared.set(array);
+	return shared;
+};
+
 /**
  * Output array of the source's buffer kind: SAB-backed sources give a
- * SAB-backed result, so it stays zero-copy for the tile workers.
+ * SAB-backed result, so there is nothing to copy for the tile workers.
  */
 const mapCells = (source: Float32Array, cell: (i: number) => number): Float32Array => {
 	const BufferConstructor = source.buffer.constructor as typeof ArrayBuffer;
