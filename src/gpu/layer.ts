@@ -192,6 +192,36 @@ const sharedRenderers = new Map<
  */
 const geometryKey = (g: GpuGridUniforms): string => JSON.stringify({ ...g, quad: undefined });
 
+const isAbortError = (error: unknown): boolean =>
+	error instanceof Error && error.name === 'AbortError';
+
+const throwIfAborted = (signal: AbortSignal | undefined): void => {
+	if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+};
+
+/**
+ * The clip box's longitudes as an interval of the unwrapped viewport's
+ * mercator x, in the world copy where the two overlap most; a box with west
+ * past east continues across the antimeridian. Undefined when disjoint.
+ */
+const clipLonRange = (
+	west: number,
+	east: number,
+	minX: number,
+	maxX: number
+): [number, number] | undefined => {
+	const x0 = (west + 180) / 360;
+	let x1 = (east + 180) / 360;
+	if (x1 < x0) x1 += 1;
+	let best: [number, number] | undefined;
+	for (let world = Math.floor(minX - x1); world <= Math.ceil(maxX - x0); world++) {
+		const lo = Math.max(minX, x0 + world);
+		const hi = Math.min(maxX, x1 + world);
+		if (hi > lo && (!best || hi - lo > best[1] - best[0])) best = [lo, hi];
+	}
+	return best;
+};
+
 const acquireSharedRenderer = (
 	gl: WebGL2RenderingContext,
 	textureCacheMb?: number
@@ -395,9 +425,13 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 
 	/**
 	 * Loads the URL without showing it. Resolves to a commit callback that
-	 * performs the visual swap (or null when a newer load superseded this one).
+	 * performs the visual swap (or null when a newer load superseded this one);
+	 * an aborted signal rejects with an AbortError and leaves nothing behind.
 	 * Committing is cheap and synchronous, so several layers can be prepared
-	 * concurrently and committed in the same frame.
+	 * concurrently and committed in the same frame. One exception: a seamless
+	 * composite prepared while the layer shows nothing draws its sub-layers as
+	 * they arrive, so a first load appears progressively instead of waiting
+	 * for the whole composite.
 	 */
 	async prepareUrl(omUrl: string, signal?: AbortSignal): Promise<(() => void) | null> {
 		const sequence = ++this.loadSequence;
@@ -427,16 +461,26 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				// Nothing showing yet: render progressively as sub-layers arrive.
 				this.seamless = frame;
 			}
-			// Load the layers active at the current zoom right away; render() keeps
-			// them in sync when the zoom changes later.
-			await this.ensureSeamlessLoads(frame, this.map?.getZoom() ?? 0);
-			if (sequence !== this.loadSequence) return null;
-			// A crop change breaks per-sub-layer geometry equality, which would
-			// otherwise degrade every pan/zoom-adjacent commit into a crossfade:
-			// re-resolve the outgoing composite's sub-layers on the incoming crop
-			// (mostly cache-served) so the commit can morph values instead.
-			const recroppedPrev = await this.recropSeamlessPrev(frame, signal);
-			if (sequence !== this.loadSequence) return null;
+			let recroppedPrev: Awaited<ReturnType<WeatherGpuLayer['recropSeamlessPrev']>>;
+			try {
+				// Load the layers active at the current zoom right away; render()
+				// keeps them in sync when the zoom changes later.
+				await this.ensureSeamlessLoads(frame, this.map?.getZoom() ?? 0, signal);
+				if (sequence !== this.loadSequence) return null;
+				// A crop change breaks per-sub-layer geometry equality, which would
+				// otherwise degrade every pan/zoom-adjacent commit into a crossfade:
+				// re-resolve the outgoing composite's sub-layers on the incoming
+				// crop (mostly cache-served) so the commit can morph values instead.
+				recroppedPrev = await this.recropSeamlessPrev(frame, signal);
+				if (sequence !== this.loadSequence) return null;
+				throwIfAborted(signal);
+			} catch (error) {
+				// A cancelled prepare leaves no frame behind: render() would keep
+				// loading (and, for a first load, showing) what the host abandoned.
+				if (this.seamless === frame) this.seamless = undefined;
+				if (this.pendingSeamless === frame) this.pendingSeamless = undefined;
+				throw error;
+			}
 			return () => {
 				if (sequence !== this.loadSequence) return;
 				const old = this.seamless;
@@ -526,7 +570,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				}
 				this.advectUnavailable.add(unavailableKey);
 			} catch (error) {
-				if (error instanceof Error && error.name === 'AbortError') return null;
+				if (isAbortError(error)) throw error;
 				this.advectUnavailable.add(unavailableKey);
 			}
 		}
@@ -595,10 +639,12 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 					await this.renderer?.warmValueTexture(recropped, prevUniforms.nx, prevUniforms.ny);
 					if (sequence !== this.loadSequence) return null;
 				}
-			} catch {
-				// Fall back to the dissolve.
+			} catch (error) {
+				if (isAbortError(error)) throw error;
+				// Anything else falls back to the dissolve.
 			}
 		}
+		throwIfAborted(signal);
 
 		return () => {
 			if (sequence !== this.loadSequence) return;
@@ -696,9 +742,20 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		const from = this.previous.values;
 		const to = this.current.values;
 		if (from.length !== to.length) return undefined;
+		return WeatherGpuLayer.lerpValues(from, to, mix);
+	}
+
+	/**
+	 * CPU counterpart of the shader's temporal mix: where one timestep is
+	 * missing the finite one shows, so a snapshot never opens holes along a
+	 * moving missing-data boundary.
+	 */
+	private static lerpValues(from: Float32Array, to: Float32Array, mix: number): Float32Array {
 		const out = new Float32Array(from.length);
 		for (let i = 0; i < from.length; i++) {
-			out[i] = from[i] + (to[i] - from[i]) * mix;
+			const a = from[i];
+			const b = to[i];
+			out[i] = !Number.isFinite(a) ? b : !Number.isFinite(b) ? a : a + (b - a) * mix;
 		}
 		return out;
 	}
@@ -731,12 +788,7 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 			const entry = old.entries.get(domainValue);
 			const to = entry?.status === 'loaded' ? entry.data?.values : undefined;
 			if (!to || to.length !== prev.values.length) continue;
-			const from = prev.values;
-			const lerped = new Float32Array(to.length);
-			for (let i = 0; i < to.length; i++) {
-				lerped[i] = from[i] + (to[i] - from[i]) * mix;
-			}
-			out.set(domainValue, lerped);
+			out.set(domainValue, WeatherGpuLayer.lerpValues(prev.values, to, mix));
 		}
 		return out.size > 0 ? out : undefined;
 	}
@@ -1670,7 +1722,8 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 				if (!prev || geometryKey(prev.gridUniforms) !== geometryKey(g)) continue;
 				await this.renderer?.warmValueTexture(prev.values, g.nx, g.ny);
 				recropped.set(layerDef.domainValue, { values: prev.values, nx: g.nx, ny: g.ny });
-			} catch {
+			} catch (error) {
+				if (isAbortError(error)) throw error;
 				// This sub-layer dissolves in via its self-prev; the rest still morph.
 			}
 		}
@@ -1810,8 +1863,9 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		minY = Math.max(0, minY - margin);
 		maxY = Math.min(1, maxY + margin);
 		if (clipBounds) {
-			minX = Math.max(minX, (clipBounds[0] + 180) / 360);
-			maxX = Math.min(maxX, (clipBounds[2] + 180) / 360);
+			const xRange = clipLonRange(clipBounds[0], clipBounds[2], minX, maxX);
+			if (!xRange) return;
+			[minX, maxX] = xRange;
 			minY = Math.max(minY, lat2tile(Math.min(85.051129, clipBounds[3]), 0));
 			maxY = Math.min(maxY, lat2tile(Math.max(-85.051129, clipBounds[1]), 0));
 		}
@@ -1866,8 +1920,16 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		map.triggerRepaint();
 	}
 
-	/** Kick loads for all zoom-active sub-layers that have no entry yet. */
-	private async ensureSeamlessLoads(frame: SeamlessFrame, zoom: number): Promise<void> {
+	/**
+	 * Kick loads for all zoom-active sub-layers that have no entry yet. An
+	 * aborted signal rejects once the loads it cancelled have let go of their
+	 * entries; render() calls this without one.
+	 */
+	private async ensureSeamlessLoads(
+		frame: SeamlessFrame,
+		zoom: number,
+		signal?: AbortSignal
+	): Promise<void> {
 		const active = activeSeamlessLayers(frame.domain, zoom);
 		const globalLayer = frame.domain.layers[frame.domain.layers.length - 1];
 		// Sub-layers mid fade-out are loaded like active ones: a crop refresh
@@ -1882,7 +1944,9 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		for (const layerDef of wanted) {
 			if (frame.entries.has(layerDef.domainValue)) continue;
 			frame.entries.set(layerDef.domainValue, { status: 'loading' });
-			loads.push(this.loadSeamlessEntry(frame, layerDef, layerDef === globalLayer, wanted.length));
+			loads.push(
+				this.loadSeamlessEntry(frame, layerDef, layerDef === globalLayer, wanted.length, signal)
+			);
 		}
 		await Promise.all(loads);
 	}
@@ -1891,16 +1955,28 @@ export class WeatherGpuLayer implements CustomLayerInterface {
 		frame: SeamlessFrame,
 		layerDef: SeamlessLayer,
 		isGlobal: boolean,
-		activeLayerCount: number
+		activeLayerCount: number,
+		signal?: AbortSignal
 	): Promise<void> {
-		const data = await loadSeamlessLayer(
-			frame.request,
-			frame.domain,
-			layerDef,
-			isGlobal,
-			this.settings,
-			activeLayerCount
-		);
+		let data: GpuSeamlessLayerData | null;
+		try {
+			data = await loadSeamlessLayer(
+				frame.request,
+				frame.domain,
+				layerDef,
+				isGlobal,
+				this.settings,
+				activeLayerCount,
+				signal
+			);
+		} catch (error) {
+			// An abort is not a failed layer: the placeholder goes, so a later
+			// ensureSeamlessLoads can load it instead of finding it skipped.
+			if (frame.entries.get(layerDef.domainValue)?.status === 'loading') {
+				frame.entries.delete(layerDef.domainValue);
+			}
+			throw error;
+		}
 		// superseded by a newer setUrl
 		if (this.seamless !== frame && this.pendingSeamless !== frame) return;
 		if (data) {

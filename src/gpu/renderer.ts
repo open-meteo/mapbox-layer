@@ -108,6 +108,33 @@ interface GpuClipMask {
 	rect: [number, number, number, number];
 }
 
+/** A cached R32F value texture, keyed by its source array's identity. */
+interface ValueTextureEntry {
+	texture: WebGLTexture;
+	nx: number;
+	ny: number;
+	bytes: number;
+	label?: string;
+	/** Rows uploaded so far; below ny while a chunked warm is streaming. */
+	uploadedRows: number;
+	/** The streaming warm in flight, if any (see warmValueTexture). */
+	upload?: Promise<void>;
+}
+
+/**
+ * Yield until the next frame. Hidden tabs get no animation frames, so a
+ * timer keeps a prepare issued in the background moving instead of stalling
+ * it until the tab is visible again.
+ */
+const nextFrame = (): Promise<void> =>
+	new Promise((resolve) => {
+		const timer = setTimeout(resolve, 100);
+		requestAnimationFrame(() => {
+			clearTimeout(timer);
+			resolve();
+		});
+	});
+
 export interface GpuLayerDraw {
 	gridUniforms: GpuGridUniforms;
 	valuesTexture: WebGLTexture;
@@ -157,7 +184,7 @@ export interface GpuDrawOptions {
 	lut: LutHandle;
 	halfQuantum: number;
 	opacity: number;
-	/** Optional geographic clip bounds [west, south, east, north]. */
+	/** Clip bounds [west, south, east, north]; west past east crosses the antimeridian. */
 	clipBounds?: Bounds;
 	/** Optional polygon clip mask multiplied into the output. */
 	clipMask?: GpuClipMask;
@@ -249,10 +276,7 @@ export class WeatherGpuRenderer {
 	// LRU-evicted by a byte budget: at global views a single O1280 texture is
 	// ~26 MB, and an unbounded count would exhaust VRAM during animation loops
 	// (failed allocations sample as uninitialised-memory noise on real drivers).
-	private valueTextures = new Map<
-		Float32Array,
-		{ texture: WebGLTexture; nx: number; ny: number; bytes: number; label?: string }
-	>();
+	private valueTextures = new Map<Float32Array, ValueTextureEntry>();
 	/** URL-state key -> value array, for residency queries that outlive the RAM state. */
 	private textureLabels = new Map<string, Float32Array>();
 	private valueTextureBytes = 0;
@@ -303,6 +327,9 @@ export class WeatherGpuRenderer {
 			this.valueTextures.delete(values);
 			this.valueTextures.set(values, cached);
 			this.labelTexture(cached, values, label);
+			// A chunked warm may still be streaming this entry; the caller samples
+			// the texture this frame, so the rest goes up right now.
+			while (cached.uploadedRows < ny) this.uploadValueRows(cached, values);
 			return cached.texture;
 		}
 
@@ -339,7 +366,7 @@ export class WeatherGpuRenderer {
 			if (!texture) throw new Error(`gpu: value texture allocation failed (${nx}x${ny})`);
 		}
 
-		const entry = { texture, nx, ny, bytes, label: undefined as string | undefined };
+		const entry: ValueTextureEntry = { texture, nx, ny, bytes, uploadedRows: ny };
 		this.valueTextures.set(values, entry);
 		this.valueTextureBytes += bytes;
 		this.labelTexture(entry, values, label);
@@ -359,9 +386,10 @@ export class WeatherGpuRenderer {
 	 * Upload (or reuse) the value texture like getValueTexture, but stream
 	 * large grids in row chunks across animation frames: a single texImage2D
 	 * of a world-view grid blocks a mobile main thread for a visible moment.
-	 * Meant for the prepare phase — the entry registers up front so repeated
-	 * warms and the later commit reuse it, and nothing samples the texture
-	 * before the commit, which only runs after this resolves.
+	 * Meant for the prepare phase: the entry registers up front so repeated
+	 * warms and the later commit reuse it, and this resolves only once every
+	 * row is up. A warm of an entry another prepare is still streaming waits
+	 * for that stream; a getValueTexture meanwhile finishes it synchronously.
 	 */
 	async warmValueTexture(
 		values: Float32Array,
@@ -374,6 +402,7 @@ export class WeatherGpuRenderer {
 			this.valueTextures.delete(values);
 			this.valueTextures.set(values, cached);
 			this.labelTexture(cached, values, label);
+			if (cached.upload) await cached.upload;
 			return;
 		}
 		const texels = nx * ny;
@@ -399,43 +428,57 @@ export class WeatherGpuRenderer {
 			texture = this.allocValueTextureStorage(nx, ny);
 			if (!texture) throw new Error(`gpu: value texture allocation failed (${nx}x${ny})`);
 		}
-		const entry = { texture, nx, ny, bytes, label: undefined as string | undefined };
+		const entry: ValueTextureEntry = { texture, nx, ny, bytes, uploadedRows: 0 };
 		this.valueTextures.set(values, entry);
 		this.valueTextureBytes += bytes;
 		this.labelTexture(entry, values, label);
 
+		entry.upload = (async () => {
+			try {
+				while (entry.uploadedRows < ny) {
+					// Evicted mid-warm (budget pressure): the texture is gone; a later
+					// getValueTexture re-uploads it synchronously.
+					if (this.valueTextures.get(values) !== entry) return;
+					this.uploadValueRows(entry, values);
+					if (entry.uploadedRows < ny) await nextFrame();
+				}
+			} finally {
+				entry.upload = undefined;
+			}
+		})();
+		await entry.upload;
+	}
+
+	/** Upload the next row chunk of a streaming entry (see warmValueTexture). */
+	private uploadValueRows(entry: ValueTextureEntry, values: Float32Array): void {
+		const gl = this.gl;
+		const nx = entry.nx;
 		const rowsPerChunk = Math.max(1, Math.floor(WeatherGpuRenderer.WARM_CHUNK_TEXELS / nx));
 		if (this.warmScratch.length < rowsPerChunk * nx) {
 			this.warmScratch = new Float32Array(rowsPerChunk * nx);
 		}
 		const scratch = this.warmScratch;
-		for (let row = 0; row < ny; row += rowsPerChunk) {
-			// Evicted mid-warm (budget pressure): the texture is gone; a later
-			// getValueTexture re-uploads it synchronously.
-			if (this.valueTextures.get(values) !== entry) return;
-			const rows = Math.min(rowsPerChunk, ny - row);
-			const start = row * nx;
-			const count = rows * nx;
-			for (let i = 0; i < count; i++) {
-				const v = values[start + i];
-				scratch[i] = Number.isFinite(v) ? v : MISSING_SENTINEL;
-			}
-			gl.bindTexture(gl.TEXTURE_2D, entry.texture);
-			gl.texSubImage2D(
-				gl.TEXTURE_2D,
-				0,
-				0,
-				row,
-				nx,
-				rows,
-				gl.RED,
-				gl.FLOAT,
-				scratch.subarray(0, count)
-			);
-			if (row + rowsPerChunk < ny) {
-				await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-			}
+		const row = entry.uploadedRows;
+		const rows = Math.min(rowsPerChunk, entry.ny - row);
+		const start = row * nx;
+		const count = rows * nx;
+		for (let i = 0; i < count; i++) {
+			const v = values[start + i];
+			scratch[i] = Number.isFinite(v) ? v : MISSING_SENTINEL;
 		}
+		gl.bindTexture(gl.TEXTURE_2D, entry.texture);
+		gl.texSubImage2D(
+			gl.TEXTURE_2D,
+			0,
+			0,
+			row,
+			nx,
+			rows,
+			gl.RED,
+			gl.FLOAT,
+			scratch.subarray(0, count)
+		);
+		entry.uploadedRows = row + rows;
 	}
 
 	/** Immutable R32F storage for the chunked warm path; null when allocation fails. */

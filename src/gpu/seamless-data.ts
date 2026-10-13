@@ -74,7 +74,9 @@ const isLayerGated = (
 /**
  * Loads one seamless sub-layer through the shared protocol state. Returns null
  * when the layer is gated, unresolvable or fails to load (the caller falls
- * through to the next coarser layer, like the CPU path).
+ * through to the next coarser layer, like the CPU path). An abort is not a
+ * failed layer and propagates, so a cancelled prepare neither skips the
+ * layer nor keeps fetching it.
  */
 export const loadSeamlessLayer = async (
 	request: ParsedRequest,
@@ -150,7 +152,8 @@ export const loadSeamlessLayer = async (
 			gridUniforms,
 			fullOrigin: fullUniforms ? [fullUniforms.originX, fullUniforms.originY] : undefined
 		};
-	} catch {
+	} catch (error) {
+		if (error instanceof Error && error.name === 'AbortError') throw error;
 		return null;
 	}
 };

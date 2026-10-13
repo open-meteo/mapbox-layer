@@ -1,17 +1,16 @@
 /**
  * Eastward/northward wind components from the protocol's speed + direction
  * arrays (direction = where the wind comes from, so the flow bearing is
- * +180°). A pure loop with no GL dependencies, so the decode worker can run
- * it off the main thread; the particle pass's `windComponentsOf` wraps it
- * with the identity cache.
+ * +180°). A pure loop with no GL dependencies; the particle pass's
+ * `windComponentsOf` wraps it with the identity cache.
  */
 export const deriveWindComponents = (
 	values: Float32Array,
 	directions: Float32Array
 ): { u: Float32Array; v: Float32Array } => {
 	const n = values.length;
-	// Match the source arrays' backing (SharedArrayBuffer when SAB is on), so
-	// worker-derived components post back zero-copy like the values do.
+	// Same backing as the source arrays (SharedArrayBuffer when SAB is on), so
+	// the components stay interchangeable with the protocol's own arrays.
 	const BufferConstructor = values.buffer.constructor as typeof ArrayBuffer;
 	const u = new Float32Array(new BufferConstructor(n * 4));
 	const v = new Float32Array(new BufferConstructor(n * 4));

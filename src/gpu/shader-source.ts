@@ -613,19 +613,22 @@ Cell locate${i}(float lat, float lon) {
 	if (yRaw < 0.0 || yRaw >= float(${u.n}.y)) return c;
 	if (${u.flags}.x == 0 && (xRaw < 0.0 || xRaw >= float(${u.n}.x))) return c;
 	// Wrap grids: longitudes just west of the origin (e.g. the half-block
-	// shifted origin of the downsampled contour grid) land at negative xRaw.
-	if (${u.flags}.x == 1) xRaw = mod(xRaw, float(${u.n}.x));
+	// shifted origin of the downsampled contour grid) land at negative xRaw;
+	// they fold by the grid's period in steps (nx + 1 on ICON, whose seam
+	// cell is double width). Only that side folds: xRaw at or past nx is the
+	// second half of the seam cell and keeps interpolating towards column 0
+	// instead of restarting at it.
+	if (${u.flags}.x == 1 && xRaw < 0.0) xRaw += 360.0 / abs(${u.delta}.x);
 
 	float yFloor = floor(yRaw);
 	c.y = int(yFloor);
 	c.yf = yRaw - yFloor;
 
-	c.x = int(min(floor(xRaw), float(${u.n}.x) - 1.0));
-	float absDx = abs(${u.delta}.x);
-	float effDx = (${u.flags}.y == 1 && xRaw >= float(${u.n}.x) - 1.0) ? absDx * 2.0 : absDx;
-	// GLSL mod() is always positive for a positive divisor; matches the CPU's
-	// abs(remainder) for the in-range longitudes this shader samples.
-	c.xf = mod(lon - ${u.origin}.x, effDx) / effDx;
+	float xFloor = min(floor(xRaw), float(${u.n}.x) - 1.0);
+	c.x = int(xFloor);
+	// The seam cell spans two steps, so its fraction runs over both.
+	float cellSteps = (${u.flags}.y == 1 && xRaw >= float(${u.n}.x) - 1.0) ? 2.0 : 1.0;
+	c.xf = (xRaw - xFloor) / cellSteps;
 	c.ok = true;
 	return c;
 }
@@ -874,7 +877,8 @@ uniform sampler2D u_lut;
 uniform vec4 u_lutRange;
 uniform float u_halfQuantum;
 uniform float u_opacity;
-// Optional geographic clip: (west, south, east, north); disabled = +-1e9.
+// Optional geographic clip: (west, south, east, north), west past east when
+// the box crosses the antimeridian; disabled = +-1e9.
 uniform vec4 u_clipBounds;
 
 in vec2 v_mercator;
@@ -886,8 +890,13 @@ void main() {
 	// grids simply exceed 180 degrees here and stay continuous for the grid math.
 	float lon = v_mercator.x * 360.0 - 180.0;
 
+	// Longitude as the offset from the west edge folded into one world, so a
+	// box with west past east crosses the antimeridian like the CPU tester's;
+	// the disabled sentinel spans more than a world and passes everything.
+	float clipSpan = u_clipBounds.z - u_clipBounds.x;
+	if (clipSpan < 0.0) clipSpan += 360.0;
 	if (lat < u_clipBounds.y || lat > u_clipBounds.w ||
-		lon < u_clipBounds.x || lon > u_clipBounds.z) {
+		mod(lon - u_clipBounds.x, 360.0) > clipSpan) {
 		fragColor = vec4(0.0);
 		return;
 	}

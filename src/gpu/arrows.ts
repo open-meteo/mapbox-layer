@@ -13,6 +13,7 @@
  * vector tiles: a shaft plus open V head in a unit box, pointing where the
  * flow goes (direction + 180°), length stepped by speed.
  */
+import { checkAgainstBounds } from '../utils/bounds';
 import { lat2tile, tile2lat } from '../utils/math';
 
 import type { ProjectionShaderData } from './shader-source';
@@ -59,6 +60,10 @@ const levelFor = (levels: GpuArrowLevel[], speed: number): GpuArrowLevel => {
 	for (const candidate of levels) if (speed > candidate.minSpeed) level = candidate;
 	return level;
 };
+
+/** Rect clip test; a box with west past east crosses the antimeridian, like the CPU tester's. */
+const outsideClipBox = (lon: number, lat: number, box: [number, number, number, number]): boolean =>
+	lat < box[1] || lat > box[3] || checkAgainstBounds(lon, box[0], box[2]);
 
 export interface ArrowAnchors {
 	/** Base-world mercator x,y pairs. */
@@ -154,12 +159,7 @@ export const buildArrowAnchors = (
 			if (x < 0) x += 1;
 			if (clipBounds || insideClip) {
 				const lon = x * 360 - 180;
-				if (
-					clipBounds &&
-					(lon < clipBounds[0] || lat < clipBounds[1] || lon > clipBounds[2] || lat > clipBounds[3])
-				) {
-					continue;
-				}
+				if (clipBounds && outsideClipBox(lon, lat, clipBounds)) continue;
 				if (insideClip && !insideClip(lon, lat)) continue;
 			}
 			if (count >= capacity) break outer;
@@ -229,12 +229,7 @@ const buildGlobeAnchors = (
 			const offX = (((x - view.minX - spacing) % 1) + 1) % 1;
 			if (offX > spanX) continue;
 			const lon = x * 360 - 180;
-			if (
-				clipBounds &&
-				(lon < clipBounds[0] || lat < clipBounds[1] || lon > clipBounds[2] || lat > clipBounds[3])
-			) {
-				continue;
-			}
+			if (clipBounds && outsideClipBox(lon, lat, clipBounds)) continue;
 			if (insideClip && !insideClip(lon, lat)) continue;
 			if (count >= MAX_ANCHORS) break outer;
 			positions[count * 2] = x;

@@ -1,4 +1,6 @@
+import { buildArrowAnchors } from '../gpu/arrows';
 import { LUT_SIZE, buildColorLut } from '../gpu/color-lut';
+import { downsampleRegular } from '../gpu/downsample';
 import { computeGridUniforms } from '../gpu/grid-uniforms';
 import { updateFragmentSource, windComponentsOf } from '../gpu/particles';
 import { fragmentSource, vertexSource } from '../gpu/shader-source';
@@ -339,5 +341,54 @@ describe('gpu color lut', () => {
 			expect(lut.data[4 * i + 2]).toBe(expected[2]);
 			expect(lut.data[4 * i + 3]).toBe(Math.round(255 * expected[3]));
 		}
+	});
+});
+
+describe('gpu arrow anchors', () => {
+	it('keeps anchors on both sides of the antimeridian for a crossing clip box', () => {
+		// west past east: the box runs from 170°E over the antimeridian to 170°W
+		const anchors = buildArrowAnchors(
+			{ minX: 0.9, maxX: 1.1, minY: 0.45, maxY: 0.55 },
+			2,
+			50,
+			[170, -10, -170, 10]
+		);
+		let east = 0;
+		let west = 0;
+		for (let i = 0; i < anchors.count; i++) {
+			const lon = anchors.positions[i * 2] * 360 - 180;
+			const lat =
+				(Math.atan(Math.sinh(Math.PI * (1 - 2 * anchors.positions[i * 2 + 1]))) * 180) / Math.PI;
+			expect(Math.abs(lat)).toBeLessThanOrEqual(10);
+			if (lon >= 170) east++;
+			else if (lon <= -170) west++;
+			else throw new Error(`anchor outside the clip box at ${lon}`);
+		}
+		expect(east).toBeGreaterThan(0);
+		expect(west).toBeGreaterThan(0);
+	});
+});
+
+describe('gpu contour downsampling', () => {
+	it('box-averages NaN-aware blocks aligned by the skip offsets', () => {
+		// 5 x 4 grid, factor 2, one column skipped: 2 x 2 blocks starting at column 1
+		const nx = 5;
+		const ny = 4;
+		const values = new Float32Array(nx * ny);
+		for (let i = 0; i < values.length; i++) values[i] = i;
+		values[1 * nx + 1] = NaN;
+		const ds = downsampleRegular(values, nx, ny, 2, 1, 0);
+		expect(ds).toBeDefined();
+		expect(ds!.nx).toBe(2);
+		expect(ds!.ny).toBe(2);
+		// block (0,0) holds cells 1, 2, NaN, 7: the mean of the finite ones
+		expect(ds!.values[0]).toBeCloseTo((1 + 2 + 7) / 3, 5);
+		// block (1,0) holds cells 3, 4, 8, 9
+		expect(ds!.values[1]).toBeCloseTo(6, 5);
+		// cached per source array, factor and alignment
+		expect(downsampleRegular(values, nx, ny, 2, 1, 0)).toBe(ds);
+		expect(downsampleRegular(values, nx, ny, 2, 0, 0)).not.toBe(ds);
+		// too few blocks for an isoline
+		expect(downsampleRegular(values, nx, ny, 4)).toBeUndefined();
 	});
 });

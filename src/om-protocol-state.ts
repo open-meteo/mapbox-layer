@@ -278,16 +278,6 @@ export const ensureData = async (
 
 export type OmDataState = 'loaded' | 'loading' | 'error' | 'missing';
 
-/**
- * Synchronous data-availability check for an om url (with or without the
- * om:// prefix). Lets renderers await actual data instead of inferring it
- * from tile events: failed tiles count as complete in MapLibre, so a purely
- * tile-based check can show an empty frame.
- *
- * States are keyed by the normalized URL: meta-JSON URLs (`latest.json`,
- * `in-progress.json`) must be resolved to their dated `.om` form first (see
- * `normalizeUrl`), otherwise this always returns 'missing'.
- */
 /** The state of an om url (with or without the om:// prefix), if any. */
 const stateOf = (omUrl: string): OmUrlState | undefined => {
 	if (!omProtocolInstance) return undefined;
@@ -300,6 +290,16 @@ const stateOf = (omUrl: string): OmUrlState | undefined => {
 	}
 };
 
+/**
+ * Synchronous data-availability check for an om url (with or without the
+ * om:// prefix). Lets renderers await actual data instead of inferring it
+ * from tile events: failed tiles count as complete in MapLibre, so a purely
+ * tile-based check can show an empty frame.
+ *
+ * States are keyed by the normalized URL: meta-JSON URLs (`latest.json`,
+ * `in-progress.json`) must be resolved to their dated `.om` form first (see
+ * `normalizeUrl`), otherwise this always returns 'missing'.
+ */
 export const getDataState = (omUrl: string): OmDataState => {
 	const state = stateOf(omUrl);
 	if (!state) return 'missing';

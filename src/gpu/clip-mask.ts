@@ -15,7 +15,10 @@ interface GpuClipMaskSource {
 	rect: [number, number, number, number];
 }
 
-/** Longest mask side in pixels; bounds the mask's VRAM cost (~16 MB RGBA max). */
+/**
+ * Longest mask side in pixels, padding included: WebGL2 guarantees textures
+ * only up to 2048 px, and it bounds the mask's VRAM cost (~16 MB RGBA max).
+ */
 const MASK_MAX_PX = 2048;
 /** Padding so the polygon edge never touches the clamped texture border. */
 const PAD_PX = 2;
@@ -37,7 +40,8 @@ export const rasterizeClipMask = (
 	const h = y1 - y0;
 	if (!(w > 0) || !(h > 0)) return undefined;
 
-	const scale = (clipping.maskMaxPx ?? MASK_MAX_PX) / Math.max(w, h);
+	const innerMaxPx = Math.max(1, (clipping.maskMaxPx ?? MASK_MAX_PX) - 2 * PAD_PX);
+	const scale = innerMaxPx / Math.max(w, h);
 	const innerW = Math.max(1, Math.round(w * scale));
 	const innerH = Math.max(1, Math.round(h * scale));
 	const canvas = new OffscreenCanvas(innerW + 2 * PAD_PX, innerH + 2 * PAD_PX);
