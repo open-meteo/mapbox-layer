@@ -18,7 +18,7 @@ import { domainOptions } from '../domains';
 import { type OmProtocol, defaultOmProtocolSettings } from '../om-protocol-core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { encodePng } from './png';
+import { encodePngAsync } from './png';
 
 import type { OmProtocolSettings, RgbaTile } from '../types';
 
@@ -37,6 +37,12 @@ export interface TileServerOptions {
 	cacheSize?: number;
 	/** Seconds a `latest` tile is cached, by the server and by clients. @default 60 */
 	latestMaxAge?: number;
+	/**
+	 * Distinct tiles rendering at once before further requests are refused
+	 * with a 503 instead of queued on the render threads without bound.
+	 * @default 256
+	 */
+	maxPending?: number;
 	/** Protocol settings beyond `maxVariables` (colour scales, domains, derivation rules). */
 	settings?: Partial<OmProtocolSettings>;
 }
@@ -44,6 +50,22 @@ export interface TileServerOptions {
 export type TileHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 
 const DEFAULT_DATA_URL = 'https://openmeteo.s3.amazonaws.com/data_spatial';
+/** Largest `tile_size` served: the render options come from the client, and a 2048 px tile costs sixteen 512 px ones. */
+const MAX_TILE_SIZE = 512;
+
+/**
+ * A numeric option from a configuration string (the CLI's environment):
+ * undefined when unset or empty, an error when malformed or negative, so a
+ * typo cannot silently disable a limit (`NaN` passes every size check).
+ */
+export const numberOption = (name: string, value: string | undefined): number | undefined => {
+	if (value === undefined || value === '') return undefined;
+	const number = Number(value);
+	if (!Number.isFinite(number) || number < 0) {
+		throw new Error(`${name} must be a non-negative number, got '${value}'`);
+	}
+	return number;
+};
 
 const TILE_PATH =
 	/^\/tiles\/(?<domain>[\w-]+)\/(?<run>latest|\d{4}-\d{2}-\d{2}T\d{4}Z)\/(?<time>[\w+-]+)\/(?<variable>[\w-]+)\/(?<z>\d+)\/(?<x>\d+)\/(?<y>\d+)\.(?<format>png|pbf)$/;
@@ -98,7 +120,8 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 		dataUrl = DEFAULT_DATA_URL,
 		maxVariables = 8,
 		cacheSize = 1000,
-		latestMaxAge = 60
+		latestMaxAge = 60,
+		maxPending = 256
 	} = options;
 	const settings: OmProtocolSettings = {
 		...defaultOmProtocolSettings,
@@ -120,7 +143,7 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 			if (data instanceof ArrayBuffer) return { status: 204, expires };
 			return {
 				status: 200,
-				body: encodePng(data as RgbaTile),
+				body: await encodePngAsync(data as RgbaTile),
 				contentType: 'image/png',
 				expires
 			};
@@ -133,7 +156,12 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 		};
 	};
 
-	const getTile = (route: TileRoute, key: string, url: string): Promise<RenderedTile> => {
+	/** The tile, cached or rendering; undefined when a new render would exceed `maxPending`. */
+	const getTile = (
+		route: TileRoute,
+		key: string,
+		url: string
+	): Promise<RenderedTile> | undefined => {
 		const cached = cache.get(key);
 		if (cached && cached.expires > Date.now()) {
 			cache.delete(key);
@@ -142,8 +170,12 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 		}
 		let pending = inflight.get(key);
 		if (!pending) {
+			if (inflight.size >= maxPending) return undefined;
 			pending = render(route, url)
 				.then((tile) => {
+					// Deleted first: a refreshed (expired) entry moves to the most
+					// recently used end instead of keeping its old slot
+					cache.delete(key);
 					cache.set(key, tile);
 					if (cache.size > cacheSize) cache.delete(cache.keys().next().value!);
 					return tile;
@@ -157,7 +189,7 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 	return async (req, res) => {
 		// Map pages on other origins (a Cesium or MapLibre app) fetch the tiles cross-origin
 		res.setHeader('access-control-allow-origin', '*');
-		const { pathname, search } = new URL(req.url ?? '/', 'http://localhost');
+		const { pathname, search, searchParams } = new URL(req.url ?? '/', 'http://localhost');
 		const route = parseTileRoute(pathname);
 		if (!route) {
 			res.writeHead(404).end('Use /tiles/{domain}/{run}/{time}/{variable}/{z}/{x}/{y}.png or .pbf');
@@ -168,8 +200,18 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 			res.writeHead(404).end(`Unknown domain ${route.domain}`);
 			return;
 		}
+		const tileSize = searchParams.get('tile_size');
+		if (tileSize !== null && !(Number(tileSize) <= MAX_TILE_SIZE)) {
+			res.writeHead(400).end(`tile_size must be a number up to ${MAX_TILE_SIZE}`);
+			return;
+		}
+		const pending = getTile(route, pathname + search, tileUrl(route, search, dataUrl));
+		if (!pending) {
+			res.writeHead(503, { 'retry-after': '1' }).end('Too many tiles rendering, retry shortly');
+			return;
+		}
 		try {
-			const tile = await getTile(route, pathname + search, tileUrl(route, search, dataUrl));
+			const tile = await pending;
 			res.setHeader(
 				'cache-control',
 				route.run === 'latest'
@@ -183,8 +225,10 @@ export const createTileHandler = (options: TileServerOptions): TileHandler => {
 			res.writeHead(200, { 'content-type': tile.contentType!, 'content-length': tile.body.length });
 			res.end(tile.body);
 		} catch (error) {
+			// The detail (data URLs, reader and network errors) is for the log,
+			// not for every client of a public endpoint
 			console.error(`${req.url}:`, error);
-			res.writeHead(500).end(String(error));
+			res.writeHead(500).end('Tile rendering failed');
 		}
 	};
 };

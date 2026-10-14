@@ -1,5 +1,5 @@
 import { MainThreadRenderer } from '../node/main-thread-renderer';
-import { encodePng } from '../node/png';
+import { encodePng, encodePngAsync } from '../node/png';
 import { WorkerThreadPool } from '../node/worker-thread-pool';
 import { existsSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -161,6 +161,10 @@ describe('encodePng', () => {
 	it('ends with an IEND chunk', () => {
 		expect(String.fromCharCode(...png.subarray(png.length - 8, png.length - 4))).toBe('IEND');
 	});
+
+	it('encodes the same bytes off the event loop', async () => {
+		expect(await encodePngAsync({ width, height, rgba })).toEqual(png);
+	});
 });
 
 // The thread script is the built `dist/node-worker.mjs` (a thread cannot load
@@ -216,5 +220,32 @@ describe.skipIf(!existsSync(workerUrl))('WorkerThreadPool', () => {
 		).resolves.toEqual({
 			cancelled: true
 		});
+	});
+
+	it('resolves as cancelled when aborted after dispatch and drops the late answer', async () => {
+		const controller = new AbortController();
+		const result = pool.requestTile({ ...request('getImage'), signal: controller.signal });
+		controller.abort();
+		await expect(result).resolves.toEqual({ cancelled: true });
+		// The thread's answer for the dropped request leaves the pool usable
+		expect((await pool.requestTile(request('getImage'))).cancelled).toBe(false);
+	});
+});
+
+describe('WorkerThreadPool lifecycle', () => {
+	it('requires a positive integer size', () => {
+		expect(() => new WorkerThreadPool({ size: 0 })).toThrow(/positive integer/);
+		expect(() => new WorkerThreadPool({ size: 1.5 })).toThrow(/positive integer/);
+	});
+
+	it('fails the tiles of a thread that exits and replaces it on the next request', async () => {
+		// A thread script that leaves without answering
+		const pool = new WorkerThreadPool({
+			size: 1,
+			workerUrl: new URL('data:text/javascript,process.exit(3)')
+		});
+		await expect(pool.requestTile(request('getImage'))).rejects.toThrow(/exited with code 3/);
+		await expect(pool.requestTile(request('getImage'))).rejects.toThrow(/exited with code 3/);
+		await pool.terminate();
 	});
 });

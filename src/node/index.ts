@@ -1,13 +1,13 @@
 import { createOmProtocol } from '../om-protocol-core';
 
 import { MainThreadRenderer } from './main-thread-renderer';
-import { encodePng } from './png';
+import { encodePng, encodePngAsync } from './png';
 import { createTileHandler } from './tile-server';
 import { WorkerThreadPool } from './worker-thread-pool';
 
 // Functions
 
-export { encodePng };
+export { encodePng, encodePngAsync };
 export { createOmProtocol };
 export { createTileHandler };
 export { getValueFromLatLong, clearBlockCache, clearBackends } from '../om-protocol-state';

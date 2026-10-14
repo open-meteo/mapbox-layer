@@ -1,6 +1,9 @@
-import { deflateSync } from 'node:zlib';
+import { promisify } from 'node:util';
+import { deflate as deflateCallback, deflateSync } from 'node:zlib';
 
 import type { RgbaTile } from '../types';
+
+const deflate = promisify(deflateCallback);
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
@@ -32,12 +35,8 @@ const chunk = (type: string, data: Uint8Array): Uint8Array => {
 	return out;
 };
 
-/**
- * Encodes a tile as an 8-bit RGBA PNG. Dependency-free so the Node entry
- * stays as light as the browser one; every row uses filter type 0 (none),
- * which costs a little compression but no per-row filter search.
- */
-export const encodePng = (tile: RgbaTile): Uint8Array => {
+/** The IHDR payload and the unfiltered scanlines of a tile, the two inputs of its PNG. */
+const scanlines = (tile: RgbaTile): { ihdr: Uint8Array; raw: Uint8Array } => {
 	const { width, height, rgba } = tile;
 	if (rgba.length !== width * height * 4) {
 		throw new Error(`Expected ${width * height * 4} RGBA bytes, got ${rgba.length}`);
@@ -57,11 +56,15 @@ export const encodePng = (tile: RgbaTile): Uint8Array => {
 		// Each scanline is prefixed with its filter type byte, 0 = unfiltered.
 		raw.set(rgba.subarray(row * stride, (row + 1) * stride), row * (1 + stride) + 1);
 	}
+	return { ihdr, raw };
+};
 
+/** The file: signature, IHDR, one IDAT holding the compressed scanlines, IEND. */
+const assemble = (ihdr: Uint8Array, idat: Uint8Array): Uint8Array => {
 	const chunks = [
 		new Uint8Array(PNG_SIGNATURE),
 		chunk('IHDR', ihdr),
-		chunk('IDAT', new Uint8Array(deflateSync(raw))),
+		chunk('IDAT', idat),
 		chunk('IEND', new Uint8Array(0))
 	];
 	const png = new Uint8Array(chunks.reduce((length, part) => length + part.length, 0));
@@ -71,4 +74,24 @@ export const encodePng = (tile: RgbaTile): Uint8Array => {
 		offset += part.length;
 	}
 	return png;
+};
+
+/**
+ * Encodes a tile as an 8-bit RGBA PNG. Dependency-free so the Node entry
+ * stays as light as the browser one; every row uses filter type 0 (none),
+ * which costs a little compression but no per-row filter search.
+ */
+export const encodePng = (tile: RgbaTile): Uint8Array => {
+	const { ihdr, raw } = scanlines(tile);
+	return assemble(ihdr, new Uint8Array(deflateSync(raw)));
+};
+
+/**
+ * `encodePng` with the compression on zlib's thread pool. Synchronously, a
+ * 512 px tile holds the event loop for several milliseconds, about as long
+ * as its render, which the render threads were meant to keep off it.
+ */
+export const encodePngAsync = async (tile: RgbaTile): Promise<Uint8Array> => {
+	const { ihdr, raw } = scanlines(tile);
+	return assemble(ihdr, new Uint8Array(await deflate(raw)));
 };

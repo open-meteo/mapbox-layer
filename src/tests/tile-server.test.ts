@@ -2,7 +2,7 @@
  * Tests for the Node tile server handler, against a mock protocol and a real
  * `node:http` server on a free port.
  */
-import { createTileHandler, parseTileRoute, tileUrl } from '../node/tile-server';
+import { createTileHandler, numberOption, parseTileRoute, tileUrl } from '../node/tile-server';
 import type { OmProtocol } from '../om-protocol-core';
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
@@ -151,14 +151,71 @@ describe('createTileHandler', () => {
 		expect(protocol).toHaveBeenCalledTimes(3);
 	});
 
-	it('answers 500 with the error when rendering fails', async () => {
+	it('answers a generic 500 and logs the detail when rendering fails', async () => {
 		const protocol = vi.fn(async () => {
 			throw new Error('no data');
 		}) as unknown as OmProtocol;
-		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const log = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const base = await listen(createTileHandler({ protocol }));
 		const response = await fetch(base + RUN);
 		expect(response.status).toBe(500);
-		expect(await response.text()).toContain('no data');
+		// Data URLs, reader and network details stay in the log
+		expect(await response.text()).toBe('Tile rendering failed');
+		expect(log).toHaveBeenCalledWith(
+			expect.stringContaining(RUN),
+			expect.objectContaining({ message: 'no data' })
+		);
+	});
+
+	it('refreshes an expired latest tile as the most recently used entry', async () => {
+		const protocol = createMockProtocol();
+		const base = await listen(createTileHandler({ protocol, cacheSize: 2, latestMaxAge: 1 }));
+		const OTHER = RUN.replace('/2/2/1', '/2/2/0');
+
+		await fetch(base + LATEST);
+		await fetch(base + RUN);
+		vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 2000);
+		await fetch(base + LATEST); // expired: rendered again
+		await fetch(base + OTHER); // a third entry evicts the least recently used one
+		await fetch(base + LATEST);
+		// The refreshed tile had moved to the recent end, so the run tile went instead
+		expect(protocol).toHaveBeenCalledTimes(4);
+	});
+
+	it('refuses further renders with 503 while maxPending tiles render', async () => {
+		const protocol = createMockProtocol(tile, 50);
+		const base = await listen(createTileHandler({ protocol, maxPending: 1 }));
+		const OTHER = RUN.replace('/2/2/1', '/2/2/0');
+
+		const first = fetch(base + RUN);
+		await new Promise((resolve) => setTimeout(resolve, 10)); // the render is under way
+		const duplicate = fetch(base + RUN); // joins it instead of counting as another
+		const refused = await fetch(base + OTHER);
+		expect(refused.status).toBe(503);
+		expect(refused.headers.get('retry-after')).toBe('1');
+		expect((await first).status).toBe(200);
+		expect((await duplicate).status).toBe(200);
+		expect(protocol).toHaveBeenCalledTimes(1);
+		// Once it is done, rendering resumes
+		expect((await fetch(base + OTHER)).status).toBe(200);
+	});
+
+	it('rejects tile sizes above 512 with 400', async () => {
+		const protocol = createMockProtocol();
+		const base = await listen(createTileHandler({ protocol }));
+		expect((await fetch(`${base}${RUN}?tile_size=1024`)).status).toBe(400);
+		expect((await fetch(`${base}${RUN}?tile_size=abc`)).status).toBe(400);
+		expect((await fetch(`${base}${RUN}?tile_size=256`)).status).toBe(200);
+		expect(protocol).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('numberOption', () => {
+	it('reads a configuration number and rejects malformed values', () => {
+		expect(numberOption('PORT', undefined)).toBeUndefined();
+		expect(numberOption('PORT', '')).toBeUndefined();
+		expect(numberOption('PORT', '8080')).toBe(8080);
+		expect(() => numberOption('TILE_CACHE_SIZE', 'abc')).toThrow(/TILE_CACHE_SIZE/);
+		expect(() => numberOption('TILE_CACHE_SIZE', '-1')).toThrow(/non-negative/);
 	});
 });
