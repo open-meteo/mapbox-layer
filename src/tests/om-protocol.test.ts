@@ -92,18 +92,18 @@ describe('Request Options', () => {
 			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
 			const base = 'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation';
 
-			expect(parseRequest(`${base}&delta_time_hours=3`, settings).dataOptions.timeStepHours).toBe(
+			expect(parseRequest(`${base}&delta_time_hours=3`, settings).dataOptions.deltaTimeHours).toBe(
 				3
 			);
 			expect(
-				parseRequest(`${base}&delta_time_hours=0.25`, settings).dataOptions.timeStepHours
+				parseRequest(`${base}&delta_time_hours=0.25`, settings).dataOptions.deltaTimeHours
 			).toBe(0.25);
 			for (const raw of ['', '0', '-3', 'abc']) {
 				expect(
-					parseRequest(`${base}&delta_time_hours=${raw}`, settings).dataOptions.timeStepHours
+					parseRequest(`${base}&delta_time_hours=${raw}`, settings).dataOptions.deltaTimeHours
 				).toBeUndefined();
 			}
-			expect(parseRequest(base, settings).dataOptions.timeStepHours).toBeUndefined();
+			expect(parseRequest(base, settings).dataOptions.deltaTimeHours).toBeUndefined();
 		});
 
 		it('draws barbs only for wind speeds, arrows otherwise', () => {

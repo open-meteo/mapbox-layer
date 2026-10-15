@@ -202,7 +202,7 @@ export const ensureData = async (
 					state.dataOptions.variable,
 					state.ranges,
 					entry.controller.signal,
-					{ timeStepHours: state.dataOptions.timeStepHours }
+					{ deltaTimeHours: state.dataOptions.deltaTimeHours }
 				);
 
 				if (postReadCallback) {

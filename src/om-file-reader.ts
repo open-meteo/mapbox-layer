@@ -63,12 +63,12 @@ export interface ReadContext {
 	/**
 	 * Length of the file's time step in hours: the reader divides the
 	 * precipitation family's per-step sums by it, and rules that ask for it
-	 * (`usesTimeStep`) get it. The om protocol passes on the
+	 * (`usesDeltaTime`) get it. The om protocol passes on the
 	 * `delta_time_hours` parameter of the om URL, which the host application
 	 * sets from the run's valid times; a direct call has to pass it for such
-	 * a variable (`variableUsesTimeStep`), or the read is rejected.
+	 * a variable (`variableUsesDeltaTime`), or the read is rejected.
 	 */
-	timeStepHours?: number;
+	deltaTimeHours?: number;
 }
 
 export const defaultFileReaderConfig: Required<
@@ -157,7 +157,7 @@ export class WeatherMapLayerFileReader {
 		if (candidates.length === 0) return undefined;
 
 		const stored = await listRootVariables(reader);
-		const context: DerivationContext = { variable, stored, timeStepHours: read.timeStepHours };
+		const context: DerivationContext = { variable, stored, deltaTimeHours: read.deltaTimeHours };
 
 		for (const rule of candidates) {
 			const sourceVars = rule.getSourceVars(context);
@@ -165,9 +165,9 @@ export class WeatherMapLayerFileReader {
 			if (sourceVars.length === 0) {
 				throw new Error(`Derivation rule for ${variable} returned no source variables`);
 			}
-			if (rule.usesTimeStep && context.timeStepHours === undefined && !prefetch) {
+			if (rule.usesDeltaTime && context.deltaTimeHours === undefined && !prefetch) {
 				throw new Error(
-					`${variable} is derived from the length of the file's time step, which the caller did not pass (timeStepHours)`
+					`${variable} is derived from the length of the file's time step, which the caller did not pass (deltaTimeHours)`
 				);
 			}
 			return { rule, sourceVars, context };
@@ -297,9 +297,9 @@ export class WeatherMapLayerFileReader {
 		read: ReadContext = {}
 	): Promise<Data> {
 		const accumulated = variableIsAccumulated(variable);
-		if (accumulated && read.timeStepHours === undefined) {
+		if (accumulated && read.deltaTimeHours === undefined) {
 			throw new Error(
-				`${variable} is shown per hour, which needs the length of the file's time step, but the caller did not pass it (timeStepHours)`
+				`${variable} is shown per hour, which needs the length of the file's time step, but the caller did not pass it (deltaTimeHours)`
 			);
 		}
 		const data = await this.withReader(omUrl, async (reader) => {
@@ -311,7 +311,7 @@ export class WeatherMapLayerFileReader {
 				return this.readSimpleVariable(reader, variable, ranges, signal);
 			}
 		});
-		return accumulated ? perHour(data, read.timeStepHours!) : data;
+		return accumulated ? perHour(data, read.deltaTimeHours!) : data;
 	}
 
 	/**
@@ -393,12 +393,12 @@ const listRootVariables = async (reader: OmFileReader): Promise<Set<string>> => 
  * A per-step sum as an hourly rate. In place: every read yields fresh arrays.
  * The quantum shrinks with the division, so the scale factor grows by it.
  */
-const perHour = (data: Data, timeStepHours: number): Data => {
+const perHour = (data: Data, deltaTimeHours: number): Data => {
 	const values = data.values;
-	if (values && timeStepHours !== 1) {
-		for (let i = 0; i < values.length; i++) values[i] /= timeStepHours;
+	if (values && deltaTimeHours !== 1) {
+		for (let i = 0; i < values.length; i++) values[i] /= deltaTimeHours;
 	}
-	if (data.scaleFactor !== undefined) data.scaleFactor *= timeStepHours;
+	if (data.scaleFactor !== undefined) data.scaleFactor *= deltaTimeHours;
 	return data;
 };
 
