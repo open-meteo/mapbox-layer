@@ -11,7 +11,8 @@ import {
 	type DerivationContext,
 	type VariableDerivationRule,
 	defaultDerivationRules,
-	patternMatches
+	patternMatches,
+	variableIsAccumulated
 } from './derivation-rules';
 
 import type { Data, DimensionRange } from './types';
@@ -60,11 +61,12 @@ export interface FileReaderConfig {
 /** What the caller knows about a file beyond its URL, for the derivation rules. */
 export interface ReadContext {
 	/**
-	 * Length of the file's time step in hours, which a rule turning
-	 * accumulations into rates divides by (`usesTimeStep`). The om protocol
-	 * passes on the `time_step_hours` parameter of the om URL, which the host
-	 * application sets from the run's valid times; a direct call has to pass
-	 * it for such a variable, or the read is rejected.
+	 * Length of the file's time step in hours: the reader divides the
+	 * precipitation family's per-step sums by it, and rules that ask for it
+	 * (`usesTimeStep`) get it. The om protocol passes on the
+	 * `time_step_hours` parameter of the om URL, which the host application
+	 * sets from the run's valid times; a direct call has to pass it for such
+	 * a variable (`variableUsesTimeStep`), or the read is rejected.
 	 */
 	timeStepHours?: number;
 }
@@ -294,7 +296,13 @@ export class WeatherMapLayerFileReader {
 		signal?: AbortSignal,
 		read: ReadContext = {}
 	): Promise<Data> {
-		return this.withReader(omUrl, async (reader) => {
+		const accumulated = variableIsAccumulated(variable);
+		if (accumulated && read.timeStepHours === undefined) {
+			throw new Error(
+				`${variable} is shown per hour, which needs the length of the file's time step, but the caller did not pass it (timeStepHours)`
+			);
+		}
+		const data = await this.withReader(omUrl, async (reader) => {
 			const derivation = await this.resolveDerivation(reader, variable, read);
 
 			if (derivation) {
@@ -303,6 +311,7 @@ export class WeatherMapLayerFileReader {
 				return this.readSimpleVariable(reader, variable, ranges, signal);
 			}
 		});
+		return accumulated ? perHour(data, read.timeStepHours!) : data;
 	}
 
 	/**
@@ -378,6 +387,19 @@ const listRootVariables = async (reader: OmFileReader): Promise<Set<string>> => 
 		}
 	}
 	return names;
+};
+
+/**
+ * A per-step sum as an hourly rate. In place: every read yields fresh arrays.
+ * The quantum shrinks with the division, so the scale factor grows by it.
+ */
+const perHour = (data: Data, timeStepHours: number): Data => {
+	const values = data.values;
+	if (values && timeStepHours !== 1) {
+		for (let i = 0; i < values.length; i++) values[i] /= timeStepHours;
+	}
+	if (data.scaleFactor !== undefined) data.scaleFactor *= timeStepHours;
+	return data;
 };
 
 /** `array` in a SharedArrayBuffer: itself when it already is, otherwise a copy. */

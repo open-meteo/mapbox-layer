@@ -322,7 +322,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		]
 	},
 	precipitation: {
-		unit: 'mm',
+		unit: 'mm/h',
 		breakpoints: [0.01, 0.055, 0.2, 1, 2, 3, 4.5, 6, 8, 10, 12, 16, 20, 25, 30],
 		colorSegments: [
 			{ range: [0, 0.04], colors: ['#ffffff', '#87CEFA'] },
@@ -433,7 +433,7 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 	// above the raster's half-quantum sampling offset (0.05 for a water
 	// equivalent stored in 0.1 mm steps), so zero snowfall stays transparent.
 	snowfall: {
-		unit: 'cm',
+		unit: 'cm/h',
 		breakpoints: [0, 0.1, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30, 40, 60, 100],
 		colorSegments: [
 			{ range: [0, 0.1], colors: ['#ffffff', '#4cd8fb'] },

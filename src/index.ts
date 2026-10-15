@@ -18,6 +18,7 @@ export {
 	defaultDerivationRules,
 	variableAvailable,
 	variableHasDirections,
+	variableIsAccumulated,
 	variableSupportsBarbs,
 	variableUsesTimeStep
 } from './derivation-rules';

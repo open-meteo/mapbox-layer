@@ -176,14 +176,13 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 		...COLOR_SCALES['temperature'],
 		unit: 'W/m²'
 	},
-	precipitation_rate: { ...COLOR_SCALES['precipitation'], unit: 'mm/h' },
 	rain: COLOR_SCALES['precipitation'],
-	rain_rate: { ...COLOR_SCALES['precipitation'], unit: 'mm/h' },
 	showers: COLOR_SCALES['precipitation'],
-	showers_rate: { ...COLOR_SCALES['precipitation'], unit: 'mm/h' },
+	// A depth, not a rate: the precipitation palette, its own unit
 	snow_depth_water_equivalent: transformScale(
 		COLOR_SCALES['precipitation'] as BreakpointColorScale,
-		(b) => b * 200
+		(b) => b * 200,
+		'mm'
 	),
 	snowfall_height: freezingLevelHeightScale,
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],

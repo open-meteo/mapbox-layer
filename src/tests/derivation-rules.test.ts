@@ -1,7 +1,8 @@
 import {
 	variableAvailable,
 	variableHasDirections,
-	variableSupportsBarbs
+	variableSupportsBarbs,
+	variableUsesTimeStep
 } from '../derivation-rules';
 import type { VariableDerivationRule } from '../derivation-rules';
 import { describe, expect, it } from 'vitest';
@@ -73,11 +74,37 @@ describe('variableAvailable', () => {
 		expect(variableAvailable('vapour_pressure_deficit', stored)).toBe(true);
 	});
 
-	it('is false where the sources are missing, and needs no time step for the rates', () => {
+	it('is false where the sources are missing', () => {
 		const stored = new Set(['temperature_2m', 'precipitation']);
 		expect(variableAvailable('snowfall', stored)).toBe(false);
 		expect(variableAvailable('apparent_temperature', stored)).toBe(false);
-		expect(variableAvailable('precipitation_rate', stored)).toBe(true);
-		expect(variableAvailable('rain_rate', stored)).toBe(false);
+		expect(variableAvailable('rain', stored)).toBe(false);
+	});
+});
+
+describe('variableUsesTimeStep', () => {
+	it('is true for the precipitation family and its ensemble statistics', () => {
+		for (const variable of [
+			'precipitation',
+			'rain',
+			'showers',
+			'snowfall',
+			'snowfall_water_equivalent',
+			'precipitation_mean',
+			'showers_spread'
+		]) {
+			expect(variableUsesTimeStep(variable), variable).toBe(true);
+		}
+	});
+
+	it('is false for what is not a per-step sum', () => {
+		for (const variable of [
+			'precipitation_probability',
+			'snowfall_height',
+			'snow_depth',
+			'temperature_2m'
+		]) {
+			expect(variableUsesTimeStep(variable), variable).toBe(false);
+		}
 	});
 });

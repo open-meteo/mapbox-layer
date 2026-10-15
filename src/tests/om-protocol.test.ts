@@ -90,8 +90,7 @@ describe('Request Options', () => {
 
 		it('passes the time step length of the URL on, when it is a positive number', () => {
 			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
-			const base =
-				'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation_rate';
+			const base = 'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation';
 
 			expect(parseRequest(`${base}&time_step_hours=3`, settings).dataOptions.timeStepHours).toBe(3);
 			expect(parseRequest(`${base}&time_step_hours=0.25`, settings).dataOptions.timeStepHours).toBe(

@@ -38,8 +38,8 @@ export interface DerivationContext {
 	 * variables (precipitation sums) cover. Passed in by the reader's caller:
 	 * the om protocol passes on the `time_step_hours` parameter of the om
 	 * URL, which the host application sets from the run's valid times for a
-	 * variable whose rules need it (`usesTimeStep`). Undefined when the caller
-	 * passed none, which the reader rejects for a read through such a rule.
+	 * variable that needs it (`variableUsesTimeStep`). Undefined when the
+	 * caller passed none, which the reader rejects for such a variable.
 	 */
 	timeStepHours?: number;
 }
@@ -67,9 +67,10 @@ export interface VariableDerivationRule {
 	provides: { directions: boolean; barbs: boolean };
 
 	/**
-	 * Whether the rule needs the file's time step (`context.timeStepHours`).
-	 * Only rules turning accumulations into rates ask for it; the reader's
-	 * caller has to provide it for such a variable.
+	 * Whether the rule needs the file's time step (`context.timeStepHours`);
+	 * the reader's caller has to provide it for such a variable. Not needed
+	 * for the precipitation family, which the reader turns into hourly rates
+	 * itself after any rule (`variableIsAccumulated`).
 	 */
 	usesTimeStep?: boolean;
 
@@ -136,14 +137,29 @@ export const variableSupportsBarbs = (
 ): boolean => findDerivationRule(variable, rules)?.provides.barbs ?? false;
 
 /**
- * Whether a rule matching `variable` needs the file's time step: which rule
- * claims the name depends on the file, so a host sets the step for a name
- * whenever any candidate asks for it.
+ * The precipitation family the files store as sums over each time step, with
+ * the ensemble mean and spread of those sums. The reader always returns them
+ * per hour, stored or derived, so a series of maps reads the same across a
+ * model's hourly, 3-hourly and 6-hourly steps.
+ */
+const ACCUMULATED =
+	/^(?:precipitation|rain|showers|snowfall|snowfall_water_equivalent)(?:_mean|_spread)?$/;
+
+/** Whether the reader turns `variable` from a per-step sum into an hourly rate. */
+export const variableIsAccumulated = (variable: string): boolean => ACCUMULATED.test(variable);
+
+/**
+ * Whether reading `variable` needs the file's time step: an accumulated
+ * variable, or a rule matching it that asks for the step (which rule claims
+ * the name depends on the file, so a host sets the step whenever any
+ * candidate asks for it).
  */
 export const variableUsesTimeStep = (
 	variable: string,
 	rules: VariableDerivationRule[] = defaultDerivationRules
-): boolean => rules.some((rule) => rule.usesTimeStep && patternMatches(rule.pattern, variable));
+): boolean =>
+	variableIsAccumulated(variable) ||
+	rules.some((rule) => rule.usesTimeStep && patternMatches(rule.pattern, variable));
 
 /**
  * Whether `variable` can be read from a file storing the variables in
@@ -415,27 +431,6 @@ export const defaultDerivationRules: VariableDerivationRule[] = [
 		getSourceVars: (context) => unlessStored(context, ['direct_radiation', 'diffuse_radiation']),
 		process: ([direct, diffuse]) => ({
 			values: mapCells(direct, (i) => direct[i] + diffuse[i]),
-			directions: undefined
-		})
-	},
-
-	// Precipitation per hour from the per-step sums the files store, so a
-	// series of maps reads the same across a model's hourly, 3-hourly and
-	// 6-hourly steps. Needs the length of the step, hence `usesTimeStep`.
-	{
-		pattern: /^(?:precipitation|rain|showers)_rate$/,
-		provides: scalar,
-		usesTimeStep: true,
-		// The sum's quantum divided by the step length has no fixed value; a
-		// 0.01 mm/h grid keeps the threshold offset negligible.
-		scaleFactor: 100,
-		getSourceVars: ({ variable, stored }) => {
-			const sum = variable.replace(/_rate$/, '');
-			return stored.has(sum) ? [sum] : null;
-		},
-		// The reader rejects a read through this rule without the step
-		process: ([sum], { timeStepHours }) => ({
-			values: mapCells(sum, (i) => sum[i] / timeStepHours!),
 			directions: undefined
 		})
 	},

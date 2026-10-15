@@ -84,6 +84,8 @@ const snowfallRule: VariableDerivationRule = {
 	})
 };
 const rules = [snowfallRule, ...defaultDerivationRules];
+// The precipitation family is read per hour; at an hourly step that is the stored sum
+const hourly = { timeStepHours: 1 };
 
 const createReader = (derivationRules?: VariableDerivationRule[]) =>
 	new WeatherMapLayerFileReader({ useSAB: false, derivationRules });
@@ -95,7 +97,13 @@ describe('custom derivation rules', () => {
 		const waterEquivalent = new FakeVariable([0, 1, 10], 10);
 		file.set('snowfall_water_equivalent', waterEquivalent);
 
-		const data = await createReader(rules).readVariable('file.om', 'snowfall');
+		const data = await createReader(rules).readVariable(
+			'file.om',
+			'snowfall',
+			null,
+			undefined,
+			hourly
+		);
 
 		expect(Array.from(data.values ?? [])).toEqual([0, 1, 10]);
 		expect(data.directions).toBeUndefined();
@@ -108,7 +116,7 @@ describe('custom derivation rules', () => {
 		// `snowfallRule` builds its values with `Float32Array.map`, a plain buffer
 		const reader = new WeatherMapLayerFileReader({ useSAB: true, derivationRules: rules });
 
-		const data = await reader.readVariable('file.om', 'snowfall');
+		const data = await reader.readVariable('file.om', 'snowfall', null, undefined, hourly);
 
 		expect(data.values?.buffer).toBeInstanceOf(SharedArrayBuffer);
 		expect(Array.from(data.values ?? [])).toEqual([0, 1, 10]);
@@ -117,7 +125,13 @@ describe('custom derivation rules', () => {
 	it('reads the source variable itself without the rule', async () => {
 		file.set('snowfall_water_equivalent', new FakeVariable([0, 1, 10], 10));
 
-		const data = await createReader(rules).readVariable('file.om', 'snowfall_water_equivalent');
+		const data = await createReader(rules).readVariable(
+			'file.om',
+			'snowfall_water_equivalent',
+			null,
+			undefined,
+			hourly
+		);
 
 		expect(Array.from(data.values ?? [])).toEqual([0, 1, 10]);
 		expect(data.scaleFactor).toBe(10);
@@ -155,7 +169,7 @@ describe('custom derivation rules', () => {
 		const reader = createReader(list);
 		list.length = 0;
 
-		const data = await reader.readVariable('file.om', 'snowfall');
+		const data = await reader.readVariable('file.om', 'snowfall', null, undefined, hourly);
 
 		expect(Array.from(data.values ?? [])).toEqual([10]);
 	});
@@ -166,14 +180,14 @@ describe('custom derivation rules', () => {
 		const reader = createReader(rules);
 
 		// Both the custom and the default rule pass for a file storing snowfall
-		const stored = await reader.readVariable('file.om', 'snowfall');
+		const stored = await reader.readVariable('file.om', 'snowfall', null, undefined, hourly);
 		expect(Array.from(stored.values ?? [])).toEqual([7]);
 
 		file.delete('snowfall');
 		file.delete('snowfall_water_equivalent');
-		await expect(reader.readVariable('file.om', 'snowfall')).rejects.toThrow(
-			'Variable: snowfall not found'
-		);
+		await expect(
+			reader.readVariable('file.om', 'snowfall', null, undefined, hourly)
+		).rejects.toThrow('Variable: snowfall not found');
 	});
 
 	it('fails on a source variable a rule names without checking, and still disposes the others', async () => {
@@ -184,18 +198,18 @@ describe('custom derivation rules', () => {
 		const waterEquivalent = new FakeVariable([3], 10);
 		file.set('snowfall_water_equivalent', waterEquivalent);
 
-		await expect(createReader([unchecked]).readVariable('file.om', 'snowfall')).rejects.toThrow(
-			'Source variable temperature_2m not found'
-		);
+		await expect(
+			createReader([unchecked]).readVariable('file.om', 'snowfall', null, undefined, hourly)
+		).rejects.toThrow('Source variable temperature_2m not found');
 		expect(waterEquivalent.disposed).toBe(true);
 	});
 
 	it('rejects a rule that names no source variables', async () => {
 		const noSources: VariableDerivationRule = { ...snowfallRule, getSourceVars: () => [] };
 
-		await expect(createReader([noSources]).readVariable('file.om', 'snowfall')).rejects.toThrow(
-			'no source variables'
-		);
+		await expect(
+			createReader([noSources]).readVariable('file.om', 'snowfall', null, undefined, hourly)
+		).rejects.toThrow('no source variables');
 	});
 
 	it('prefetches every source variable of a derived one', async () => {
@@ -252,15 +266,15 @@ describe('default rules following what the file stores', () => {
 		file.set('snowfall_water_equivalent', new FakeVariable([1, 2], 10));
 		const reader = createReader();
 
-		const snowfall = await reader.readVariable('file.om', 'snowfall');
+		const snowfall = await reader.readVariable('file.om', 'snowfall', null, undefined, hourly);
 		expect(Array.from(snowfall.values ?? [])).toEqual([expect.closeTo(0.7), expect.closeTo(1.4)]);
 
 		// Rain never drops below zero
-		const rain = await reader.readVariable('file.om', 'rain');
+		const rain = await reader.readVariable('file.om', 'rain', null, undefined, hourly);
 		expect(Array.from(rain.values ?? [])).toEqual([4, 0]);
 
 		file.set('showers', new FakeVariable([1.5, NaN], 10));
-		const withShowers = await reader.readVariable('file.om', 'rain');
+		const withShowers = await reader.readVariable('file.om', 'rain', null, undefined, hourly);
 		expect(Array.from(withShowers.values ?? [])).toEqual([2.5, 0]);
 	});
 
@@ -357,29 +371,47 @@ describe('humidity-derived default rules', () => {
 	});
 });
 
-describe('precipitation rate', () => {
-	it('divides the stored sum by the time step the caller passes', async () => {
+describe('precipitation as an hourly rate', () => {
+	it('divides a stored sum by the time step the caller passes, and its quantum with it', async () => {
 		file.set('precipitation', new FakeVariable([3, 0.6], 10));
 
-		const data = await createReader().readVariable(
-			'file.om',
-			'precipitation_rate',
-			null,
-			undefined,
-			{
-				timeStepHours: 3
-			}
-		);
+		const data = await createReader().readVariable('file.om', 'precipitation', null, undefined, {
+			timeStepHours: 3
+		});
 
 		expect(Array.from(data.values ?? [])).toEqual([expect.closeTo(1), expect.closeTo(0.2)]);
-		expect(data.scaleFactor).toBe(100);
+		expect(data.scaleFactor).toBe(30);
 	});
 
-	it('rejects a read through a rate rule without the time step, with the reason', async () => {
+	it('divides a derived member of the family after its rule', async () => {
+		file.set('precipitation', new FakeVariable([6], 10));
+		file.set('snowfall_water_equivalent', new FakeVariable([3], 10));
+		const reader = createReader();
+		const at = { timeStepHours: 3 };
+
+		const rain = await reader.readVariable('file.om', 'rain', null, undefined, at);
+		expect(rain.values?.[0]).toBeCloseTo(1);
+		const snowfall = await reader.readVariable('file.om', 'snowfall', null, undefined, at);
+		expect(snowfall.values?.[0]).toBeCloseTo(0.7);
+	});
+
+	it('covers the ensemble mean and spread of the sums, and nothing else of the family', async () => {
+		file.set('precipitation_mean', new FakeVariable([6], 10));
+		file.set('precipitation_probability', new FakeVariable([60], 1));
+		const reader = createReader();
+		const at = { timeStepHours: 6 };
+
+		const mean = await reader.readVariable('file.om', 'precipitation_mean', null, undefined, at);
+		expect(mean.values?.[0]).toBeCloseTo(1);
+		const probability = await reader.readVariable('file.om', 'precipitation_probability');
+		expect(probability.values?.[0]).toBe(60);
+	});
+
+	it('rejects a read without the time step, with the reason', async () => {
 		file.set('precipitation', new FakeVariable([3], 10));
 
-		await expect(createReader().readVariable('file.om', 'precipitation_rate')).rejects.toThrow(
-			'did not pass (timeStepHours)'
+		await expect(createReader().readVariable('file.om', 'precipitation')).rejects.toThrow(
+			'did not pass it (timeStepHours)'
 		);
 	});
 
@@ -387,14 +419,8 @@ describe('precipitation rate', () => {
 		const sum = new FakeVariable([3], 10);
 		file.set('precipitation', sum);
 
-		await createReader().prefetchVariable('file.om', 'precipitation_rate');
+		await createReader().prefetchVariable('file.om', 'precipitation');
 
 		expect(sum.prefetched).toBe(true);
-	});
-
-	it('passes when the sum itself is not stored', async () => {
-		await expect(createReader().readVariable('file.om', 'rain_rate')).rejects.toThrow(
-			'Variable: rain_rate not found'
-		);
 	});
 });

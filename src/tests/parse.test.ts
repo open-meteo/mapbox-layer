@@ -145,7 +145,7 @@ describe('capture API time step', () => {
 
 	it('sets the step length of the resolved file from the run valid times', async () => {
 		const url = await parseMetaJson(
-			'https://host/data_spatial/capture_step_a/latest.json?time_step=valid_times_3&variable=precipitation_rate'
+			'https://host/data_spatial/capture_step_a/latest.json?time_step=valid_times_3&variable=precipitation'
 		);
 		expect(url).toContain('/2026/10/15/0000Z/2026-10-15T0500.om');
 		expect(parseUrlComponents(url).params.get('time_step_hours')).toBe('3');
@@ -153,7 +153,7 @@ describe('capture API time step', () => {
 
 	it('keeps a step length the caller passed', async () => {
 		const url = await parseMetaJson(
-			'https://host/data_spatial/capture_step_b/latest.json?time_step=valid_times_3&variable=precipitation_rate&time_step_hours=6'
+			'https://host/data_spatial/capture_step_b/latest.json?time_step=valid_times_3&variable=precipitation&time_step_hours=6'
 		);
 		expect(parseUrlComponents(url).params.get('time_step_hours')).toBe('6');
 	});

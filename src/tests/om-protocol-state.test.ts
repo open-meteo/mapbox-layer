@@ -483,7 +483,7 @@ describe('ensureData – derivation context', () => {
 		const state = makeState(
 			new Map<string, OmUrlState>(),
 			'rate',
-			makeDataOptions({ variable: 'precipitation_rate', timeStepHours: 3 })
+			makeDataOptions({ variable: 'precipitation', timeStepHours: 3 })
 		);
 		const reader = new FakeReader();
 

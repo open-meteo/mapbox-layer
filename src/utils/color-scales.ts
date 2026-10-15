@@ -265,7 +265,7 @@ export const COLOR_SCALES: ColorScales = {
 	},
 	precipitation: {
 		type: 'breakpoint',
-		unit: 'mm',
+		unit: 'mm/h',
 		breakpoints: [0.01, 0.055, 0.2, 1, 2, 3, 4.5, 6, 8, 10, 12, 16, 20, 25, 30],
 		colors: [
 			[225, 243, 254, 0],
@@ -406,7 +406,7 @@ export const COLOR_SCALES: ColorScales = {
 	},
 	snowfall: {
 		type: 'breakpoint',
-		unit: 'cm',
+		unit: 'cm/h',
 		breakpoints: [0, 0.1, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30, 40, 60, 100],
 		colors: [
 			[255, 255, 255, 0],
