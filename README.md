@@ -213,6 +213,50 @@ maplibregl.addProtocol('om', (params, abortController) =>
 
 An example implementation with a useful case is available in the `examples/callbacks` sub-directory.
 
+### Derivation rules
+
+Some variables are not stored in the `.om` files but computed while reading them: wind speed and direction come from the `u`/`v` components, wave height is paired with the wave direction, and `vapour_pressure_deficit`, `wet_bulb_temperature_2m` and `apparent_temperature` are computed from the 2 m temperature and humidity (the Magnus formula for the dew point, Stull's fit for the wet-bulb temperature and Steadman's apparent temperature, as the Open-Meteo backend computes them). Each of these is a derivation rule, matching the requested variable name and listing the variables it is read from.
+
+What a model stores differs: `snowfall` is stored by some models and derived from `snowfall_water_equivalent` on others, wind comes as `u`/`v` components or as speed and direction, and ECMWF stores the dew point where other models store the relative humidity. A rule therefore sees the variables of the file it reads from and decides whether it applies. The stored field wins over a derived one, and a derived field needs all of its sources in the file (the first file of a run has no accumulations yet). Where not stored, the defaults derive `snowfall`, `rain`, `dew_point_2m`, `relative_humidity_2m`, `shortwave_radiation`, `direct_radiation`, `diffuse_radiation` and `wind_speed_*`/`wind_direction_*` from the components, and the humidity-derived fields take the dew point, the wind speed or the direct and diffuse radiation where a model stores those instead. The precipitation family (`precipitation`, `rain`, `showers`, `snowfall`, `snowfall_water_equivalent` and their ensemble `_mean` and `_spread`), which the files store as sums over each time step, is always shown per hour (mm/h, cm/h for snowfall), stored or derived, so a series of maps reads the same across a model's hourly, 3-hourly and 6-hourly steps. That needs the length of the file's time step, which the om protocol takes from the `delta_time_hours` parameter of the om URL: the host application sets it from the run's valid times (the gap to the previous valid time; the first step takes the gap to the next one), and a Capture API URL (`latest.json`, `in-progress.json`) gets it set while resolving, from the valid times it fetches anyway.
+
+The defaults are exported as `defaultDerivationRules`; own rules are passed through `fileReaderConfig`:
+
+```ts
+// Fresh snow from the water equivalent with a ratio that follows the
+// temperature, instead of the fixed 0.7 cm per mm of the default rule.
+// Listed first, this rule takes `variable=snowfall` over.
+const snowfallRule = {
+	pattern: /^snowfall$/,
+	provides: { directions: false, barbs: false },
+	scaleFactor: 'primary',
+	// A model storing snowfall itself keeps it; otherwise both sources are needed
+	getSourceVars: ({ variable, stored }) =>
+		!stored.has(variable) && stored.has('snowfall_water_equivalent') && stored.has('temperature_2m')
+			? ['snowfall_water_equivalent', 'temperature_2m']
+			: null,
+	process: ([waterEquivalent, temperature]) => ({
+		// 1 cm per mm near freezing, up to 2 cm per mm of cold, dry snow
+		values: waterEquivalent.map((mm, i) => mm * Math.min(2, Math.max(1, 1 - temperature[i] / 10))),
+		directions: undefined
+	})
+};
+
+const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
+omProtocolOptions.fileReaderConfig = {
+	...omProtocolOptions.fileReaderConfig,
+	// The first rule claiming a name wins, so own rules go in front of the defaults.
+	derivationRules: [snowfallRule, ...OMWeatherMapLayer.defaultDerivationRules]
+};
+```
+
+A string pattern matches anywhere in the name, which is why the rule above anchors a RegExp: a plain `'snowfall'` would also claim `snowfall_water_equivalent`. `getSourceVars` receives the requested name and the set of variables stored in the file; returning `null` passes the name on to the next matching rule, and when no rule claims it the variable is read as stored. A rule lists as many source variables as it needs: a single one to convert units, two for the `u`/`v` pairs, more to combine fields. They all have to live in the same file and share its dimensions, and `process` receives their data in the order `getSourceVars` returns, along with the same file context. A rule producing a member of the precipitation family returns the per-step sum; the reader divides it by the step after the rule. A rule needing the step for anything else sets `usesTimeStep` and gets it in hours as `context.timeStepHours`. `variableUsesTimeStep(variable)` tells a host which variables need `delta_time_hours`, and `timeStepHoursAt(validTime, validTimes)` computes it from a run's valid times; a direct `readVariable` call passes it as its last argument, and a read of such a variable without it is rejected.
+
+`provides` is declared up front because it is needed before any data is read: `directions: true` makes a variable eligible for arrows, and `barbs: true` additionally marks its values as a wind speed, since barbs encode knots. Both are also queried through `variableHasDirections(variable, rules)` and `variableSupportsBarbs(variable, rules)`, for a UI that offers arrow styles. They are answered from the first rule matching the name, before any file is open, so rules matching the same name have to agree on them.
+
+Since the rules replace the defaults rather than extending them, leaving out `defaultDerivationRules` is how a default rule is dropped. The list is read once, when the protocol creates its shared file reader, so it has to be set before the first tile request.
+
+- `examples/custom-derivation-rules.html` – snowfall from the water equivalent with a temperature-dependent ratio, in front of the default rule.
+
 ### Clipping
 
 To restrict weather data to a geometric boundary, the clipping parameters can be supplied during the instantiation of the omProtocol.

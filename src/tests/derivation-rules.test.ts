@@ -1,5 +1,10 @@
-import { variableHasDirections, variableSupportsBarbs } from '../om-file-reader';
-import type { VariableDerivationRule } from '../om-file-reader';
+import {
+	variableAvailable,
+	variableHasDirections,
+	variableSupportsBarbs,
+	variableUsesTimeStep
+} from '../derivation-rules';
+import type { VariableDerivationRule } from '../derivation-rules';
 import { describe, expect, it } from 'vitest';
 
 describe('variableHasDirections', () => {
@@ -24,10 +29,24 @@ describe('variableHasDirections', () => {
 			provides: { directions: false, barbs: false },
 			scaleFactor: 'primary',
 			getSourceVars: () => ['temperature_2m', 'temperature_2m_mean'],
-			process: (a, b) => ({ values: a.map((v, i) => v - b[i]), directions: undefined })
+			process: ([a, b]) => ({ values: a.map((v, i) => v - b[i]), directions: undefined })
 		};
 		expect(variableHasDirections('temperature_anomaly_2m', [scalarOnly])).toBe(false);
 		expect(variableHasDirections('wind_u_component_10m', [scalarOnly])).toBe(false);
+	});
+
+	it('matches a global or sticky RegExp pattern on every lookup', () => {
+		const vectors: VariableDerivationRule = {
+			pattern: /_component_/g,
+			provides: { directions: true, barbs: true },
+			scaleFactor: 'primary',
+			getSourceVars: () => ['wind_u_component_10m', 'wind_v_component_10m'],
+			process: ([u]) => ({ values: u, directions: u })
+		};
+		// `RegExp.prototype.test` would advance `lastIndex` and fail every other call
+		for (let i = 0; i < 3; i++) {
+			expect(variableHasDirections('wind_u_component_10m', [vectors])).toBe(true);
+		}
 	});
 });
 
@@ -43,5 +62,49 @@ describe('variableSupportsBarbs', () => {
 		expect(variableSupportsBarbs('wave_height')).toBe(false);
 		expect(variableSupportsBarbs('swell_wave_direction')).toBe(false);
 		expect(variableSupportsBarbs('temperature_2m')).toBe(false);
+	});
+});
+
+describe('variableAvailable', () => {
+	it('is true for a stored variable and for one a default rule derives from the stored set', () => {
+		const stored = new Set(['temperature_2m', 'relative_humidity_2m', 'snowfall_water_equivalent']);
+		expect(variableAvailable('temperature_2m', stored)).toBe(true);
+		expect(variableAvailable('snowfall', stored)).toBe(true);
+		expect(variableAvailable('dew_point_2m', stored)).toBe(true);
+		expect(variableAvailable('vapour_pressure_deficit', stored)).toBe(true);
+	});
+
+	it('is false where the sources are missing', () => {
+		const stored = new Set(['temperature_2m', 'precipitation']);
+		expect(variableAvailable('snowfall', stored)).toBe(false);
+		expect(variableAvailable('apparent_temperature', stored)).toBe(false);
+		expect(variableAvailable('rain', stored)).toBe(false);
+	});
+});
+
+describe('variableUsesTimeStep', () => {
+	it('is true for the precipitation family and its ensemble statistics', () => {
+		for (const variable of [
+			'precipitation',
+			'rain',
+			'showers',
+			'snowfall',
+			'snowfall_water_equivalent',
+			'precipitation_mean',
+			'showers_spread'
+		]) {
+			expect(variableUsesTimeStep(variable), variable).toBe(true);
+		}
+	});
+
+	it('is false for what is not a per-step sum', () => {
+		for (const variable of [
+			'precipitation_probability',
+			'snowfall_height',
+			'snow_depth',
+			'temperature_2m'
+		]) {
+			expect(variableUsesTimeStep(variable), variable).toBe(false);
+		}
 	});
 });
