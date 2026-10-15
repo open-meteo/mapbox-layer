@@ -675,7 +675,6 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '3_hourly',
-		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '6_hourly'
 	},
 	{
@@ -1226,7 +1225,6 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '3_hourly',
-		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '3_hourly'
 	},
 
@@ -1240,7 +1238,7 @@ export const domainOptions: Array<Domain> = [
 			{ fromHours: 0, hours: 1 },
 			{ fromHours: 48, hours: 3 }
 		],
-		model_interval: '3_hourly'
+		model_interval: '6_hourly'
 	},
 	{
 		value: 'meteofrance_arpege_europe',
@@ -1337,7 +1335,6 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '3_hourly',
-		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '12_hourly'
 	},
 	{
@@ -1505,7 +1502,6 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
-		time_steps: [{ fromHours: 0, hours: 1 }],
 		model_interval: '3_hourly'
 	},
 	{
@@ -1548,7 +1544,6 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
-		time_steps: [{ fromHours: 0, hours: 1 }],
 		model_interval: '6_hourly'
 	},
 
