@@ -45,7 +45,6 @@ export const variableOptions = [
 
 	{ value: 'dew_point', label: 'Dew Point' },
 	{ value: 'dew_point_2m', label: 'Dew Point (2m)' },
-	{ value: 'dew_point_2m', label: 'Dew Point (2m)' },
 	{ value: 'dew_point_2m_anomaly', label: 'Dew Point (2m) Anomaly' },
 	{ value: 'dew_point_2m_mean', label: 'Dew Point (2m) Mean' },
 	{ value: 'dew_point_2m_spread', label: 'Dew Point (2m) Spread' },
