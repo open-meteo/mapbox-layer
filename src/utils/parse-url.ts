@@ -90,23 +90,16 @@ export const replaceUrlDomain = (
 	);
 
 /**
- * Model run and valid time of a data-spatial file URL, or undefined for URLs
- * without the run/valid-time path structure.
+ * Lead time in hours (model run to valid time) of a data-spatial file URL, or
+ * undefined for URLs without the run/valid-time path structure.
  */
-export const parseFileTimes = (url: string): { modelRun: Date; validTime: Date } | undefined => {
+export const parseLeadTimeHours = (url: string): number | undefined => {
 	const groups = url.match(RUN_AND_VALID_TIME_REGEX)?.groups;
 	if (!groups) return undefined;
 	const hhmm = (time: string) => `${time.slice(0, 2)}:${time.slice(2)}:00Z`;
-	return {
-		modelRun: new Date(`${groups.runDate.replace(/\//g, '-')}T${hhmm(groups.runTime)}`),
-		validTime: new Date(`${groups.validDate}T${hhmm(groups.validTime)}`)
-	};
-};
-
-/** Lead time in hours (model run to valid time) of a data-spatial file URL. */
-export const parseLeadTimeHours = (url: string): number | undefined => {
-	const times = parseFileTimes(url);
-	return times && (times.validTime.getTime() - times.modelRun.getTime()) / 3_600_000;
+	const modelRun = Date.parse(`${groups.runDate.replace(/\//g, '-')}T${hhmm(groups.runTime)}`);
+	const validTime = Date.parse(`${groups.validDate}T${hhmm(groups.validTime)}`);
+	return (validTime - modelRun) / 3_600_000;
 };
 
 /**
@@ -122,6 +115,26 @@ const resolveJsonFetchUrl = (jsonUrl: string, domainOptions?: Domain[]): string 
 	const domain = domainOptions.find((d) => d.value === urlDomainValue);
 	if (!domain || !isSeamlessDomain(domain)) return jsonUrl;
 	return replaceUrlDomain(jsonUrl, urlDomainValue, getConcreteDomainValue(domain));
+};
+
+/**
+ * Length in hours of the time step ending at `validTime` in a run with these
+ * valid times: the gap to the previous valid time, the first one taking the
+ * gap to the next. This is the `time_step_hours` a host puts on the om URL
+ * for rules turning accumulations into rates. Undefined when `validTime` is
+ * not a valid time of the run or the run has only one. The listed valid
+ * times are not guaranteed to be in order.
+ */
+export const timeStepHoursAt = (
+	validTime: Date,
+	validTimes: (Date | string)[] | undefined
+): number | undefined => {
+	if (!validTimes || validTimes.length < 2) return undefined;
+	const times = validTimes.map((time) => new Date(time).getTime()).sort((a, b) => a - b);
+	const index = times.indexOf(validTime.getTime());
+	if (index === -1) return undefined;
+	const step = index === 0 ? times[1] - times[0] : times[index] - times[index - 1];
+	return step / 3_600_000;
 };
 
 export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => {
@@ -204,6 +217,16 @@ export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => 
 		date = new Date(metaResult.valid_times[0]);
 	}
 	parsedOmUrl.searchParams.delete('time_step'); // delete time_step urlSearchParam since it has no effect on map
+
+	// The capture API already holds the run's valid times, so it sets the step
+	// length rate rules divide by, for the file the URL resolves to (named by
+	// the hour), unless the caller passed one. Reads without such a rule ignore it.
+	if (!parsedOmUrl.searchParams.has('time_step_hours')) {
+		const fileTime = new Date(date);
+		fileTime.setUTCMinutes(0, 0, 0);
+		const step = timeStepHoursAt(fileTime, metaResult.valid_times);
+		if (step) parsedOmUrl.searchParams.set('time_step_hours', String(step));
+	}
 
 	// need to return a URL that is not percent encoded
 	return decodeURIComponent(

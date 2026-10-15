@@ -5,16 +5,9 @@ import {
 	VALID_INTERPOLATIONS
 } from './utils/constants';
 import { normalizeLon } from './utils/math';
-import { domainStepHours } from './utils/model-runs';
-import {
-	normalizeUrl,
-	parseFileTimes,
-	parseUrlComponents,
-	replaceUrlDomain
-} from './utils/parse-url';
+import { normalizeUrl, parseUrlComponents, replaceUrlDomain } from './utils/parse-url';
 import { createSamplers } from './utils/samplers';
 
-import { variableUsesTimeStep } from './derivation-rules';
 import { type SeamlessLayerFilter, isSeamlessDomain, selectSeamlessLayers } from './domain-helpers';
 import { GridFactory } from './grids';
 import { WeatherMapLayerFileReader } from './om-file-reader';
@@ -201,30 +194,15 @@ export const ensureData = async (
 
 		const promise = (async () => {
 			try {
-				const variable = state.dataOptions.variable;
 				// A rule turning accumulations into rates divides by the file's time
-				// step, which the reader knows nothing about: the domain's schedule
-				// gives it for the file's lead time, with no request. A custom
-				// request resolver may shape `variable` and `domain` as it likes;
-				// only a name can be matched against the rules.
-				const times = parseFileTimes(state.omFileUrl);
-				const timeStepHours =
-					typeof variable === 'string' &&
-					times &&
-					state.dataOptions.domain &&
-					variableUsesTimeStep(variable, omFileReader.config.derivationRules)
-						? domainStepHours(
-								state.dataOptions.domain,
-								(times.validTime.getTime() - times.modelRun.getTime()) / 3_600_000,
-								times.validTime
-							)
-						: undefined;
+				// step, which neither the reader nor the protocol can know: the host
+				// sets it on the om URL (`time_step_hours`) from the run's valid times
 				const data = await omFileReader.readVariable(
 					state.omFileUrl,
-					variable,
+					state.dataOptions.variable,
 					state.ranges,
 					entry.controller.signal,
-					{ timeStepHours }
+					{ timeStepHours: state.dataOptions.timeStepHours }
 				);
 
 				if (postReadCallback) {

@@ -36,10 +36,10 @@ export interface DerivationContext {
 	/**
 	 * Length of the file's time step in hours, the period its accumulated
 	 * variables (precipitation sums) cover. Passed in by the reader's caller:
-	 * the om protocol takes it from the domain's time step schedule and the
-	 * file's lead time for a variable whose rules need it (`usesTimeStep`).
-	 * Undefined when the caller passed none, which the reader rejects for a
-	 * read through such a rule.
+	 * the om protocol passes on the `time_step_hours` parameter of the om
+	 * URL, which the host application sets from the run's valid times for a
+	 * variable whose rules need it (`usesTimeStep`). Undefined when the caller
+	 * passed none, which the reader rejects for a read through such a rule.
 	 */
 	timeStepHours?: number;
 }
@@ -137,8 +137,8 @@ export const variableSupportsBarbs = (
 
 /**
  * Whether a rule matching `variable` needs the file's time step: which rule
- * claims the name depends on the file, so the step is looked up when any
- * candidate asks for it.
+ * claims the name depends on the file, so a host sets the step for a name
+ * whenever any candidate asks for it.
  */
 export const variableUsesTimeStep = (
 	variable: string,

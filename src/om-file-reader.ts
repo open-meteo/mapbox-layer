@@ -62,9 +62,9 @@ export interface ReadContext {
 	/**
 	 * Length of the file's time step in hours, which a rule turning
 	 * accumulations into rates divides by (`usesTimeStep`). The om protocol
-	 * takes it from the domain's time step schedule and the file's lead time;
-	 * a direct call has to pass it for such a variable, or the read is
-	 * rejected.
+	 * passes on the `time_step_hours` parameter of the om URL, which the host
+	 * application sets from the run's valid times; a direct call has to pass
+	 * it for such a variable, or the read is rejected.
 	 */
 	timeStepHours?: number;
 }

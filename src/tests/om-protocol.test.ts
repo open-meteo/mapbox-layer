@@ -88,6 +88,23 @@ describe('Request Options', () => {
 			expect(renderOptions.intervals).toStrictEqual([2]);
 		});
 
+		it('passes the time step length of the URL on, when it is a positive number', () => {
+			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
+			const base =
+				'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation_rate';
+
+			expect(parseRequest(`${base}&time_step_hours=3`, settings).dataOptions.timeStepHours).toBe(3);
+			expect(parseRequest(`${base}&time_step_hours=0.25`, settings).dataOptions.timeStepHours).toBe(
+				0.25
+			);
+			for (const raw of ['', '0', '-3', 'abc']) {
+				expect(
+					parseRequest(`${base}&time_step_hours=${raw}`, settings).dataOptions.timeStepHours
+				).toBeUndefined();
+			}
+			expect(parseRequest(base, settings).dataOptions.timeStepHours).toBeUndefined();
+		});
+
 		it('draws barbs only for wind speeds, arrows otherwise', () => {
 			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
 			const base =

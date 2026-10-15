@@ -1,5 +1,5 @@
 import { pad } from '../utils';
-import { parseMetaJson, parseUrlComponents } from '../utils/parse-url';
+import { parseMetaJson, parseUrlComponents, timeStepHoursAt } from '../utils/parse-url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('URL Parsing', () => {
@@ -96,5 +96,65 @@ describe('URL Parsing', () => {
 				'Invalid OM protocol URL'
 			);
 		});
+	});
+});
+
+describe('timeStepHoursAt', () => {
+	// Hourly steps turning 3-hourly, listed out of order like some runs are
+	const validTimes = [
+		'2026-10-15T01:00Z',
+		'2026-10-15T00:00Z',
+		'2026-10-15T05:00Z',
+		'2026-10-15T02:00Z'
+	];
+
+	it('is the gap to the previous valid time, the first one taking the next gap', () => {
+		expect(timeStepHoursAt(new Date('2026-10-15T02:00Z'), validTimes)).toBe(1);
+		expect(timeStepHoursAt(new Date('2026-10-15T05:00Z'), validTimes)).toBe(3);
+		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), validTimes)).toBe(1);
+	});
+
+	it('is undefined off the run, or without a second valid time', () => {
+		expect(timeStepHoursAt(new Date('2026-10-15T04:00Z'), validTimes)).toBeUndefined();
+		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), ['2026-10-15T00:00Z'])).toBeUndefined();
+		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), undefined)).toBeUndefined();
+	});
+});
+
+describe('capture API time step', () => {
+	const meta = {
+		completed: true,
+		last_modified_time: '',
+		reference_time: '2026-10-15T00:00Z',
+		valid_times: [
+			'2026-10-15T00:00Z',
+			'2026-10-15T01:00Z',
+			'2026-10-15T02:00Z',
+			'2026-10-15T05:00Z'
+		],
+		variables: ['precipitation']
+	};
+
+	beforeEach(() =>
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => Response.json(meta))
+		)
+	);
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('sets the step length of the resolved file from the run valid times', async () => {
+		const url = await parseMetaJson(
+			'https://host/data_spatial/capture_step_a/latest.json?time_step=valid_times_3&variable=precipitation_rate'
+		);
+		expect(url).toContain('/2026/10/15/0000Z/2026-10-15T0500.om');
+		expect(parseUrlComponents(url).params.get('time_step_hours')).toBe('3');
+	});
+
+	it('keeps a step length the caller passed', async () => {
+		const url = await parseMetaJson(
+			'https://host/data_spatial/capture_step_b/latest.json?time_step=valid_times_3&variable=precipitation_rate&time_step_hours=6'
+		);
+		expect(parseUrlComponents(url).params.get('time_step_hours')).toBe('6');
 	});
 });

@@ -13,11 +13,13 @@ export {
 export { updateCurrentBounds } from './utils/bounds';
 export { createClippingTester } from './utils/clipping';
 export { domainStep, closestModelRun } from './utils/model-runs';
+export { timeStepHoursAt } from './utils/parse-url';
 export {
 	defaultDerivationRules,
 	variableAvailable,
 	variableHasDirections,
-	variableSupportsBarbs
+	variableSupportsBarbs,
+	variableUsesTimeStep
 } from './derivation-rules';
 export { getCachedResolvedClipping } from './utils/parse-request';
 export { getColor, getColorScale } from './utils/styling';

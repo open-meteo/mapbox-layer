@@ -108,7 +108,16 @@ const defaultResolveDataIdentity = (
 
 	const mapBounds = currentBounds;
 
-	return { domain, variable, bounds: mapBounds };
+	// The length of the step an accumulation covers, from the host's knowledge
+	// of the run's valid times; anything but a positive number means unknown
+	const timeStepHours = Number(params.get('time_step_hours'));
+
+	return {
+		domain,
+		variable,
+		bounds: mapBounds,
+		timeStepHours: Number.isFinite(timeStepHours) && timeStepHours > 0 ? timeStepHours : undefined
+	};
 };
 
 const defaultResolveRenderOptions = (
