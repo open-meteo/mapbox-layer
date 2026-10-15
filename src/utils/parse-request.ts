@@ -110,7 +110,7 @@ const defaultResolveDataIdentity = (
 
 	// The length of the step an accumulation covers, from the host's knowledge
 	// of the run's valid times; anything but a positive number means unknown
-	const timeStepHours = Number(params.get('time_step_hours'));
+	const timeStepHours = Number(params.get('delta_time_hours'));
 
 	return {
 		domain,

@@ -120,7 +120,7 @@ const resolveJsonFetchUrl = (jsonUrl: string, domainOptions?: Domain[]): string 
 /**
  * Length in hours of the time step ending at `validTime` in a run with these
  * valid times: the gap to the previous valid time, the first one taking the
- * gap to the next. This is the `time_step_hours` a host puts on the om URL
+ * gap to the next. This is the `delta_time_hours` a host puts on the om URL
  * for rules turning accumulations into rates. Undefined when `validTime` is
  * not a valid time of the run or the run has only one. The listed valid
  * times are not guaranteed to be in order.
@@ -168,7 +168,11 @@ export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => 
 	};
 	const modelRun = new Date(metaResult.reference_time);
 
-	const parsedOmUrl = new URL(url);
+	// A tile request carries its coordinates after the query (`...&variable=x/5/16/10`);
+	// they come off while the query is edited, so a parameter added below does
+	// not end up behind them, and go back on at the very end
+	const tileSuffix = url.match(TILE_SUFFIX_REGEX)?.[0] ?? '';
+	const parsedOmUrl = new URL(url.slice(0, url.length - tileSuffix.length));
 	const timeStep = parsedOmUrl.searchParams.get('time_step');
 	const timeStepMatch = timeStep?.match(TIME_STEP_REGEX);
 	if (timeStep && timeStepMatch) {
@@ -221,11 +225,11 @@ export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => 
 	// The capture API already holds the run's valid times, so it sets the step
 	// length rate rules divide by, for the file the URL resolves to (named by
 	// the hour), unless the caller passed one. Reads without such a rule ignore it.
-	if (!parsedOmUrl.searchParams.has('time_step_hours')) {
+	if (!parsedOmUrl.searchParams.has('delta_time_hours')) {
 		const fileTime = new Date(date);
 		fileTime.setUTCMinutes(0, 0, 0);
 		const step = timeStepHoursAt(fileTime, metaResult.valid_times);
-		if (step) parsedOmUrl.searchParams.set('time_step_hours', String(step));
+		if (step) parsedOmUrl.searchParams.set('delta_time_hours', String(step));
 	}
 
 	// need to return a URL that is not percent encoded
@@ -234,7 +238,8 @@ export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => 
 			parsedOmUrl.href.replace(
 				`${meta}.json`,
 				`${modelRun.getUTCFullYear()}/${pad(modelRun.getUTCMonth() + 1)}/${pad(modelRun.getUTCDate())}/${pad(modelRun.getUTCHours())}00Z/${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}00.om`
-			)
+			) +
+			tileSuffix
 	);
 };
 

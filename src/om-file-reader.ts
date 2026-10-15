@@ -64,7 +64,7 @@ export interface ReadContext {
 	 * Length of the file's time step in hours: the reader divides the
 	 * precipitation family's per-step sums by it, and rules that ask for it
 	 * (`usesTimeStep`) get it. The om protocol passes on the
-	 * `time_step_hours` parameter of the om URL, which the host application
+	 * `delta_time_hours` parameter of the om URL, which the host application
 	 * sets from the run's valid times; a direct call has to pass it for such
 	 * a variable (`variableUsesTimeStep`), or the read is rejected.
 	 */

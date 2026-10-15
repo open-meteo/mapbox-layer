@@ -36,7 +36,7 @@ export interface DerivationContext {
 	/**
 	 * Length of the file's time step in hours, the period its accumulated
 	 * variables (precipitation sums) cover. Passed in by the reader's caller:
-	 * the om protocol passes on the `time_step_hours` parameter of the om
+	 * the om protocol passes on the `delta_time_hours` parameter of the om
 	 * URL, which the host application sets from the run's valid times for a
 	 * variable that needs it (`variableUsesTimeStep`). Undefined when the
 	 * caller passed none, which the reader rejects for such a variable.

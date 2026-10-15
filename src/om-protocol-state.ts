@@ -196,7 +196,7 @@ export const ensureData = async (
 			try {
 				// A rule turning accumulations into rates divides by the file's time
 				// step, which neither the reader nor the protocol can know: the host
-				// sets it on the om URL (`time_step_hours`) from the run's valid times
+				// sets it on the om URL (`delta_time_hours`) from the run's valid times
 				const data = await omFileReader.readVariable(
 					state.omFileUrl,
 					state.dataOptions.variable,

@@ -92,13 +92,15 @@ describe('Request Options', () => {
 			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
 			const base = 'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation';
 
-			expect(parseRequest(`${base}&time_step_hours=3`, settings).dataOptions.timeStepHours).toBe(3);
-			expect(parseRequest(`${base}&time_step_hours=0.25`, settings).dataOptions.timeStepHours).toBe(
-				0.25
+			expect(parseRequest(`${base}&delta_time_hours=3`, settings).dataOptions.timeStepHours).toBe(
+				3
 			);
+			expect(
+				parseRequest(`${base}&delta_time_hours=0.25`, settings).dataOptions.timeStepHours
+			).toBe(0.25);
 			for (const raw of ['', '0', '-3', 'abc']) {
 				expect(
-					parseRequest(`${base}&time_step_hours=${raw}`, settings).dataOptions.timeStepHours
+					parseRequest(`${base}&delta_time_hours=${raw}`, settings).dataOptions.timeStepHours
 				).toBeUndefined();
 			}
 			expect(parseRequest(base, settings).dataOptions.timeStepHours).toBeUndefined();
