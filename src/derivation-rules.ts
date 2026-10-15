@@ -36,9 +36,10 @@ export interface DerivationContext {
 	/**
 	 * Length of the file's time step in hours, the period its accumulated
 	 * variables (precipitation sums) cover. Passed in by the reader's caller:
-	 * the om protocol takes it from the model run's `meta.json` for a variable
-	 * whose rules need it (`usesTimeStep`). Undefined when the caller passed
-	 * none, which the reader rejects for a read through such a rule.
+	 * the om protocol takes it from the domain's time step schedule and the
+	 * file's lead time for a variable whose rules need it (`usesTimeStep`).
+	 * Undefined when the caller passed none, which the reader rejects for a
+	 * read through such a rule.
 	 */
 	timeStepHours?: number;
 }
@@ -143,6 +144,23 @@ export const variableUsesTimeStep = (
 	variable: string,
 	rules: VariableDerivationRule[] = defaultDerivationRules
 ): boolean => rules.some((rule) => rule.usesTimeStep && patternMatches(rule.pattern, variable));
+
+/**
+ * Whether `variable` can be read from a file storing the variables in
+ * `stored`: as stored, or through a rule claiming it for that set. Lets a UI
+ * offer the derived variables a domain's metadata does not list, by the same
+ * decision the reader makes for the file.
+ */
+export const variableAvailable = (
+	variable: string,
+	stored: ReadonlySet<string>,
+	rules: VariableDerivationRule[] = defaultDerivationRules
+): boolean =>
+	stored.has(variable) ||
+	rules.some(
+		(rule) =>
+			patternMatches(rule.pattern, variable) && rule.getSourceVars({ variable, stored }) !== null
+	);
 
 /** Vector magnitude and meteorological direction from u/v components. */
 const uvToSpeedAndDirection = ([u, v]: Float32Array[]): Data => {

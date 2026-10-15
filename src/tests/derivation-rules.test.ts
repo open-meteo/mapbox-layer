@@ -1,4 +1,8 @@
-import { variableHasDirections, variableSupportsBarbs } from '../derivation-rules';
+import {
+	variableAvailable,
+	variableHasDirections,
+	variableSupportsBarbs
+} from '../derivation-rules';
 import type { VariableDerivationRule } from '../derivation-rules';
 import { describe, expect, it } from 'vitest';
 
@@ -57,5 +61,23 @@ describe('variableSupportsBarbs', () => {
 		expect(variableSupportsBarbs('wave_height')).toBe(false);
 		expect(variableSupportsBarbs('swell_wave_direction')).toBe(false);
 		expect(variableSupportsBarbs('temperature_2m')).toBe(false);
+	});
+});
+
+describe('variableAvailable', () => {
+	it('is true for a stored variable and for one a default rule derives from the stored set', () => {
+		const stored = new Set(['temperature_2m', 'relative_humidity_2m', 'snowfall_water_equivalent']);
+		expect(variableAvailable('temperature_2m', stored)).toBe(true);
+		expect(variableAvailable('snowfall', stored)).toBe(true);
+		expect(variableAvailable('dew_point_2m', stored)).toBe(true);
+		expect(variableAvailable('vapour_pressure_deficit', stored)).toBe(true);
+	});
+
+	it('is false where the sources are missing, and needs no time step for the rates', () => {
+		const stored = new Set(['temperature_2m', 'precipitation']);
+		expect(variableAvailable('snowfall', stored)).toBe(false);
+		expect(variableAvailable('apparent_temperature', stored)).toBe(false);
+		expect(variableAvailable('precipitation_rate', stored)).toBe(true);
+		expect(variableAvailable('rain_rate', stored)).toBe(false);
 	});
 });

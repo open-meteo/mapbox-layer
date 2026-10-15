@@ -15,6 +15,7 @@ export { createClippingTester } from './utils/clipping';
 export { domainStep, closestModelRun } from './utils/model-runs';
 export {
 	defaultDerivationRules,
+	variableAvailable,
 	variableHasDirections,
 	variableSupportsBarbs
 } from './derivation-rules';

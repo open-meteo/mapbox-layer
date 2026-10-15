@@ -469,6 +469,10 @@ export const domainOptions: Array<Domain> = [
 		label: 'DWD ICON',
 		grid: DWD_ICON_GRID,
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 78, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -485,6 +489,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.2
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 78, hours: 3 }
+		],
 		model_interval: '3_hourly'
 	},
 	{
@@ -607,6 +615,10 @@ export const domainOptions: Array<Domain> = [
 		label: 'GFS Global 0.25°',
 		grid: NCEP_GFS025_GRID,
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 120, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -623,6 +635,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 120, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -639,6 +655,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '6_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 3 },
+			{ fromHours: 240, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -655,6 +675,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '6_hourly',
+		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '6_hourly'
 	},
 	{
@@ -769,6 +790,11 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 36, hours: 3, aligned: true },
+			{ fromHours: 186, hours: 6, aligned: true }
+		],
 		model_interval: 'hourly'
 	},
 	{
@@ -806,6 +832,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 120, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -822,6 +852,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 120, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 
@@ -840,6 +874,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '3_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -856,6 +894,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '6_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -901,6 +943,11 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 1280
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 90, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -917,6 +964,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '3_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -930,6 +981,11 @@ export const domainOptions: Array<Domain> = [
 			gaussianGridLatitudeLines: 1280
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 90, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '6_hourly'
 	},
 	{
@@ -992,6 +1048,10 @@ export const domainOptions: Array<Domain> = [
 		label: 'GEM Global',
 		grid: CMC_GEM_GDPS_15KM_GRID,
 		time_interval: '3_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 84, hours: 3 }
+		],
 		model_interval: '12_hourly'
 	},
 	{
@@ -1085,6 +1145,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: '6_hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 3 },
+			{ fromHours: 192, hours: 6 }
+		],
 		model_interval: '12_hourly'
 	},
 
@@ -1162,6 +1226,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '3_hourly'
 	},
 
@@ -1171,6 +1236,10 @@ export const domainOptions: Array<Domain> = [
 		label: 'MF ARPEGE World',
 		grid: METEOFRANCE_ARPEGE_WORLD025_GRID,
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 48, hours: 3 }
+		],
 		model_interval: '3_hourly'
 	},
 	{
@@ -1268,6 +1337,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [{ fromHours: 0, hours: 3 }],
 		model_interval: '3_hourly'
 	},
 	{
@@ -1435,6 +1505,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: '6_hourly',
+		time_steps: [{ fromHours: 0, hours: 1 }],
 		model_interval: '12_hourly'
 	},
 	{
@@ -1477,6 +1548,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: '6_hourly',
+		time_steps: [{ fromHours: 0, hours: 1 }],
 		model_interval: '12_hourly'
 	},
 
@@ -1486,6 +1558,11 @@ export const domainOptions: Array<Domain> = [
 		label: 'UK Met Office 10km',
 		grid: UKMO_GLOBAL_DETERMINISTIC_10KM_GRID,
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 54, hours: 3 },
+			{ fromHours: 144, hours: 6 }
+		],
 		model_interval: '3_hourly'
 	},
 	{
@@ -1524,6 +1601,10 @@ export const domainOptions: Array<Domain> = [
 			zoom: 1
 		},
 		time_interval: 'hourly',
+		time_steps: [
+			{ fromHours: 0, hours: 1 },
+			{ fromHours: 132, hours: 3 }
+		],
 		model_interval: '6_hourly'
 	},
 	{

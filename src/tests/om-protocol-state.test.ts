@@ -480,48 +480,64 @@ describe('ensureData – cancelled read still settling', () => {
 
 describe('ensureData – derivation context', () => {
 	const run = 'https://host/data_spatial/model/2026/10/08/0000Z';
-	const meta = {
-		completed: true,
-		last_modified_time: '',
-		reference_time: '2026-10-08T00:00Z',
-		valid_times: ['2026-10-08T00:00Z', '2026-10-08T03:00Z', '2026-10-08T06:00Z'],
-		variables: ['precipitation']
-	};
+	// Hourly steps that turn 3-hourly beyond 120 h, like GFS
+	const dataOptions = (variable: string) =>
+		makeDataOptions({
+			variable,
+			domain: {
+				...makeDomain(),
+				time_steps: [
+					{ fromHours: 0, hours: 1 },
+					{ fromHours: 120, hours: 3 }
+				]
+			}
+		});
 
 	afterEach(() => vi.unstubAllGlobals());
 
-	it('hands a rate variable the time step from the model run meta.json', async () => {
-		const fetch = vi.fn(async () => Response.json(meta));
-		vi.stubGlobal('fetch', fetch);
-		const state = getOrCreateState(
-			new Map<string, OmUrlState>(),
-			'k',
-			makeDataOptions({ variable: 'precipitation_rate' }),
-			`${run}/2026-10-08T0600.om`
-		);
-		const reader = new FakeReader();
-
-		const p = ensureData(state, asReader(reader), undefined);
-		await flushMicrotasks();
-
-		expect(fetch).toHaveBeenCalledWith(`${run}/meta.json`);
-		expect(reader.lastCall.read).toEqual({ timeStepHours: 3 });
-		reader.resolveCall(0, makeMockData());
-		await p;
-	});
-
-	it('looks nothing up for a variable no rule derives from the time step', async () => {
+	it('hands a rate variable the time step of its lead time, without any request', async () => {
 		const fetch = vi.fn();
 		vi.stubGlobal('fetch', fetch);
-		const state = makeState(new Map<string, OmUrlState>(), 'k');
 		const reader = new FakeReader();
-
-		const p = ensureData(state, asReader(reader), undefined);
-		await flushMicrotasks();
-
+		for (const [file, timeStepHours] of [
+			['2026-10-08T0600.om', 1],
+			['2026-10-13T0000.om', 1],
+			['2026-10-13T0300.om', 3]
+		] as const) {
+			const state = getOrCreateState(
+				new Map<string, OmUrlState>(),
+				file,
+				dataOptions('precipitation_rate'),
+				`${run}/${file}`
+			);
+			const p = ensureData(state, asReader(reader), undefined);
+			await flushMicrotasks();
+			expect(reader.lastCall.read).toEqual({ timeStepHours });
+			reader.resolveCall(reader.calls.length - 1, makeMockData());
+			await p;
+		}
 		expect(fetch).not.toHaveBeenCalled();
+	});
+
+	it('passes no step for a variable no rule derives from it, or a file outside a run', async () => {
+		const reader = new FakeReader();
+		const plain = makeState(new Map<string, OmUrlState>(), 'k');
+		const p = ensureData(plain, asReader(reader), undefined);
+		await flushMicrotasks();
 		expect(reader.lastCall.read).toEqual({ timeStepHours: undefined });
 		reader.resolveCall(0, makeMockData());
 		await p;
+
+		const outside = getOrCreateState(
+			new Map<string, OmUrlState>(),
+			'o',
+			dataOptions('precipitation_rate'),
+			'https://host/file.om'
+		);
+		const q = ensureData(outside, asReader(reader), undefined);
+		await flushMicrotasks();
+		expect(reader.lastCall.read).toEqual({ timeStepHours: undefined });
+		reader.resolveCall(1, makeMockData());
+		await q;
 	});
 });

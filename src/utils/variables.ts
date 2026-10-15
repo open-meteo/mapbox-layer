@@ -45,6 +45,7 @@ export const variableOptions = [
 
 	{ value: 'dew_point', label: 'Dew Point' },
 	{ value: 'dew_point_2m', label: 'Dew Point (2m)' },
+	{ value: 'dew_point_2m', label: 'Dew Point (2m)' },
 	{ value: 'dew_point_2m_anomaly', label: 'Dew Point (2m) Anomaly' },
 	{ value: 'dew_point_2m_mean', label: 'Dew Point (2m) Mean' },
 	{ value: 'dew_point_2m_spread', label: 'Dew Point (2m) Spread' },
@@ -385,6 +386,7 @@ export const variableOptions = [
 	// level groups
 	{ value: 'geopotential_height', label: 'Geopotential Height' },
 	{ value: 'relative_humidity', label: 'Relative Humidity' },
+	{ value: 'relative_humidity_2m', label: 'Relative Humidity (2m)' },
 	{ value: 'soil_moisture', label: 'Soil Moisture' },
 	{ value: 'soil_temperature', label: 'Soil Temperature' },
 	{ value: 'temperature', label: 'Temperature' },

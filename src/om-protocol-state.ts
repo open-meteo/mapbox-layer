@@ -5,9 +5,10 @@ import {
 	VALID_INTERPOLATIONS
 } from './utils/constants';
 import { normalizeLon } from './utils/math';
+import { domainStepHours } from './utils/model-runs';
 import {
-	fetchRunTimeStepHours,
 	normalizeUrl,
+	parseFileTimes,
 	parseUrlComponents,
 	replaceUrlDomain
 } from './utils/parse-url';
@@ -202,14 +203,21 @@ export const ensureData = async (
 			try {
 				const variable = state.dataOptions.variable;
 				// A rule turning accumulations into rates divides by the file's time
-				// step, which the reader knows nothing about: it comes from the model
-				// run's `meta.json` next to the file, one request per run. A custom
-				// request resolver may shape `variable` as it likes; only a name can
-				// be matched against the rules.
+				// step, which the reader knows nothing about: the domain's schedule
+				// gives it for the file's lead time, with no request. A custom
+				// request resolver may shape `variable` and `domain` as it likes;
+				// only a name can be matched against the rules.
+				const times = parseFileTimes(state.omFileUrl);
 				const timeStepHours =
 					typeof variable === 'string' &&
+					times &&
+					state.dataOptions.domain &&
 					variableUsesTimeStep(variable, omFileReader.config.derivationRules)
-						? await fetchRunTimeStepHours(state.omFileUrl)
+						? domainStepHours(
+								state.dataOptions.domain,
+								(times.validTime.getTime() - times.modelRun.getTime()) / 3_600_000,
+								times.validTime
+							)
 						: undefined;
 				const data = await omFileReader.readVariable(
 					state.omFileUrl,

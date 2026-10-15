@@ -329,6 +329,25 @@ export interface Domain {
 	label?: string;
 	grid: GridData;
 	time_interval: ModelDt;
+	/**
+	 * Lengths in hours of the run's time steps, where they differ from
+	 * `time_interval` or change along the forecast (models thin their output
+	 * further out), in order: the first entry covers everything up to the
+	 * second entry's lead time (also the files before the run time), each
+	 * later one the steps from its lead time on. Rules turning accumulations
+	 * into rates divide by it. Omitted, every step has the base interval's
+	 * length.
+	 */
+	time_steps?: {
+		fromHours: number;
+		hours: number;
+		/**
+		 * The phase's files sit on UTC hours divisible by `hours` rather than
+		 * on multiples of it from the run time (NBM runs every hour and thins
+		 * onto the synoptic grid), so its first step can be shorter.
+		 */
+		aligned?: boolean;
+	}[];
 	model_interval: ModelUpdateInterval;
 }
 
