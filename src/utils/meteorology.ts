@@ -1,8 +1,9 @@
 /**
- * Per-cell formulas behind the humidity-derived default derivation rules,
- * ported from the Open-Meteo API (`Meteorology.swift`) so a map shows the same
- * numbers as the forecast endpoint. Temperatures in °C, humidity in %, wind in
- * m/s, radiation in W/m².
+ * Per-cell formulas behind the humidity-derived default derivation rules:
+ * Magnus for the dew point, Stull (2011) for the wet-bulb temperature and
+ * Steadman for the apparent temperature, following the Open-Meteo backend
+ * (`Meteorology.swift`). Temperatures in °C, humidity in %, wind in m/s,
+ * radiation in W/m².
  */
 
 /** Dew point from air temperature and relative humidity, Magnus formula. */

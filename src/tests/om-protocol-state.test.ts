@@ -20,6 +20,7 @@ type ReadCall = {
 	variable: unknown;
 	ranges: unknown;
 	signal: AbortSignal | undefined;
+	read: unknown;
 	resolve: (v: Data | PromiseLike<Data>) => void;
 	reject: (err?: unknown) => void;
 	aborted: boolean;
@@ -64,16 +65,28 @@ const makeMockData = (size = 100): Data => ({
  */
 class FakeReader {
 	calls: ReadCall[] = [];
+	// Default rules: ensureData asks them which variables need the time step
+	config = {} as WeatherMapLayerFileReader['config'];
 
 	// Must match the WeatherMapLayerFileReader interface used by ensureData
 	readVariable(
 		omUrl: unknown,
 		variable: unknown,
 		ranges: unknown,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		read?: unknown
 	): Promise<Data> {
 		return new Promise<Data>((resolve, reject) => {
-			const call: ReadCall = { omUrl, variable, ranges, signal, resolve, reject, aborted: false };
+			const call: ReadCall = {
+				omUrl,
+				variable,
+				ranges,
+				signal,
+				read,
+				resolve,
+				reject,
+				aborted: false
+			};
 			this.calls.push(call);
 
 			if (signal?.aborted) {
@@ -462,5 +475,53 @@ describe('ensureData – cancelled read still settling', () => {
 		// The replacement caches its result and clears its own pending promise.
 		expect(state.data).toBe(mockData);
 		expect(state.dataPromise).toBeNull();
+	});
+});
+
+describe('ensureData – derivation context', () => {
+	const run = 'https://host/data_spatial/model/2026/10/08/0000Z';
+	const meta = {
+		completed: true,
+		last_modified_time: '',
+		reference_time: '2026-10-08T00:00Z',
+		valid_times: ['2026-10-08T00:00Z', '2026-10-08T03:00Z', '2026-10-08T06:00Z'],
+		variables: ['precipitation']
+	};
+
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('hands a rate variable the time step from the model run meta.json', async () => {
+		const fetch = vi.fn(async () => Response.json(meta));
+		vi.stubGlobal('fetch', fetch);
+		const state = getOrCreateState(
+			new Map<string, OmUrlState>(),
+			'k',
+			makeDataOptions({ variable: 'precipitation_rate' }),
+			`${run}/2026-10-08T0600.om`
+		);
+		const reader = new FakeReader();
+
+		const p = ensureData(state, asReader(reader), undefined);
+		await flushMicrotasks();
+
+		expect(fetch).toHaveBeenCalledWith(`${run}/meta.json`);
+		expect(reader.lastCall.read).toEqual({ timeStepHours: 3 });
+		reader.resolveCall(0, makeMockData());
+		await p;
+	});
+
+	it('looks nothing up for a variable no rule derives from the time step', async () => {
+		const fetch = vi.fn();
+		vi.stubGlobal('fetch', fetch);
+		const state = makeState(new Map<string, OmUrlState>(), 'k');
+		const reader = new FakeReader();
+
+		const p = ensureData(state, asReader(reader), undefined);
+		await flushMicrotasks();
+
+		expect(fetch).not.toHaveBeenCalled();
+		expect(reader.lastCall.read).toEqual({ timeStepHours: undefined });
+		reader.resolveCall(0, makeMockData());
+		await p;
 	});
 });

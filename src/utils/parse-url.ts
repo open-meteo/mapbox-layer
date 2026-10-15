@@ -141,9 +141,10 @@ const fetchMetaJson = (jsonUrl: string, fetchUrl = jsonUrl): Promise<DomainMetaD
 /**
  * Length in hours of the time step a data-spatial file covers: the gap to the
  * previous valid time of its model run, from the run's `meta.json` (the first
- * step takes the gap to the next one). Undefined for a URL without the
- * run/valid-time path structure, a `meta.json` that cannot be fetched, or a
- * valid time it does not list.
+ * step takes the gap to the next one). The protocol hands it to the file
+ * reader for rules turning accumulations into rates. Undefined for a URL
+ * without the run/valid-time path structure, a `meta.json` that cannot be
+ * fetched, or a valid time it does not list.
  */
 export const fetchRunTimeStepHours = async (omUrl: string): Promise<number | undefined> => {
 	const match = omUrl.match(RUN_AND_VALID_TIME_REGEX);

@@ -5,9 +5,15 @@ import {
 	VALID_INTERPOLATIONS
 } from './utils/constants';
 import { normalizeLon } from './utils/math';
-import { normalizeUrl, parseUrlComponents, replaceUrlDomain } from './utils/parse-url';
+import {
+	fetchRunTimeStepHours,
+	normalizeUrl,
+	parseUrlComponents,
+	replaceUrlDomain
+} from './utils/parse-url';
 import { createSamplers } from './utils/samplers';
 
+import { variableUsesTimeStep } from './derivation-rules';
 import { type SeamlessLayerFilter, isSeamlessDomain, selectSeamlessLayers } from './domain-helpers';
 import { GridFactory } from './grids';
 import { WeatherMapLayerFileReader } from './om-file-reader';
@@ -194,11 +200,23 @@ export const ensureData = async (
 
 		const promise = (async () => {
 			try {
+				const variable = state.dataOptions.variable;
+				// A rule turning accumulations into rates divides by the file's time
+				// step, which the reader knows nothing about: it comes from the model
+				// run's `meta.json` next to the file, one request per run. A custom
+				// request resolver may shape `variable` as it likes; only a name can
+				// be matched against the rules.
+				const timeStepHours =
+					typeof variable === 'string' &&
+					variableUsesTimeStep(variable, omFileReader.config.derivationRules)
+						? await fetchRunTimeStepHours(state.omFileUrl)
+						: undefined;
 				const data = await omFileReader.readVariable(
 					state.omFileUrl,
-					state.dataOptions.variable,
+					variable,
 					state.ranges,
-					entry.controller.signal
+					entry.controller.signal,
+					{ timeStepHours }
 				);
 
 				if (postReadCallback) {

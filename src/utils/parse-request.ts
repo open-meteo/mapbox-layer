@@ -2,7 +2,7 @@ import {
 	type VariableDerivationRule,
 	defaultDerivationRules,
 	variableSupportsBarbs
-} from '../om-file-reader';
+} from '../derivation-rules';
 
 import { currentBounds, setClippingBounds } from './bounds';
 import { type ResolvedClippingOptions, resolveClippingOptions } from './clipping';

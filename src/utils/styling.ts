@@ -181,12 +181,6 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	rain_rate: { ...COLOR_SCALES['precipitation'], unit: 'mm/h' },
 	showers: COLOR_SCALES['precipitation'],
 	showers_rate: { ...COLOR_SCALES['precipitation'], unit: 'mm/h' },
-	// cm of fresh snow: the water equivalent's scale at the 0.7 cm/mm ratio
-	snowfall: transformScale(
-		COLOR_SCALES['precipitation'] as BreakpointColorScale,
-		(b) => b * 0.7,
-		'cm'
-	),
 	snow_depth_water_equivalent: transformScale(
 		COLOR_SCALES['precipitation'] as BreakpointColorScale,
 		(b) => b * 200

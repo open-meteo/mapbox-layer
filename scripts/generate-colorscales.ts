@@ -410,6 +410,28 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ range: [0.01, 5], opacity: [1, 1], easing: 'linear' }
 		]
 	},
+	// Fresh snow in cm, the scale contributed in #322: its range reaches the
+	// extremes a 6-hourly step can hold, and the first visible band starts
+	// above the raster's half-quantum sampling offset (0.05 for a water
+	// equivalent stored in 0.1 mm steps), so zero snowfall stays transparent.
+	snowfall: {
+		unit: 'cm',
+		breakpoints: [0, 0.1, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30, 40, 60, 100],
+		colorSegments: [
+			{ range: [0, 0.1], colors: ['#ffffff', '#4cd8fb'] },
+			{ range: [0.1, 1], colors: ['#4cd8fb', 'blue'] },
+			{ range: [1, 5], colors: ['blue', '#00b400'] },
+			{ range: [5, 20], colors: ['#00b400', 'yellow'] },
+			{ range: [20, 100], colors: ['yellow', 'red'] }
+		],
+		opacitySegments: [
+			{ range: [0, 0.1], opacity: [0, 0.6], easing: 'linear' },
+			{ range: [0.1, 1], opacity: [0.6, 1], easing: 'linear' },
+			{ range: [1, 5], opacity: [1, 1], easing: 'linear' },
+			{ range: [5, 20], opacity: [1, 1], easing: 'linear' },
+			{ range: [20, 100], opacity: [1, 1], easing: 'linear' }
+		]
+	},
 	soil_moisture: {
 		unit: 'vol. %',
 		breakpoints: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5],

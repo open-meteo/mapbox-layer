@@ -1,5 +1,5 @@
-import { variableHasDirections, variableSupportsBarbs } from '../om-file-reader';
-import type { VariableDerivationRule } from '../om-file-reader';
+import { variableHasDirections, variableSupportsBarbs } from '../derivation-rules';
+import type { VariableDerivationRule } from '../derivation-rules';
 import { describe, expect, it } from 'vitest';
 
 describe('variableHasDirections', () => {

@@ -4,13 +4,13 @@
  * reader whose children are the entries of `file`.
  */
 import {
-	WeatherMapLayerFileReader,
 	defaultDerivationRules,
 	variableHasDirections,
 	variableSupportsBarbs
-} from '../om-file-reader';
-import type { VariableDerivationRule } from '../om-file-reader';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+} from '../derivation-rules';
+import type { VariableDerivationRule } from '../derivation-rules';
+import { WeatherMapLayerFileReader } from '../om-file-reader';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** The variables of the fake file; each test fills it before reading. */
 const { file } = vi.hoisted(() => ({ file: new Map<string, FakeVariable>() }));
@@ -147,6 +147,17 @@ describe('custom derivation rules', () => {
 		expect(Array.from(data.values ?? [])).toEqual([3]);
 		expect(data.directions).toBeUndefined();
 		expect(variableHasDirections('wind_u_component_10m', [snowfallRule])).toBe(false);
+	});
+
+	it('keeps the rules it was built with when the list is edited afterwards', async () => {
+		file.set('snowfall_water_equivalent', new FakeVariable([10], 10));
+		const list = [...rules];
+		const reader = createReader(list);
+		list.length = 0;
+
+		const data = await reader.readVariable('file.om', 'snowfall');
+
+		expect(Array.from(data.values ?? [])).toEqual([10]);
 	});
 
 	it('falls through to the next matching rule, then to the stored variable', async () => {
@@ -347,47 +358,38 @@ describe('humidity-derived default rules', () => {
 });
 
 describe('precipitation rate', () => {
-	const runUrl = 'https://host/data_spatial/model/2026/10/08/0000Z';
-	const meta = {
-		completed: true,
-		last_modified_time: '',
-		reference_time: '2026-10-08T00:00Z',
-		valid_times: [
-			'2026-10-08T00:00Z',
-			'2026-10-08T03:00Z',
-			'2026-10-08T01:00Z',
-			'2026-10-08T06:00Z'
-		],
-		variables: ['precipitation']
-	};
-
-	afterEach(() => vi.unstubAllGlobals());
-
-	it('divides the stored sum by the time step from the run meta.json', async () => {
-		const fetch = vi.fn(async () => Response.json(meta));
-		vi.stubGlobal('fetch', fetch);
+	it('divides the stored sum by the time step the caller passes', async () => {
 		file.set('precipitation', new FakeVariable([3, 0.6], 10));
 
 		const data = await createReader().readVariable(
-			`${runUrl}/2026-10-08T0600.om`,
-			'precipitation_rate'
+			'file.om',
+			'precipitation_rate',
+			null,
+			undefined,
+			{
+				timeStepHours: 3
+			}
 		);
 
 		expect(Array.from(data.values ?? [])).toEqual([expect.closeTo(1), expect.closeTo(0.2)]);
 		expect(data.scaleFactor).toBe(100);
-		expect(fetch).toHaveBeenCalledWith(`${runUrl}/meta.json`);
 	});
 
-	it('fails for a file outside a model run, with the reason', async () => {
-		vi.stubGlobal('fetch', async () => new Response(null, { status: 404 }));
+	it('rejects a read through a rate rule without the time step, with the reason', async () => {
 		file.set('precipitation', new FakeVariable([3], 10));
 
 		await expect(createReader().readVariable('file.om', 'precipitation_rate')).rejects.toThrow(
-			"precipitation_rate needs the model run's meta.json"
+			'did not pass (timeStepHours)'
 		);
-		await expect(
-			createReader().readVariable(`${runUrl}-missing/2026-10-08T0600.om`, 'precipitation_rate')
-		).rejects.toThrow("needs the model run's meta.json");
+	});
+
+	it('prefetches the sum without needing the step', async () => {
+		const sum = new FakeVariable([3], 10);
+		file.set('precipitation', sum);
+
+		await createReader().prefetchVariable('file.om', 'precipitation_rate');
+
+		expect(sum.prefetched).toBe(true);
 	});
 
 	it('passes when the sum itself is not stored', async () => {
