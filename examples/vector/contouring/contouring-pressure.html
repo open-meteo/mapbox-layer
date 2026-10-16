@@ -35,7 +35,7 @@
 				hash: true
 			});
 
-			// its time steps are 3-hourly, which current_time_1H would miss two hours out of three
+			// ecmwf_ifs025 time steps are 3-hourly, which current_time_1H would miss two hours out of three
 			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs025/latest.json?time_step=valid_times_0&variable=pressure_msl&intervals=2&contours=true`;
 
 			map.on('load', () => {
