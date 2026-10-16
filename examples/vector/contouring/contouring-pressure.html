@@ -35,7 +35,6 @@
 				hash: true
 			});
 
-			// ecmwf_ifs025 because ecmwf_ifs stores pressure_msl in Pa (see callbacks/post-read-callback.html);
 			// its time steps are 3-hourly, which current_time_1H would miss two hours out of three
 			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs025/latest.json?time_step=valid_times_0&variable=pressure_msl&intervals=2&contours=true`;
 
