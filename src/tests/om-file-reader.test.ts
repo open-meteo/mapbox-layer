@@ -85,7 +85,7 @@ const snowfallRule: VariableDerivationRule = {
 };
 const rules = [snowfallRule, ...defaultDerivationRules];
 // The precipitation family is read per hour; at an hourly step that is the stored sum
-const hourly = { timeStepHours: 1 };
+const hourly = { deltaTimeHours: 1 };
 
 const createReader = (derivationRules?: VariableDerivationRule[]) =>
 	new WeatherMapLayerFileReader({ useSAB: false, derivationRules });
@@ -376,7 +376,7 @@ describe('precipitation as an hourly rate', () => {
 		file.set('precipitation', new FakeVariable([3, 0.6], 10));
 
 		const data = await createReader().readVariable('file.om', 'precipitation', null, undefined, {
-			timeStepHours: 3
+			deltaTimeHours: 3
 		});
 
 		expect(Array.from(data.values ?? [])).toEqual([expect.closeTo(1), expect.closeTo(0.2)]);
@@ -387,7 +387,7 @@ describe('precipitation as an hourly rate', () => {
 		file.set('precipitation', new FakeVariable([6], 10));
 		file.set('snowfall_water_equivalent', new FakeVariable([3], 10));
 		const reader = createReader();
-		const at = { timeStepHours: 3 };
+		const at = { deltaTimeHours: 3 };
 
 		const rain = await reader.readVariable('file.om', 'rain', null, undefined, at);
 		expect(rain.values?.[0]).toBeCloseTo(1);
@@ -399,7 +399,7 @@ describe('precipitation as an hourly rate', () => {
 		file.set('precipitation_mean', new FakeVariable([6], 10));
 		file.set('precipitation_probability', new FakeVariable([60], 1));
 		const reader = createReader();
-		const at = { timeStepHours: 6 };
+		const at = { deltaTimeHours: 6 };
 
 		const mean = await reader.readVariable('file.om', 'precipitation_mean', null, undefined, at);
 		expect(mean.values?.[0]).toBeCloseTo(1);
@@ -411,7 +411,7 @@ describe('precipitation as an hourly rate', () => {
 		file.set('precipitation', new FakeVariable([3], 10));
 
 		await expect(createReader().readVariable('file.om', 'precipitation')).rejects.toThrow(
-			'did not pass it (timeStepHours)'
+			'did not pass it (deltaTimeHours)'
 		);
 	});
 

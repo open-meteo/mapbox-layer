@@ -1,5 +1,5 @@
 import { pad } from '../utils';
-import { parseMetaJson, parseUrlComponents, timeStepHoursAt } from '../utils/parse-url';
+import { deltaTimeHoursAt, parseMetaJson, parseUrlComponents } from '../utils/parse-url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('URL Parsing', () => {
@@ -99,7 +99,7 @@ describe('URL Parsing', () => {
 	});
 });
 
-describe('timeStepHoursAt', () => {
+describe('deltaTimeHoursAt', () => {
 	// Hourly steps turning 3-hourly, listed out of order like some runs are
 	const validTimes = [
 		'2026-10-15T01:00Z',
@@ -109,15 +109,15 @@ describe('timeStepHoursAt', () => {
 	];
 
 	it('is the gap to the previous valid time, the first one taking the next gap', () => {
-		expect(timeStepHoursAt(new Date('2026-10-15T02:00Z'), validTimes)).toBe(1);
-		expect(timeStepHoursAt(new Date('2026-10-15T05:00Z'), validTimes)).toBe(3);
-		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), validTimes)).toBe(1);
+		expect(deltaTimeHoursAt(new Date('2026-10-15T02:00Z'), validTimes)).toBe(1);
+		expect(deltaTimeHoursAt(new Date('2026-10-15T05:00Z'), validTimes)).toBe(3);
+		expect(deltaTimeHoursAt(new Date('2026-10-15T00:00Z'), validTimes)).toBe(1);
 	});
 
 	it('is undefined off the run, or without a second valid time', () => {
-		expect(timeStepHoursAt(new Date('2026-10-15T04:00Z'), validTimes)).toBeUndefined();
-		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), ['2026-10-15T00:00Z'])).toBeUndefined();
-		expect(timeStepHoursAt(new Date('2026-10-15T00:00Z'), undefined)).toBeUndefined();
+		expect(deltaTimeHoursAt(new Date('2026-10-15T04:00Z'), validTimes)).toBeUndefined();
+		expect(deltaTimeHoursAt(new Date('2026-10-15T00:00Z'), ['2026-10-15T00:00Z'])).toBeUndefined();
+		expect(deltaTimeHoursAt(new Date('2026-10-15T00:00Z'), undefined)).toBeUndefined();
 	});
 });
 

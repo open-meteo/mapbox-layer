@@ -2,7 +2,7 @@ import {
 	variableAvailable,
 	variableHasDirections,
 	variableSupportsBarbs,
-	variableUsesTimeStep
+	variableUsesDeltaTime
 } from '../derivation-rules';
 import type { VariableDerivationRule } from '../derivation-rules';
 import { describe, expect, it } from 'vitest';
@@ -82,7 +82,7 @@ describe('variableAvailable', () => {
 	});
 });
 
-describe('variableUsesTimeStep', () => {
+describe('variableUsesDeltaTime', () => {
 	it('is true for the precipitation family and its ensemble statistics', () => {
 		for (const variable of [
 			'precipitation',
@@ -93,7 +93,7 @@ describe('variableUsesTimeStep', () => {
 			'precipitation_mean',
 			'showers_spread'
 		]) {
-			expect(variableUsesTimeStep(variable), variable).toBe(true);
+			expect(variableUsesDeltaTime(variable), variable).toBe(true);
 		}
 	});
 
@@ -104,7 +104,7 @@ describe('variableUsesTimeStep', () => {
 			'snow_depth',
 			'temperature_2m'
 		]) {
-			expect(variableUsesTimeStep(variable), variable).toBe(false);
+			expect(variableUsesDeltaTime(variable), variable).toBe(false);
 		}
 	});
 });

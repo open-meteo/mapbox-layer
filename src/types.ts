@@ -25,7 +25,7 @@ export interface DataIdentityOptions {
 	 * the om URL. The host application sets it from the run's valid times;
 	 * the protocol only passes it on to the reader.
 	 */
-	timeStepHours?: number;
+	deltaTimeHours?: number;
 }
 
 export type InterpolationMethod = 'nearest' | 'linear' | 'cubic' | 'monotone';

@@ -483,14 +483,14 @@ describe('ensureData – derivation context', () => {
 		const state = makeState(
 			new Map<string, OmUrlState>(),
 			'rate',
-			makeDataOptions({ variable: 'precipitation', timeStepHours: 3 })
+			makeDataOptions({ variable: 'precipitation', deltaTimeHours: 3 })
 		);
 		const reader = new FakeReader();
 
 		const p = ensureData(state, asReader(reader), undefined);
 		await flushMicrotasks();
 
-		expect(reader.lastCall.read).toEqual({ timeStepHours: 3 });
+		expect(reader.lastCall.read).toEqual({ deltaTimeHours: 3 });
 		reader.resolveCall(0, makeMockData());
 		await p;
 	});
@@ -502,7 +502,7 @@ describe('ensureData – derivation context', () => {
 		const p = ensureData(state, asReader(reader), undefined);
 		await flushMicrotasks();
 
-		expect(reader.lastCall.read).toEqual({ timeStepHours: undefined });
+		expect(reader.lastCall.read).toEqual({ deltaTimeHours: undefined });
 		reader.resolveCall(0, makeMockData());
 		await p;
 	});

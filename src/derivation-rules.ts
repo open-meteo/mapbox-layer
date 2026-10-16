@@ -38,10 +38,10 @@ export interface DerivationContext {
 	 * variables (precipitation sums) cover. Passed in by the reader's caller:
 	 * the om protocol passes on the `delta_time_hours` parameter of the om
 	 * URL, which the host application sets from the run's valid times for a
-	 * variable that needs it (`variableUsesTimeStep`). Undefined when the
+	 * variable that needs it (`variableUsesDeltaTime`). Undefined when the
 	 * caller passed none, which the reader rejects for such a variable.
 	 */
-	timeStepHours?: number;
+	deltaTimeHours?: number;
 }
 
 /**
@@ -67,12 +67,12 @@ export interface VariableDerivationRule {
 	provides: { directions: boolean; barbs: boolean };
 
 	/**
-	 * Whether the rule needs the file's time step (`context.timeStepHours`);
+	 * Whether the rule needs the file's time step (`context.deltaTimeHours`);
 	 * the reader's caller has to provide it for such a variable. Not needed
 	 * for the precipitation family, which the reader turns into hourly rates
 	 * itself after any rule (`variableIsAccumulated`).
 	 */
-	usesTimeStep?: boolean;
+	usesDeltaTime?: boolean;
 
 	/**
 	 * Names of the variables in the file that the requested variable is read
@@ -154,12 +154,12 @@ export const variableIsAccumulated = (variable: string): boolean => ACCUMULATED.
  * the name depends on the file, so a host sets the step whenever any
  * candidate asks for it).
  */
-export const variableUsesTimeStep = (
+export const variableUsesDeltaTime = (
 	variable: string,
 	rules: VariableDerivationRule[] = defaultDerivationRules
 ): boolean =>
 	variableIsAccumulated(variable) ||
-	rules.some((rule) => rule.usesTimeStep && patternMatches(rule.pattern, variable));
+	rules.some((rule) => rule.usesDeltaTime && patternMatches(rule.pattern, variable));
 
 /**
  * Whether `variable` can be read from a file storing the variables in

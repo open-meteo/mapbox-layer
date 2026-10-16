@@ -125,7 +125,7 @@ const resolveJsonFetchUrl = (jsonUrl: string, domainOptions?: Domain[]): string 
  * not a valid time of the run or the run has only one. The listed valid
  * times are not guaranteed to be in order.
  */
-export const timeStepHoursAt = (
+export const deltaTimeHoursAt = (
 	validTime: Date,
 	validTimes: (Date | string)[] | undefined
 ): number | undefined => {
@@ -228,7 +228,7 @@ export const parseMetaJson = async (omUrl: string, domainOptions?: Domain[]) => 
 	if (!parsedOmUrl.searchParams.has('delta_time_hours')) {
 		const fileTime = new Date(date);
 		fileTime.setUTCMinutes(0, 0, 0);
-		const step = timeStepHoursAt(fileTime, metaResult.valid_times);
+		const step = deltaTimeHoursAt(fileTime, metaResult.valid_times);
 		if (step) parsedOmUrl.searchParams.set('delta_time_hours', String(step));
 	}
 
