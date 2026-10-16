@@ -48,9 +48,9 @@
 			});
 
 			// below url is used to request 'latest.json' and get the nearest timestep to "current local time" + 1 hour
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 			// example of an actual omUrl:
-			// const omUrl = `om://https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m`;
+			// const omUrl = `om://https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/2025/06/06/1200Z/2025-06-06T1200.om?variable=temperature_2m`;
 
 			// The provider resolves once the TileJSON is known; fromProviderAsync adds the layer right away.
 			viewer.imageryLayers.add(
