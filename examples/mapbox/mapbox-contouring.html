@@ -45,7 +45,7 @@
 				OMWeatherMapLayer.updateCurrentBounds([minLng, minLat, maxLng, maxLat]);
 			});
 
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
 
 			map.on('load', () => {
 				// Raster: a custom source (Mapbox's CustomSourceInterface), added like any other source.

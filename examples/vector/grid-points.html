@@ -31,10 +31,13 @@
 			const map = new maplibregl.Map({
 				container: 'map',
 				style: 'https://static-assets.open-meteo.com/map-assets/styles/minimal-planet-maps.json', // replace with your own style sheet
+				center: [10, 50],
+				zoom: 4,
 				hash: true
 			});
 
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			// ecmwf_ifs025 time steps are 3-hourly, which current_time_1H would miss two hours out of three
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs025/latest.json?time_step=valid_times_0&variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileRasterSource', {
@@ -55,7 +58,7 @@
 				);
 
 				map.addSource('omFileGridSource', {
-					url: 'om://' + omUrl + '?grid=true',
+					url: 'om://' + omUrl + '&grid=true',
 					type: 'vector'
 				});
 

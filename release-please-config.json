@@ -14,6 +14,7 @@
 
 		"examples/wind.html",
 		"examples/popup.html",
+		"examples/seamless.html",
 		"examples/temperature.html",
 		"examples/precipitation.html",
 		"examples/interpolation.html",
@@ -37,7 +38,7 @@
 		"examples/clipping/oceans/clip-oceans.html",
 		"examples/clipping/contours/clip-france.html",
 		"examples/clipping/raster/clip-switzerland.html",
-		"examples/clipping/bounds/clip-germany-bounds.html",
+		"examples/clipping/bounds/clip-great-britain-bounds.html",
 
 		"examples/vector/contouring/contouring-pressure.html",
 		"examples/vector/contouring/contouring-on-colorscale.html",
