@@ -49,18 +49,25 @@ export const omProtocol = async (
 	params: RequestParameters,
 	abortController: AbortController,
 	settings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | TileResponse | null>> => {
+): Promise<GetResourceResponse<TileJSON | TileResponse>> => {
 	const signal = abortController.signal;
 
 	// Check if already aborted
 	if (signal.aborted) {
-		return { data: null };
+		return makeEmptyTileResponse(params.type);
 	}
 
 	const instance = getProtocolInstance(settings);
 
 	const url = await normalizeUrl(params.url, settings.domainOptions);
-	const request = await parseRequest(url, settings, instance.omFileReader);
+	// Resolved against the reader's effective config: the reader is built from
+	// the first call's `fileReaderConfig`, so what rendering takes from the
+	// derivation rules (barbs only for a wind speed) follows how data is read.
+	const request = await parseRequest(
+		url,
+		{ ...settings, fileReaderConfig: instance.omFileReader.config },
+		instance.omFileReader
+	);
 
 	// Handle TileJSON request. The bounds only depend on the grid definition, so
 	// respond without touching the data: the read starts with the first tile
@@ -94,7 +101,7 @@ export const omProtocol = async (
 			})
 		: [{ domain, omFileUrl: request.baseUrl, stateKey: request.fileAndVariableKey }];
 	if (layers.length === 0) {
-		return { data: null };
+		return makeEmptyTileResponse(params.type);
 	}
 
 	// `maxStatesWithData` counts states, but callers size it in variables (one
@@ -122,7 +129,7 @@ export const omProtocol = async (
 
 	// Check abort status before proceeding
 	if (signal.aborted) {
-		return { data: null };
+		return makeEmptyTileResponse(params.type);
 	}
 
 	// All layers load in parallel. A layer that fails is dropped so the others
@@ -149,10 +156,29 @@ export const omProtocol = async (
 	const tileResult = await requestTile(url, request, loaded, params.type, signal);
 
 	if (tileResult.cancelled || !tileResult.data) {
-		return { data: null };
+		return makeEmptyTileResponse(params.type);
 	} else {
 		return { data: tileResult.data };
 	}
+};
+
+/**
+ * Response for a request with nothing to draw: aborted, or no layer covering
+ * the tile. Not `null`: MapLibre's protocol handler type excludes it since
+ * 6.11, and releases before 6.8 leave a raster tile that receives it loading
+ * forever. An empty buffer is an empty vector tile on every release and an
+ * empty raster tile from 6.8 on, but older releases try to decode it as an
+ * image and fail, so a raster tile gets a transparent bitmap, which every
+ * release uploads as is. Allocated per call: MapLibre transfers vector
+ * payloads to its worker, which detaches the buffer.
+ */
+const makeEmptyTileResponse = async (
+	type: RequestParameters['type']
+): Promise<GetResourceResponse<TileResponse>> => {
+	if (type === 'image' && typeof createImageBitmap === 'function') {
+		return { data: await createImageBitmap(new ImageData(1, 1)) };
+	}
+	return { data: new ArrayBuffer(0) };
 };
 
 const makeTileAbortedResponse = (): TileResult => {

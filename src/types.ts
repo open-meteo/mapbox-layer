@@ -26,6 +26,13 @@ export interface DataIdentityOptions {
 	grid: GridData;
 	variable: string;
 	bounds: Bounds | undefined;
+	/**
+	 * Length in hours of the file's time step, which rules turning
+	 * accumulations into rates divide by: the `delta_time_hours` parameter of
+	 * the om URL. The host application sets it from the run's valid times;
+	 * the protocol only passes it on to the reader.
+	 */
+	deltaTimeHours?: number;
 }
 
 export type InterpolationMethod = 'nearest' | 'linear' | 'cubic' | 'monotone';

@@ -13,7 +13,15 @@ export {
 export { updateCurrentBounds } from './utils/bounds';
 export { createClippingTester } from './utils/clipping';
 export { domainStep, closestModelRun } from './utils/model-runs';
-export { variableHasDirections, variableSupportsBarbs } from './om-file-reader';
+export { deltaTimeHoursAt } from './utils/parse-url';
+export {
+	defaultDerivationRules,
+	variableAvailable,
+	variableHasDirections,
+	variableIsAccumulated,
+	variableSupportsBarbs,
+	variableUsesDeltaTime
+} from './derivation-rules';
 export { getCachedResolvedClipping } from './utils/parse-request';
 export { wktToGridData } from './utils/wkt';
 export { getColor, getColorScale } from './utils/styling';
@@ -47,6 +55,7 @@ export {
 
 // Adapters
 
+export { addCesiumProtocolSupport } from './adapters/cesium';
 export { addLeafletProtocolSupport } from './adapters/leaflet';
 export { addMapboxProtocolSupport } from './adapters/mapbox';
 export { addOpenLayersProtocolSupport } from './adapters/openlayers';
@@ -73,5 +82,6 @@ export type {
 	SeamlessLayer
 } from './types';
 
-export type { VariableDerivationRule, WeatherMapLayerFileReader } from './om-file-reader';
+export type { DerivationContext, VariableDerivationRule } from './derivation-rules';
+export type { ReadContext, WeatherMapLayerFileReader } from './om-file-reader';
 export type { BlockCache } from '@openmeteo/file-reader';
