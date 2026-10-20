@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.3.0](https://github.com/open-meteo/weather-map-layer/compare/v0.2.2...v0.3.0) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* custom derivation rules ([#347](https://github.com/open-meteo/weather-map-layer/issues/347))
+
+### Features
+
+* add ocean current colour scale ([#362](https://github.com/open-meteo/weather-map-layer/issues/362)) ([a8380e5](https://github.com/open-meteo/weather-map-layer/commit/a8380e5a5e255c1f0045b27f6b91ef7ad7efcb2c))
+* cesium adapter ([#352](https://github.com/open-meteo/weather-map-layer/issues/352)) ([b650e2b](https://github.com/open-meteo/weather-map-layer/commit/b650e2be98694cb3fdb576b6efc6a01546858f27))
+* custom derivation rules ([#347](https://github.com/open-meteo/weather-map-layer/issues/347)) ([3a52d0d](https://github.com/open-meteo/weather-map-layer/commit/3a52d0d0865f807f4f369706935290be9f78c03e))
+
+
+### Bug Fixes
+
+* drop the max zoom from the examples ([#359](https://github.com/open-meteo/weather-map-layer/issues/359)) ([9934ede](https://github.com/open-meteo/weather-map-layer/commit/9934ede27207f3a6f84e4a69d00ec6b2d6bcfa6d))
+* small correction time_intervals ([#365](https://github.com/open-meteo/weather-map-layer/issues/365)) ([ee3e481](https://github.com/open-meteo/weather-map-layer/commit/ee3e481147eef4752b60c42b248a93030a1a7e1e))
+
+## [0.2.2](https://github.com/open-meteo/weather-map-layer/compare/v0.2.1...v0.2.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* return an empty tile instead of null from the protocol ([#350](https://github.com/open-meteo/weather-map-layer/issues/350)) ([8fc0719](https://github.com/open-meteo/weather-map-layer/commit/8fc071968185532313f5f09ea0bcfad035ea7fdb))
+
+## [0.2.1](https://github.com/open-meteo/weather-map-layer/compare/v0.2.0...v0.2.1) (2026-09-30)
+
+
+### Features
+
+* seamless domains ([#317](https://github.com/open-meteo/weather-map-layer/issues/317)) ([8438f7b](https://github.com/open-meteo/weather-map-layer/commit/8438f7bce7424ef39bc8152b66332a70ef03eac0))
+
+
+### Bug Fixes
+
+* shift the wind colour scale ([#339](https://github.com/open-meteo/weather-map-layer/issues/339)) ([b1a8e45](https://github.com/open-meteo/weather-map-layer/commit/b1a8e45f888d46d2514c5b911ca1fb3adf6c86bf))
+
 ## [0.2.0](https://github.com/open-meteo/weather-map-layer/compare/v0.1.1...v0.2.0) (2026-09-21)
 
 

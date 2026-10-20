@@ -1,5 +1,9 @@
+import {
+	type VariableDerivationRule,
+	defaultDerivationRules,
+	variableSupportsBarbs
+} from '../derivation-rules';
 import { getLocalOmFile } from '../local-files';
-import { variableSupportsBarbs } from '../om-file-reader';
 
 import { currentBounds, setClippingBounds } from './bounds';
 import { type ResolvedClippingOptions, resolveClippingOptions } from './clipping';
@@ -75,7 +79,8 @@ export const defaultResolveRequest = (
 	const renderOptions = defaultResolveRenderOptions(
 		urlComponents,
 		dataOptions,
-		settings.colorScales
+		settings.colorScales,
+		settings.fileReaderConfig.derivationRules ?? defaultDerivationRules
 	);
 
 	return { dataOptions, renderOptions };
@@ -92,6 +97,12 @@ const defaultResolveDataIdentity = (
 		throw new Error(`Variable is required but not defined`);
 	}
 
+	// The length of the step an accumulation covers, from the host's knowledge
+	// of the run's valid times; anything but a positive number means unknown
+	const rawDeltaTimeHours = Number(params.get('delta_time_hours'));
+	const deltaTimeHours =
+		Number.isFinite(rawDeltaTimeHours) && rawDeltaTimeHours > 0 ? rawDeltaTimeHours : undefined;
+
 	// A registered local file has no domain to look up: it stands in as its
 	// own, with the grid read from its crs_wkt on registration
 	const local = getLocalOmFile(baseUrl);
@@ -103,7 +114,8 @@ const defaultResolveDataIdentity = (
 		return {
 			domain: { value: baseUrl, grid, time_interval: 'hourly', model_interval: 'hourly' },
 			variable,
-			bounds: currentBounds
+			bounds: currentBounds,
+			deltaTimeHours
 		};
 	}
 
@@ -117,13 +129,14 @@ const defaultResolveDataIdentity = (
 		throw new Error(`Invalid domain: ${domainValue}`);
 	}
 
-	return { domain, variable, bounds: currentBounds };
+	return { domain, variable, bounds: currentBounds, deltaTimeHours };
 };
 
 const defaultResolveRenderOptions = (
 	urlComponents: ParsedUrlComponents,
 	dataOptions: DataIdentityOptions,
-	colorScales: ColorScales
+	colorScales: ColorScales,
+	derivationRules: VariableDerivationRule[]
 ): RenderOptions => {
 	const { params } = urlComponents;
 
@@ -156,7 +169,7 @@ const defaultResolveRenderOptions = (
 	// Barbs encode knots, so a variable whose directions come with another
 	// quantity (waves, currents) is drawn with arrows whatever was requested
 	const arrowStyle =
-		requestedArrowStyle === 'barb' && !variableSupportsBarbs(dataOptions.variable)
+		requestedArrowStyle === 'barb' && !variableSupportsBarbs(dataOptions.variable, derivationRules)
 			? 'arrow'
 			: requestedArrowStyle;
 	const drawContours = params.get('contours') === 'true';
