@@ -14,11 +14,13 @@
 
 		"examples/wind.html",
 		"examples/popup.html",
+		"examples/seamless.html",
 		"examples/temperature.html",
 		"examples/precipitation.html",
 		"examples/interpolation.html",
 		"examples/partial-requests.html",
 		"examples/combined-variables.html",
+		"examples/custom-derivation-rules.html",
 
 		"examples/vector/grid-points.html",
 		"examples/vector/wind-arrows.html",
@@ -36,7 +38,7 @@
 		"examples/clipping/oceans/clip-oceans.html",
 		"examples/clipping/contours/clip-france.html",
 		"examples/clipping/raster/clip-switzerland.html",
-		"examples/clipping/bounds/clip-germany-bounds.html",
+		"examples/clipping/bounds/clip-great-britain-bounds.html",
 
 		"examples/vector/contouring/contouring-pressure.html",
 		"examples/vector/contouring/contouring-on-colorscale.html",
@@ -53,6 +55,9 @@
 
 		"examples/mapbox/mapbox-raster.html",
 		"examples/mapbox/mapbox-vector.html",
-		"examples/mapbox/mapbox-contouring.html"
+		"examples/mapbox/mapbox-contouring.html",
+
+		"examples/cesium/cesium-raster.html",
+		"examples/cesium/cesium-vector.html"
 	]
 }

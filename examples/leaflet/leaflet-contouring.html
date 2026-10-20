@@ -24,7 +24,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.0/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			// Build the Leaflet adapter that intercepts "om://" requests and routes them through omProtocol.
@@ -51,7 +51,7 @@
 			map.on('moveend', updateBounds);
 			updateBounds();
 
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
 
 			// Raster layer: precipitation colour fill.
 			leafletAdapter

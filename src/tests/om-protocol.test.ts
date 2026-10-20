@@ -1,6 +1,6 @@
 import { defaultOmProtocolSettings } from '../om-protocol';
 import { parseRequest } from '../utils/parse-request';
-import { RequestParameters } from 'maplibre-gl';
+import { AddProtocolAction, RequestParameters } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -86,6 +86,24 @@ describe('Request Options', () => {
 			expect(dataOptions.domain.value).toBe('domain1');
 			expect(dataOptions.variable).toBe('temperature');
 			expect(renderOptions.intervals).toStrictEqual([2]);
+		});
+
+		it('passes the time step length of the URL on, when it is a positive number', () => {
+			const settings = createTestSettings({ domainOptions: [createTestDomain('domain1')] });
+			const base = 'om://https://example.com/data_spatial/domain1/file.om?variable=precipitation';
+
+			expect(parseRequest(`${base}&delta_time_hours=3`, settings).dataOptions.deltaTimeHours).toBe(
+				3
+			);
+			expect(
+				parseRequest(`${base}&delta_time_hours=0.25`, settings).dataOptions.deltaTimeHours
+			).toBe(0.25);
+			for (const raw of ['', '0', '-3', 'abc']) {
+				expect(
+					parseRequest(`${base}&delta_time_hours=${raw}`, settings).dataOptions.deltaTimeHours
+				).toBeUndefined();
+			}
+			expect(parseRequest(base, settings).dataOptions.deltaTimeHours).toBeUndefined();
 		});
 
 		it('draws barbs only for wind speeds, arrows otherwise', () => {
@@ -364,7 +382,7 @@ describe('omProtocol', () => {
 			).rejects.toThrow("Unsupported request type 'vector'");
 		});
 
-		it('returns { data: null } when the signal is already aborted', async () => {
+		it('returns an empty tile when the signal is already aborted', async () => {
 			const { omProtocol } = await import('../om-protocol');
 
 			const params: RequestParameters = {
@@ -375,7 +393,19 @@ describe('omProtocol', () => {
 			abortController.abort();
 			const result = await omProtocol(params, abortController, defaultOmProtocolSettings);
 
-			expect(result.data).toBeNull();
+			expect(result.data).toBeInstanceOf(ArrayBuffer);
+			expect((result.data as ArrayBuffer).byteLength).toBe(0);
+		});
+
+		it('fits the MapLibre protocol handler type', async () => {
+			const { omProtocol } = await import('../om-protocol');
+
+			// Checked at compile time: `AddProtocolAction` excludes `null` payloads
+			// since MapLibre 6.11.
+			const handler: AddProtocolAction = (params, abortController) =>
+				omProtocol(params, abortController, defaultOmProtocolSettings);
+
+			expect(handler).toBeTypeOf('function');
 		});
 
 		it('calls postReadCallback after data is loaded', async () => {
