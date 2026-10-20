@@ -193,7 +193,7 @@ const seamlessDomains: SeamlessDomain[] = [
 		label: 'MF Seamless',
 		grid: METEOFRANCE_ARPEGE_WORLD025_GRID,
 		time_interval: 'hourly',
-		model_interval: '3_hourly',
+		model_interval: '6_hourly',
 		layers: [
 			{
 				domainValue: 'meteofrance_arome_france0025',
@@ -223,7 +223,7 @@ const seamlessDomains: SeamlessDomain[] = [
 		value: 'cmc_gem_seamless',
 		label: 'GEM Seamless',
 		grid: CMC_GEM_GDPS_15KM_GRID,
-		time_interval: '3_hourly',
+		time_interval: 'hourly',
 		model_interval: '12_hourly',
 		layers: [
 			{ domainValue: 'cmc_gem_hrdps_west', minZoom: 4, maxForecastHours: 48 },
@@ -266,7 +266,7 @@ const seamlessDomains: SeamlessDomain[] = [
 		label: 'UKMO Seamless',
 		grid: UKMO_GLOBAL_DETERMINISTIC_10KM_GRID,
 		time_interval: 'hourly',
-		model_interval: '3_hourly',
+		model_interval: '6_hourly',
 		layers: [
 			{
 				domainValue: 'ukmo_uk_deterministic_2km',
@@ -638,7 +638,7 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.5,
 			zoom: 1
 		},
-		time_interval: '6_hourly',
+		time_interval: '3_hourly',
 		model_interval: '6_hourly'
 	},
 	{
@@ -654,7 +654,7 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.25,
 			zoom: 1
 		},
-		time_interval: '6_hourly',
+		time_interval: '3_hourly',
 		model_interval: '6_hourly'
 	},
 	{
@@ -855,7 +855,7 @@ export const domainOptions: Array<Domain> = [
 			dy: 180 / (721 - 1),
 			zoom: 1
 		},
-		time_interval: '6_hourly',
+		time_interval: '3_hourly',
 		model_interval: '6_hourly'
 	},
 	{
@@ -991,7 +991,7 @@ export const domainOptions: Array<Domain> = [
 		value: 'cmc_gem_gdps_15km',
 		label: 'GEM Global',
 		grid: CMC_GEM_GDPS_15KM_GRID,
-		time_interval: '3_hourly',
+		time_interval: 'hourly',
 		model_interval: '12_hourly'
 	},
 	{
@@ -1084,7 +1084,7 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.5,
 			zoom: 1
 		},
-		time_interval: '6_hourly',
+		time_interval: '3_hourly',
 		model_interval: '12_hourly'
 	},
 
@@ -1121,7 +1121,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 5.2
 		},
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: '12_hourly'
 	},
 
 	// JMA
@@ -1161,7 +1161,7 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.1,
 			zoom: 1
 		},
-		time_interval: 'hourly',
+		time_interval: '3_hourly',
 		model_interval: '3_hourly'
 	},
 
@@ -1171,7 +1171,7 @@ export const domainOptions: Array<Domain> = [
 		label: 'MF ARPEGE World',
 		grid: METEOFRANCE_ARPEGE_WORLD025_GRID,
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: '6_hourly'
 	},
 	{
 		value: 'meteofrance_arpege_europe',
@@ -1187,7 +1187,7 @@ export const domainOptions: Array<Domain> = [
 			zoom: 3.5
 		},
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: '6_hourly'
 	},
 	{
 		value: 'meteofrance_arome_france0025',
@@ -1267,8 +1267,8 @@ export const domainOptions: Array<Domain> = [
 			dy: 1 / 12,
 			zoom: 1
 		},
-		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		time_interval: '3_hourly',
+		model_interval: '12_hourly'
 	},
 	{
 		value: 'meteofrance_currents',
@@ -1323,7 +1323,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: 'hourly'
 	},
 
 	// KMA
@@ -1434,8 +1434,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: '6_hourly',
-		model_interval: '12_hourly'
+		time_interval: 'hourly',
+		model_interval: '3_hourly'
 	},
 	{
 		value: 'meteoswiss_icon_ch2',
@@ -1456,7 +1456,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: '6_hourly'
 	},
 	{
 		value: 'meteoswiss_icon_ch2_ensemble',
@@ -1476,8 +1476,8 @@ export const domainOptions: Array<Domain> = [
 				name: 'RotatedLatLonProjection'
 			}
 		},
-		time_interval: '6_hourly',
-		model_interval: '12_hourly'
+		time_interval: 'hourly',
+		model_interval: '6_hourly'
 	},
 
 	// UKMO
@@ -1486,7 +1486,7 @@ export const domainOptions: Array<Domain> = [
 		label: 'UK Met Office 10km',
 		grid: UKMO_GLOBAL_DETERMINISTIC_10KM_GRID,
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: '6_hourly'
 	},
 	{
 		value: 'ukmo_uk_deterministic_2km',
@@ -1508,7 +1508,7 @@ export const domainOptions: Array<Domain> = [
 			}
 		},
 		time_interval: 'hourly',
-		model_interval: '3_hourly'
+		model_interval: 'hourly'
 	},
 	{
 		value: 'ukmo_global_ensemble_20km',
