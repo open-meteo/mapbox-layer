@@ -54,7 +54,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.0/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
@@ -66,7 +66,7 @@
 			});
 
 			let dark = true;
-			const baseOmUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=cloud_cover`;
+			const baseOmUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=cloud_cover`;
 
 			function ensureOmLayer(omUrl) {
 				const omFileSource = map.getSource('omFileSource');
@@ -75,8 +75,7 @@
 				} else {
 					map.addSource('omFileSource', {
 						url: 'om://' + omUrl,
-						type: 'raster',
-						maxzoom: 12
+						type: 'raster'
 					});
 				}
 

@@ -13,17 +13,43 @@
 				padding: 0;
 				height: 100%;
 			}
+
+			.borders-toggle {
+				position: absolute;
+				right: 12px;
+				top: 12px;
+				background: rgba(255, 255, 255, 0.9);
+				border-radius: 6px;
+				padding: 8px 10px;
+				font-family: sans-serif;
+				box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+				z-index: 2;
+			}
+			.borders-toggle label {
+				align-items: center;
+				display: inline-flex;
+				gap: 8px;
+				cursor: pointer;
+				user-select: none;
+			}
 		</style>
 	</head>
 	<body>
 		<div id="map"></div>
+
+		<div class="borders-toggle">
+			<label>
+				<input id="bordersCheckbox" type="checkbox" checked />
+				Domain borders
+			</label>
+		</div>
 		<script type="module">
 			import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs';
 
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.0/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
@@ -37,12 +63,12 @@
 			});
 
 			// note the '_seamless' postfix. not all domains support seamless composites, check the readme for details
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon_seamless/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/meteofrance_seamless/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 			// Seamless domain borders: one per finer layer, drawn from the
-			// library's domain footprints (the base layer, dwd_icon, is global)
+			// library's domain footprints (the base layer, meteofrance_arpege_world025, is global)
 			const { domainOptions, getDomainBoundary, selectSeamlessLayers } = OMWeatherMapLayer;
-			const seamlessDomain = domainOptions.find((d) => d.value === 'dwd_icon_seamless');
+			const seamlessDomain = domainOptions.find((d) => d.value === 'meteofrance_seamless');
 			const borders = selectSeamlessLayers(seamlessDomain, domainOptions)
 				.slice(0, -1)
 				.map(({ layer, domain }) => ({
@@ -55,8 +81,7 @@
 			map.on('load', () => {
 				map.addSource('omFileSource', {
 					url: 'om://' + omUrl,
-					type: 'raster',
-					maxzoom: 12
+					type: 'raster'
 				});
 				map.addLayer(
 					{
@@ -139,6 +164,18 @@
 						}
 					});
 				}
+
+				const bordersCheckbox = document.getElementById('bordersCheckbox');
+				const updateBorders = () => {
+					const visibility = bordersCheckbox.checked ? 'visible' : 'none';
+					for (const b of borders) {
+						map.setLayoutProperty(`sb-line-${b.id}`, 'visibility', visibility);
+						map.setLayoutProperty(`sb-label-${b.id}`, 'visibility', visibility);
+					}
+				};
+				// run once as well, as the box can be unticked before the map has loaded
+				updateBorders();
+				bordersCheckbox.addEventListener('change', updateBorders);
 			});
 		</script>
 	</body>
