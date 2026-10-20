@@ -23,7 +23,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.2/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
@@ -34,13 +34,13 @@
 				hash: true
 			});
 
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			// ecmwf_ifs025 time steps are 3-hourly, which current_time_1H would miss two hours out of three
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs025/latest.json?time_step=valid_times_0&variable=temperature_2m`;
 
 			map.on('load', () => {
 				map.addSource('omFileRasterSource', {
 					url: 'om://' + omUrl,
-					type: 'raster',
-					maxzoom: 12
+					type: 'raster'
 				});
 
 				map.addLayer(
