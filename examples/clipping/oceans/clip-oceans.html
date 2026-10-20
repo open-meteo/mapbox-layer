@@ -24,7 +24,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.0/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			fetch('./natural_earth_50m_land_10km_buffer.geojson')
@@ -53,13 +53,12 @@
 					});
 
 					// setting tile_size=256 reduces each tile to 1/2 the width and height of the default 512px. Without it, each tile would contain 2x2 = 4 times as many pixels to compute.
-					const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=soil_temperature_54cm&tile_size=256`;
+					const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=soil_temperature_28_to_100cm&tile_size=256`;
 
 					map.on('load', () => {
 						map.addSource('omFileSource', {
 							url: 'om://' + omUrl,
-							type: 'raster',
-							maxzoom: 12
+							type: 'raster'
 						});
 						map.addLayer(
 							{
