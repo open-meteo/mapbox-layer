@@ -20,6 +20,7 @@ type ReadCall = {
 	variable: unknown;
 	ranges: unknown;
 	signal: AbortSignal | undefined;
+	read: unknown;
 	resolve: (v: Data | PromiseLike<Data>) => void;
 	reject: (err?: unknown) => void;
 	aborted: boolean;
@@ -64,16 +65,28 @@ const makeMockData = (size = 100): Data => ({
  */
 class FakeReader {
 	calls: ReadCall[] = [];
+	// Default rules: ensureData asks them which variables need the time step
+	config = {} as WeatherMapLayerFileReader['config'];
 
 	// Must match the WeatherMapLayerFileReader interface used by ensureData
 	readVariable(
 		omUrl: unknown,
 		variable: unknown,
 		ranges: unknown,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		read?: unknown
 	): Promise<Data> {
 		return new Promise<Data>((resolve, reject) => {
-			const call: ReadCall = { omUrl, variable, ranges, signal, resolve, reject, aborted: false };
+			const call: ReadCall = {
+				omUrl,
+				variable,
+				ranges,
+				signal,
+				read,
+				resolve,
+				reject,
+				aborted: false
+			};
 			this.calls.push(call);
 
 			if (signal?.aborted) {
@@ -462,5 +475,35 @@ describe('ensureData – cancelled read still settling', () => {
 		// The replacement caches its result and clears its own pending promise.
 		expect(state.data).toBe(mockData);
 		expect(state.dataPromise).toBeNull();
+	});
+});
+
+describe('ensureData – derivation context', () => {
+	it('passes the time step length of the data identity on to the reader', async () => {
+		const state = makeState(
+			new Map<string, OmUrlState>(),
+			'rate',
+			makeDataOptions({ variable: 'precipitation', deltaTimeHours: 3 })
+		);
+		const reader = new FakeReader();
+
+		const p = ensureData(state, asReader(reader), undefined);
+		await flushMicrotasks();
+
+		expect(reader.lastCall.read).toEqual({ deltaTimeHours: 3 });
+		reader.resolveCall(0, makeMockData());
+		await p;
+	});
+
+	it('passes no step when the identity carries none', async () => {
+		const state = makeState(new Map<string, OmUrlState>(), 'k');
+		const reader = new FakeReader();
+
+		const p = ensureData(state, asReader(reader), undefined);
+		await flushMicrotasks();
+
+		expect(reader.lastCall.read).toEqual({ deltaTimeHours: undefined });
+		reader.resolveCall(0, makeMockData());
+		await p;
 	});
 });
