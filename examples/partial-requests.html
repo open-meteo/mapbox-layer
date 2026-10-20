@@ -23,7 +23,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.2/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
@@ -38,7 +38,7 @@
 			});
 
 			// below url is used to request 'latest.json' and get the nearest timestep to "current local time" + 1 hour
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=temperature_2m`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=temperature_2m`;
 
 			map.on('dataloading', () => {
 				const bounds = map.getBounds();
@@ -50,8 +50,7 @@
 			map.on('load', () => {
 				map.addSource('omFileSource', {
 					url: 'om://' + omUrl,
-					type: 'raster',
-					maxzoom: 12
+					type: 'raster'
 				});
 				map.addLayer(
 					{

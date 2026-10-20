@@ -70,7 +70,13 @@ export const createOmProtocol = (renderer: TileRenderer): OmProtocol => {
 		const instance = getProtocolInstance(settings);
 
 		const url = await normalizeUrl(params.url, settings.domainOptions);
-		const request = parseRequest(url, settings);
+		// Resolved against the reader's effective config: the reader is built from
+		// the first call's `fileReaderConfig`, so what rendering takes from the
+		// derivation rules (barbs only for a wind speed) follows how data is read.
+		const request = parseRequest(url, {
+			...settings,
+			fileReaderConfig: instance.omFileReader.config
+		});
 
 		// Handle TileJSON request. The bounds only depend on the grid definition, so
 		// respond without touching the data: the read starts with the first tile

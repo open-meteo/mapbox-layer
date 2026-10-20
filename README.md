@@ -34,13 +34,12 @@ import { omProtocol } from '@openmeteo/weather-map-layer';
 
 maplibregl.addProtocol('om', omProtocol);
 
-const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m`;
+const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?variable=temperature_2m`;
 
 map.on('load', () => {
 	map.addSource('omFileSource', {
 		url: 'om://' + omUrl,
-		type: 'raster',
-		maxzoom: 12 // tiles look pretty much the same below zoom-level 12, even on the high res models
+		type: 'raster'
 	});
 
 	map.addLayer({
@@ -87,20 +86,19 @@ The package ships as an ES module only, so load it from a `<script type="module"
 ```html
 <script type="module">
 	import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs';
-	import * as OMWeatherMapLayer from 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.2/dist/index.mjs'; // x-release-please-version
+	import * as OMWeatherMapLayer from 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs'; // x-release-please-version
 
 	// Standard MapLibre GL JS setup
 	// ...
 
 	maplibregl.addProtocol('om', OMWeatherMapLayer.omProtocol);
 
-	const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?variable=temperature_2m`;
+	const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?variable=temperature_2m`;
 
 	map.on('load', () => {
 		map.addSource('omFileSource', {
 			url: 'om://' + omUrl,
-			type: 'raster',
-			maxzoom: 12 // tiles look pretty much the same below zoom-level 12, even on the high res models
+			type: 'raster'
 		});
 
 		map.addLayer({
@@ -175,11 +173,12 @@ For the vector source examples there is the `examples/vector` sub-directory with
 
 ## Framework Adapters
 
-The core `omProtocol` handler is designed for MapLibre GL JS, but this package also ships adapters for **Mapbox GL JS**, **Leaflet** and **OpenLayers**. Each adapter provides `addProtocol` / `removeProtocol` plus factory methods for creating map-library-native source or layer objects. See `examples/leaflet`, `examples/openlayers` and `examples/mapbox`.
+The core `omProtocol` handler is designed for MapLibre GL JS, but this package also ships adapters for **Mapbox GL JS**, **Leaflet**, **OpenLayers** and **CesiumJS**. Each adapter provides `addProtocol` / `removeProtocol` plus factory methods for creating map-library-native source or layer objects. See `examples/leaflet`, `examples/openlayers`, `examples/mapbox` and `examples/cesium`.
 
 - **Leaflet** – `addLeafletProtocolSupport(L)` gives `createTileLayer` and `createVectorTileLayer`, both plain `L.GridLayer`s. They default to `tileSize: 512, zoomOffset: -1`: the protocol renders 512 px tiles and sizes its arrow/barb lattice for them, so this reproduces the MapLibre look 1:1. Pass `tileSize: 256, zoomOffset: 0` for 256 px tiles.
 - **OpenLayers** – `addOpenLayersProtocolSupport(ol)` gives `createRasterSource` (a `DataTile` source for `WebGLTile` layers) and `createVectorTileSource` (an MVT `VectorTile` source).
 - **Mapbox GL JS** – `addMapboxProtocolSupport()` gives `createRasterSource`, a `type: 'custom'` raster source for `map.addSource`, and `addVectorSource(map, sourceId, url)`, which keeps a GeoJSON source in sync with the vector tiles of the viewport (Mapbox custom sources carry raster data only). Style layers select their features with a filter on the `layer` property, e.g. `['==', ['get', 'layer'], 'wind-arrows']`, instead of `source-layer`.
+- **CesiumJS** – `addCesiumProtocolSupport(Cesium)` gives `createImageryProvider` and `createVectorImageryProvider`, both resolving to an `ImageryProvider` once the TileJSON is known; add them with `viewer.imageryLayers.add(Cesium.ImageryLayer.fromProviderAsync(provider))`. Cesium has no vector tile renderer, so the vector provider draws the arrows, barbs or contours onto raster tiles with a style function, like the Leaflet vector tile layer. Do not limit the data window with `updateCurrentBounds` in Cesium: it requests the root tiles and the ancestors of what it shows, which cover the whole domain anyway, plus tiles beyond the view while the camera moves, and keeps them all. A window would save nothing and leave those tiles partly empty until their level changes.
 
 #### Cross-origin isolation
 
@@ -237,6 +236,50 @@ maplibregl.addProtocol('om', (params, abortController) =>
 
 An example implementation with a useful case is available in the `examples/callbacks` sub-directory.
 
+### Derivation rules
+
+Some variables are not stored in the `.om` files but computed while reading them: wind speed and direction come from the `u`/`v` components, wave height is paired with the wave direction, and `vapour_pressure_deficit`, `wet_bulb_temperature_2m` and `apparent_temperature` are computed from the 2 m temperature and humidity (the Magnus formula for the dew point, Stull's fit for the wet-bulb temperature and Steadman's apparent temperature, as the Open-Meteo backend computes them). Each of these is a derivation rule, matching the requested variable name and listing the variables it is read from.
+
+What a model stores differs: `snowfall` is stored by some models and derived from `snowfall_water_equivalent` on others, wind comes as `u`/`v` components or as speed and direction, and ECMWF stores the dew point where other models store the relative humidity. A rule therefore sees the variables of the file it reads from and decides whether it applies. The stored field wins over a derived one, and a derived field needs all of its sources in the file (the first file of a run has no accumulations yet). Where not stored, the defaults derive `snowfall`, `rain`, `dew_point_2m`, `relative_humidity_2m`, `shortwave_radiation`, `direct_radiation`, `diffuse_radiation` and `wind_speed_*`/`wind_direction_*` from the components, and the humidity-derived fields take the dew point, the wind speed or the direct and diffuse radiation where a model stores those instead. The precipitation family (`precipitation`, `rain`, `showers`, `snowfall`, `snowfall_water_equivalent` and their ensemble `_mean` and `_spread`), which the files store as sums over each time step, is always shown per hour (mm/h, cm/h for snowfall), stored or derived, so a series of maps reads the same across a model's hourly, 3-hourly and 6-hourly steps. That needs the length of the file's time step, which the om protocol takes from the `delta_time_hours` parameter of the om URL: the host application sets it from the run's valid times (the gap to the previous valid time; the first step takes the gap to the next one), and a Capture API URL (`latest.json`, `in-progress.json`) gets it set while resolving, from the valid times it fetches anyway.
+
+The defaults are exported as `defaultDerivationRules`; own rules are passed through `fileReaderConfig`:
+
+```ts
+// Fresh snow from the water equivalent with a ratio that follows the
+// temperature, instead of the fixed 0.7 cm per mm of the default rule.
+// Listed first, this rule takes `variable=snowfall` over.
+const snowfallRule = {
+	pattern: /^snowfall$/,
+	provides: { directions: false, barbs: false },
+	scaleFactor: 'primary',
+	// A model storing snowfall itself keeps it; otherwise both sources are needed
+	getSourceVars: ({ variable, stored }) =>
+		!stored.has(variable) && stored.has('snowfall_water_equivalent') && stored.has('temperature_2m')
+			? ['snowfall_water_equivalent', 'temperature_2m']
+			: null,
+	process: ([waterEquivalent, temperature]) => ({
+		// 1 cm per mm near freezing, up to 2 cm per mm of cold, dry snow
+		values: waterEquivalent.map((mm, i) => mm * Math.min(2, Math.max(1, 1 - temperature[i] / 10))),
+		directions: undefined
+	})
+};
+
+const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
+omProtocolOptions.fileReaderConfig = {
+	...omProtocolOptions.fileReaderConfig,
+	// The first rule claiming a name wins, so own rules go in front of the defaults.
+	derivationRules: [snowfallRule, ...OMWeatherMapLayer.defaultDerivationRules]
+};
+```
+
+A string pattern matches anywhere in the name, which is why the rule above anchors a RegExp: a plain `'snowfall'` would also claim `snowfall_water_equivalent`. `getSourceVars` receives the requested name and the set of variables stored in the file; returning `null` passes the name on to the next matching rule, and when no rule claims it the variable is read as stored. A rule lists as many source variables as it needs: a single one to convert units, two for the `u`/`v` pairs, more to combine fields. They all have to live in the same file and share its dimensions, and `process` receives their data in the order `getSourceVars` returns, along with the same file context. A rule producing a member of the precipitation family returns the per-step sum; the reader divides it by the step after the rule. A rule needing the step for anything else sets `usesDeltaTime` and gets it in hours as `context.deltaTimeHours`. `variableUsesDeltaTime(variable)` tells a host which variables need `delta_time_hours`, and `deltaTimeHoursAt(validTime, validTimes)` computes it from a run's valid times; a direct `readVariable` call passes it as its last argument, and a read of such a variable without it is rejected.
+
+`provides` is declared up front because it is needed before any data is read: `directions: true` makes a variable eligible for arrows, and `barbs: true` additionally marks its values as a wind speed, since barbs encode knots. Both are also queried through `variableHasDirections(variable, rules)` and `variableSupportsBarbs(variable, rules)`, for a UI that offers arrow styles. They are answered from the first rule matching the name, before any file is open, so rules matching the same name have to agree on them.
+
+Since the rules replace the defaults rather than extending them, leaving out `defaultDerivationRules` is how a default rule is dropped. The list is read once, when the protocol creates its shared file reader, so it has to be set before the first tile request.
+
+- `examples/custom-derivation-rules.html` – snowfall from the water equivalent with a temperature-dependent ratio, in front of the default rule.
+
 ### Clipping
 
 To restrict weather data to a geometric boundary, the clipping parameters can be supplied during the instantiation of the omProtocol.
@@ -255,7 +298,7 @@ The clipping examples require `npm run serve`, as they load GeoJSON files over H
 - `examples/clipping/raster/clip-switzerland.html` – Demonstrates temperature raster data clipped to the geographical contour of Switzerland.
 - `examples/clipping/arrows/clip-italy.html` – Shows wind velocity raster and vector arrow fields clipped to the contour of Italy.
 - `examples/clipping/contours/clip-france.html` – Illustrates temperature and isocontour overlays confined to the French boundary.
-- `examples/clipping/bounds/clip-germany-bounds.html` – Restricts tile generation to a bounding box around Germany.
+- `examples/clipping/bounds/clip-great-britain-bounds.html` – Restricts tile generation to a bounding box around Great Britain.
 - `examples/clipping/oceans/clip-oceans.html` – Depicts the exclusion of oceanic regions from a global model, thereby hiding weather data on ocean surfaces.
 
 ## Capture API
@@ -268,19 +311,19 @@ Because the use of OM files on the S3 storage is often quite ambiguous, a Captur
 
 For each Weather Model, there will be a `latest.json` and `in-progress.json` metadata file, containing data like valid time steps, valid variables and reference times.
 
-An example can be found [here](https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json), for `DWD Icon Global`:
+An example can be found [here](https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json), for `ECMWF IFS HRES`:
 
 ```
-https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json
+https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json
 ```
 
 ```json
 {
 	"completed": true,
-	"last_modified_time": "2025-11-11T09:42:17Z",
-	"reference_time": "2025-11-11T06:00:00Z",
-	"valid_times": ["2025-11-11T06:00Z", "2025-11-11T07:00Z", "...+91"],
-	"variables": ["cape", "cloud_cover", "cloud_cover_high", "...+120"]
+	"last_modified_time": "2026-10-15T23:58:08Z",
+	"reference_time": "2026-10-15T18:00:00Z",
+	"valid_times": ["2026-10-15T18:00Z", "2026-10-15T19:00Z", "...+107"],
+	"variables": ["boundary_layer_height", "cape", "cloud_cover", "...+32"]
 }
 ```
 
@@ -290,22 +333,22 @@ If you don't want to select a particular model run, but instead always want to u
 
 For example, with the link below replace the highlighted part:
 
-<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/<b style="color:#af1111">2025/06/06/1200Z/2025-06-06T1200.om</b>?variable=temperature_2m
+<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/<b style="color:#af1111">2025/06/06/1200Z/2025-06-06T1200.om</b>?variable=temperature_2m
 </code></pre>
 
 With `latest.json`:
 
-<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/<b style="color:#14a62d">latest.json</b>?variable=temperature_2m
+<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/<b style="color:#14a62d">latest.json</b>?variable=temperature_2m
 </code></pre>
 
 If you want to show the closest current time, or a pick a different valid time than the first one, you could use:
 
-<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?<b>time_step=current_time_1H</b>&variable=temperature_2m
+<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?<b>time_step=current_time_1H</b>&variable=temperature_2m
 </code></pre>
 
 or the 5th index of the `valid_times` array
 
-<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?<b>time_step=valid_times_5</b>&variable=temperature_2m
+<pre><code>https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?<b>time_step=valid_times_5</b>&variable=temperature_2m
 </code></pre>
 
 ### Time Step Modifiers
