@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Open-Meteo Mapbox Layer - Germany Bounds Clip</title>
+		<title>Open-Meteo Mapbox Layer - Great Britain Bounds Clip</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
@@ -23,14 +23,14 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.1/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
-			const germanyBounds = [5.87, 47.27, 15.04, 55.06];
+			const greatBritainBounds = [-8.65, 49.86, 1.77, 60.86];
 
 			const omProtocolOptions = OMWeatherMapLayer.defaultOmProtocolSettings;
 			omProtocolOptions.clippingOptions = {
-				bounds: germanyBounds
+				bounds: greatBritainBounds
 			};
 
 			maplibregl.addProtocol('om', (params, abortController) =>
@@ -40,19 +40,18 @@
 			const map = new maplibregl.Map({
 				container: 'map',
 				style: 'https://static-assets.open-meteo.com/map-assets/styles/minimal-planet-maps.json', // replace with your own style sheet
-				center: [10.4515, 51.1657],
-				zoom: 5,
+				center: [-3.436, 55.3781],
+				zoom: 4.5,
 				hash: true
 			});
 
 			const omUrl =
-				'https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon_d2/latest.json?time_step=current_time_1H&variable=temperature_2m';
+				'https://openmeteo.s3.amazonaws.com/data_spatial/ukmo_uk_deterministic_2km/latest.json?time_step=current_time_1H&variable=temperature_2m';
 
 			map.on('load', () => {
 				map.addSource('omFileSource', {
 					url: 'om://' + omUrl,
-					type: 'raster',
-					maxzoom: 12
+					type: 'raster'
 				});
 				map.addLayer(
 					{

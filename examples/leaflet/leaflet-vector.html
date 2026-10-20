@@ -24,7 +24,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.1/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			// Build the Leaflet adapter that intercepts "om://" requests and routes them through omProtocol.
@@ -53,7 +53,7 @@
 
 			// Both layers share the same model / time step; only the variable differs.
 			// The vector layer appends `&arrows=true` to request PBF arrow tiles.
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=wind_u_component_10m`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=wind_u_component_10m`;
 
 			// Raster layer: wind-speed colour fill
 			leafletAdapter

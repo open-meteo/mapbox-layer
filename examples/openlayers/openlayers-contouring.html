@@ -24,7 +24,7 @@
 			const OMWeatherMapLayer = await import(
 				location.hostname === 'localhost'
 					? '../../dist/index.mjs' // local development
-					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.2.1/dist/index.mjs' // x-release-please-version
+					: 'https://unpkg.com/@openmeteo/weather-map-layer@0.3.0/dist/index.mjs' // x-release-please-version
 			);
 
 			const olAdapter = OMWeatherMapLayer.addOpenLayersProtocolSupport(ol);
@@ -32,7 +32,7 @@
 			// Register the 'om' protocol handler (same as MapLibre's addProtocol).
 			olAdapter.addProtocol('om', OMWeatherMapLayer.omProtocol);
 
-			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
+			const omUrl = `https://openmeteo.s3.amazonaws.com/data_spatial/ecmwf_ifs/latest.json?time_step=current_time_1H&variable=precipitation&contours=true`;
 
 			// Create sources — synchronous; TileJSON resolves on first tile load.
 			const rasterSource = olAdapter.createRasterSource('om://' + omUrl);
