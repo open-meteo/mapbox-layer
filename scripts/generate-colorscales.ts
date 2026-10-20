@@ -189,6 +189,24 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ range: [25, 100], colors: ['#937350', '#ffffff'] }
 		]
 	},
+	// Feels-like temperature: the hues of `temperature`, so both read alike,
+	// with the bands tightened to the range a body notices.
+	apparent_temperature: {
+		unit: '°C',
+		breakpoints: [
+			-50, -40, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 28, 32, 36, 40, 45, 50
+		],
+		colorSegments: [
+			{ range: [-50, -25], colors: ['#ef07ef', '#0034ff'] },
+			{ range: [-25, 0], colors: ['#0034ff', '#A4DAF5'] },
+			{ range: [0, 15], colors: ['#72E8A5', 'green'] },
+			{ range: [15, 25], colors: ['green', 'yellow'] },
+			{ range: [25, 32], colors: ['yellow', 'orange'] },
+			{ range: [32, 42], colors: ['orange', 'red'] },
+			{ range: [42, 50], colors: ['red', '#93001a'] }
+		],
+		opacitySegments: [{ range: [-50, 50], opacity: [1, 1], easing: 'linear' }]
+	},
 	cape: {
 		unit: 'J/kg',
 		breakpoints: [0, 50, 150, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000],
@@ -285,8 +303,26 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		],
 		opacitySegments: [{ range: [4600, 6000], opacity: [0.7, 0.7], easing: 'linear' }]
 	},
+	// Ocean surface currents: most open-ocean flow sits below 0.3 m/s, the
+	// western boundary currents (Gulf Stream, Kuroshio, Agulhas) reach ~2-2.5.
+	// The wind ramp's colour language, compressed onto that range, with fine
+	// steps in the crowded low band and near-transparent still water.
+	ocean_current: {
+		unit: 'm/s',
+		breakpoints: [0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1, 1.25, 1.5, 2, 2.5],
+		colorSegments: [
+			{ range: [0, 0.5], colors: ['steelblue', 'green'] },
+			{ range: [0.5, 1.5], colors: ['green', 'orange'] },
+			{ range: [1.5, 2.5], colors: ['orange', '#ff0000'] }
+		],
+		opacitySegments: [
+			{ range: [0, 0.05], opacity: [0, 0.15], easing: 'linear' },
+			{ range: [0.05, 0.4], opacity: [0.15, 1], easing: 'linear' },
+			{ range: [0.4, 2.5], opacity: [1, 1], easing: 'linear' }
+		]
+	},
 	precipitation: {
-		unit: 'mm',
+		unit: 'mm/h',
 		breakpoints: [0.01, 0.055, 0.2, 1, 2, 3, 4.5, 6, 8, 10, 12, 16, 20, 25, 30],
 		colorSegments: [
 			{ range: [0, 0.04], colors: ['#ffffff', '#87CEFA'] },
@@ -392,6 +428,28 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ range: [0.01, 5], opacity: [1, 1], easing: 'linear' }
 		]
 	},
+	// Fresh snow in cm, the scale contributed in #322: its range reaches the
+	// extremes a 6-hourly step can hold, and the first visible band starts
+	// above the raster's half-quantum sampling offset (0.05 for a water
+	// equivalent stored in 0.1 mm steps), so zero snowfall stays transparent.
+	snowfall: {
+		unit: 'cm/h',
+		breakpoints: [0, 0.1, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30, 40, 60, 100],
+		colorSegments: [
+			{ range: [0, 0.1], colors: ['#ffffff', '#4cd8fb'] },
+			{ range: [0.1, 1], colors: ['#4cd8fb', 'blue'] },
+			{ range: [1, 5], colors: ['blue', '#00b400'] },
+			{ range: [5, 20], colors: ['#00b400', 'yellow'] },
+			{ range: [20, 100], colors: ['yellow', 'red'] }
+		],
+		opacitySegments: [
+			{ range: [0, 0.1], opacity: [0, 0.6], easing: 'linear' },
+			{ range: [0.1, 1], opacity: [0.6, 1], easing: 'linear' },
+			{ range: [1, 5], opacity: [1, 1], easing: 'linear' },
+			{ range: [5, 20], opacity: [1, 1], easing: 'linear' },
+			{ range: [20, 100], opacity: [1, 1], easing: 'linear' }
+		]
+	},
 	soil_moisture: {
 		unit: 'vol. %',
 		breakpoints: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5],
@@ -489,6 +547,19 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 		],
 		opacitySegments: [{ range: [0, 12], opacity: [1, 1], easing: 'linear' }]
 	},
+	// Plant water demand: blue while the air is near saturation, green around
+	// the 0.8 to 1.2 kPa band crops prefer, warm colours as the air dries out.
+	vapour_pressure_deficit: {
+		unit: 'kPa',
+		breakpoints: [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 2, 2.5, 3, 3.5, 4, 5, 6],
+		colorSegments: [
+			{ range: [0, 0.8], colors: ['#0034ff', '#72E8A5'] },
+			{ range: [0.8, 1.6], colors: ['#72E8A5', 'green', 'yellow'] },
+			{ range: [1.6, 3], colors: ['yellow', 'orange', 'red'] },
+			{ range: [3, 6], colors: ['red', '#93001a'] }
+		],
+		opacitySegments: [{ range: [0, 6], opacity: [1, 1], easing: 'linear' }]
+	},
 	vertical_velocity: {
 		unit: 'm/s',
 		breakpoints: [-0.75, -0.5, -0.3, -0.15, -0.05, 0, 0.05, 0.15, 0.3, 0.5, 0.75],
@@ -514,6 +585,23 @@ const colorScaleDefinitions: Record<string, ColorScaleDefinition> = {
 			{ range: [0, 10000], opacity: [1, 1], easing: 'linear' },
 			{ range: [10000, 20000], opacity: [1, 0], easing: 'linear' } // clear air fades out
 		]
+	},
+	// Heat-stress view: green up to the mid twenties, red from the 31 °C limit
+	// of human heat tolerance, dark red above the classic 35 °C threshold.
+	wet_bulb_temperature_2m: {
+		unit: '°C',
+		breakpoints: [
+			-30, -20, -10, -5, 0, 5, 10, 15, 18, 20, 22, 24, 26, 28, 30, 31, 32, 33, 34, 35, 36, 38, 40
+		],
+		colorSegments: [
+			{ range: [-30, 0], colors: ['#0034ff', '#A4DAF5'] },
+			{ range: [0, 20], colors: ['#72E8A5', 'green'] },
+			{ range: [20, 26], colors: ['green', 'yellow'] },
+			{ range: [26, 31], colors: ['yellow', 'orange'] },
+			{ range: [31, 35], colors: ['orange', 'red'] },
+			{ range: [35, 40], colors: ['red', '#93001a'] }
+		],
+		opacitySegments: [{ range: [-30, 40], opacity: [1, 1], easing: 'linear' }]
 	},
 	wind: {
 		unit: 'm/s',
