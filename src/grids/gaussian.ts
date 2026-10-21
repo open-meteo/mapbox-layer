@@ -56,6 +56,27 @@ export class GaussianGrid implements GridInterface {
 		];
 	}
 
+	getCellPolygon(lat: number, lon: number): Array<[number, number]> | null {
+		// Same node as getNearestNeighborValue, on the evenly spaced row
+		// latitudes forEachPoint places the nodes on; the row's own longitude
+		// step makes the cells narrower towards the poles
+		const latitudeLines = this.latitudeLines;
+		const dy = 180 / (2 * latitudeLines + 0.5);
+		const y = modPositive(Math.round(latitudeLines - 1 - (lat - dy / 2) / dy), 2 * latitudeLines);
+		const dx = 360 / this.nxOf(y);
+		const x = modPositive(Math.round(lon / dx), this.nxOf(y));
+		const nodeLat = (latitudeLines - y - 1) * dy + dy / 2;
+		// The node's longitude on the same turn as `lon`
+		const nodeLon = x * dx + 360 * Math.round((lon - x * dx) / 360);
+		return [
+			[nodeLon - dx / 2, nodeLat - dy / 2],
+			[nodeLon + dx / 2, nodeLat - dy / 2],
+			[nodeLon + dx / 2, nodeLat + dy / 2],
+			[nodeLon - dx / 2, nodeLat + dy / 2],
+			[nodeLon - dx / 2, nodeLat - dy / 2]
+		];
+	}
+
 	getCenter(): { lng: number; lat: number } {
 		// FIXME: Center hardcoded for now
 		return { lng: 0, lat: 0 };
