@@ -122,6 +122,49 @@ const CHMI_ALADIN_CENTRAL_EUROPE_2KM_GRID: GridData = {
 	}
 };
 
+// Native ICON grids: the icosahedral meshes the models run on, in DWD's cell
+// order, shared by every domain written on the same mesh. The global one is
+// computed (see grids/icon/icon.ts); limited-area ones are located through the
+// cell index the backend publishes next to the data. The data mirror does not
+// serve that static path, hence the S3 URLs.
+
+// DWD grid 26 (R3B07, 13 km)
+const DWD_ICON_GLOBAL_NATIVE_GRID: GridData = {
+	type: 'icon',
+	nx: 2949120,
+	ny: 1,
+	iconRoot: 3,
+	iconBisections: 7,
+	zoom: 1
+};
+
+// DWD grid 62 (R3B08, 6.6 km)
+const DWD_ICON_EU_NATIVE_GRID: GridData = {
+	type: 'latband',
+	nx: 768608,
+	ny: 1,
+	geometry: 'https://openmeteo.s3.amazonaws.com/data/dwd_icon_eu_native/static/grid.bin',
+	zoom: 3.2
+};
+
+// DWD grid 63 (R2B08, 10 km)
+const DWD_ICON_EU_EPS_NATIVE_GRID: GridData = {
+	type: 'latband',
+	nx: 342428,
+	ny: 1,
+	geometry: 'https://openmeteo.s3.amazonaws.com/data/dwd_icon_eu_eps_native/static/grid.bin',
+	zoom: 3.2
+};
+
+// DWD grid 47 (2 km)
+const DWD_ICON_D2_NATIVE_GRID: GridData = {
+	type: 'latband',
+	nx: 542040,
+	ny: 1,
+	geometry: 'https://openmeteo.s3.amazonaws.com/data/dwd_icon_d2_native/static/grid.bin',
+	zoom: 5.2
+};
+
 // -------------------------------------------------------------------------
 // Seamless composite domains
 // -------------------------------------------------------------------------
@@ -474,17 +517,16 @@ export const domainOptions: Array<Domain> = [
 	{
 		value: 'dwd_icon_global_native',
 		label: 'DWD ICON Native',
-		// The icosahedral R3B07 grid (13 km) the model runs on, in DWD's cell
-		// order (see grids/icon/icon.ts): the same run as dwd_icon before regridding.
-		grid: {
-			type: 'icon',
-			nx: 2949120,
-			ny: 1,
-			iconRoot: 3,
-			iconBisections: 7,
-			zoom: 1
-		},
+		// The same run as dwd_icon before regridding
+		grid: DWD_ICON_GLOBAL_NATIVE_GRID,
 		time_interval: 'hourly',
+		model_interval: '6_hourly'
+	},
+	{
+		value: 'dwd_aicon_global_native',
+		label: 'DWD AICON Native',
+		grid: DWD_ICON_GLOBAL_NATIVE_GRID,
+		time_interval: '3_hourly',
 		model_interval: '6_hourly'
 	},
 	{
@@ -500,6 +542,13 @@ export const domainOptions: Array<Domain> = [
 			dy: 0.0625,
 			zoom: 3.2
 		},
+		time_interval: 'hourly',
+		model_interval: '3_hourly'
+	},
+	{
+		value: 'dwd_icon_eu_native',
+		label: 'DWD ICON EU Native',
+		grid: DWD_ICON_EU_NATIVE_GRID,
 		time_interval: 'hourly',
 		model_interval: '3_hourly'
 	},
@@ -522,18 +571,30 @@ export const domainOptions: Array<Domain> = [
 	{
 		value: 'dwd_icon_d2_native',
 		label: 'DWD ICON D2 Native',
-		// The 2 km icosahedral grid the model runs on (DWD grid 47), located
-		// through the cell index the backend publishes next to the data. The
-		// data mirror does not serve that static path, hence the S3 URL.
-		grid: {
-			type: 'latband',
-			nx: 542040,
-			ny: 1,
-			geometry: 'https://openmeteo.s3.amazonaws.com/data/dwd_icon_d2_native/static/grid.bin',
-			zoom: 5.2
-		},
+		grid: DWD_ICON_D2_NATIVE_GRID,
 		time_interval: 'hourly',
 		model_interval: '3_hourly'
+	},
+	{
+		value: 'dwd_icon_d2_native_15min',
+		label: 'DWD ICON D2 Native 15min',
+		grid: DWD_ICON_D2_NATIVE_GRID,
+		time_interval: '15_minute',
+		model_interval: '3_hourly'
+	},
+	{
+		value: 'dwd_icon_d2_ruc_native',
+		label: 'DWD ICON D2 RUC Native',
+		grid: DWD_ICON_D2_NATIVE_GRID,
+		time_interval: 'hourly',
+		model_interval: 'hourly'
+	},
+	{
+		value: 'dwd_icon_d2_ruc_native_15min',
+		label: 'DWD ICON D2 RUC Native 15min',
+		grid: DWD_ICON_D2_NATIVE_GRID,
+		time_interval: '15_minute',
+		model_interval: 'hourly'
 	},
 	// Not availabe yet
 	// {
@@ -617,6 +678,13 @@ export const domainOptions: Array<Domain> = [
 		model_interval: '6_hourly'
 	},
 	{
+		value: 'dwd_icon_eu_eps_native',
+		label: 'DWD ICON EU EPS Native',
+		grid: DWD_ICON_EU_EPS_NATIVE_GRID,
+		time_interval: 'hourly',
+		model_interval: '6_hourly'
+	},
+	{
 		value: 'dwd_icon_d2_eps',
 		label: 'DWD ICON D2 EPS',
 		grid: {
@@ -631,6 +699,13 @@ export const domainOptions: Array<Domain> = [
 		},
 		time_interval: 'hourly',
 		model_interval: '6_hourly'
+	},
+	{
+		value: 'dwd_icon_d2_eps_native',
+		label: 'DWD ICON D2 EPS Native',
+		grid: DWD_ICON_D2_NATIVE_GRID,
+		time_interval: 'hourly',
+		model_interval: '3_hourly'
 	},
 
 	// GFS
